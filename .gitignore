@@ -1,0 +1,5 @@
+# Build directories
+build*/
+
+# QtCreator settings
+*.user
