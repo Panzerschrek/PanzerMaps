@@ -1,0 +1,6 @@
+[submodule "tinyxml2"]
+	path = source/tinyxml2
+	url = https://github.com/Panzerschrek/tinyxml2
+[submodule "source/tinyxml2"]
+	path = source/tinyxml2
+	url = https://github.com/Panzerschrek/tinyxml2
