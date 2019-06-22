@@ -4,3 +4,6 @@
 [submodule "source/tinyxml2"]
 	path = source/tinyxml2
 	url = https://github.com/Panzerschrek/tinyxml2
+[submodule "source/panzer_ogl_lib"]
+	path = source/panzer_ogl_lib
+	url = https://github.com/Panzerschrek/panzer_ogl_lib.git
