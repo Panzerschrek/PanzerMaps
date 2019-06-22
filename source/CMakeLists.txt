@@ -4,7 +4,7 @@ project( PanzerMaps )
 
 find_package( SDL2 REQUIRED )
 
-add_subdirectory( tinyxml2 ${CMAKE_BINARY_DIR}/llvm )
+add_subdirectory( tinyxml2 )
 
 file( GLOB EXPORTER_SOURCES "exporter/*.hpp" "exporter/*.cpp" )
 
