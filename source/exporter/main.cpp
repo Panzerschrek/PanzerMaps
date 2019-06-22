@@ -217,10 +217,10 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 	using namespace DataFileDescription;
 
 	std::vector<unsigned char> result;
-
 	result.resize( sizeof(DataFile), 0 );
 
-	Chunk& chunk= *reinterpret_cast<Chunk*>( result.data() );
+	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
+	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
 	MercatorPoint min_point;
 	MercatorPoint max_point;
@@ -228,6 +228,8 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		min_point= max_point= GeoPointToWebMercatorPoint( prepared_data.vertices.front() );
 	else
 		min_point.x= max_point.x= min_point.y= max_point.y= 0;
+
+	// TODO - asssert, if data chunk contains >= 65535 vertices.
 
 	// Convert input coordinates to web mercator, calculate bounding box.
 	std::vector<MercatorPoint> prepared_data_vetices_converted;
@@ -247,6 +249,8 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 	std::vector<ChunkVertex> vertices;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
 	{
+		get_chunk().point_object_groups_offset= static_cast<uint32_t>(result.size());
+
 		auto point_objects= prepared_data.point_objects;
 		// Sort by class.
 		std::sort(
@@ -265,14 +269,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			{
 				if( prev_class != PointObjectClass::None )
 				{
-					group.vertex_count= vertices.size() - group.first_vertex;
+					group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
 					result.insert(
 						result.end(),
 						reinterpret_cast<const unsigned char*>(&group),
 						reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+					++get_chunk().point_object_groups_count;
 				}
 
-				group.first_vertex= vertices.size();
+				group.first_vertex= static_cast<uint16_t>( vertices.size() );
 				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
 
 				prev_class= object.class_;
@@ -285,6 +290,8 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		}
 	}
 	{
+		get_chunk().linear_object_groups_offset= static_cast<uint32_t>( result.size() );
+
 		auto linear_objects= prepared_data.linear_objects;
 		// Sort by class.
 		std::sort(
@@ -302,14 +309,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			{
 				if( prev_class != LinearObjectClass::None )
 				{
-					group.vertex_count= vertices.size() - group.first_vertex;
+					group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
 					result.insert(
 						result.end(),
 						reinterpret_cast<const unsigned char*>(&group),
 						reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+					++get_chunk().linear_object_groups_count;
 				}
 
-				group.first_vertex= vertices.size();
+				group.first_vertex= static_cast<uint16_t>( vertices.size() );
 				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
 
 				prev_class= object.class_;
@@ -326,6 +334,8 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		}
 	}
 	{
+		get_chunk().areal_object_groups_offset= static_cast<uint32_t>( result.size() );
+
 		auto areal_objects= prepared_data.areal_objects;
 		// Sort by class.
 		std::sort(
@@ -343,14 +353,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			{
 				if( prev_class != ArealObjectClass::None )
 				{
-					group.vertex_count= vertices.size() - group.first_vertex;
+					group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
 					result.insert(
 						result.end(),
 						reinterpret_cast<const unsigned char*>(&group),
 						reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+					++get_chunk().areal_object_groups_count;
 				}
 
-				group.first_vertex= vertices.size();
+				group.first_vertex= static_cast<uint16_t>( vertices.size() );
 				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
 
 				prev_class= object.class_;
@@ -371,6 +382,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		result.end(),
 		reinterpret_cast<const unsigned char*>( vertices.data() ),
 		reinterpret_cast<const unsigned char*>( vertices.data() + vertices.size() ) );
+	get_chunk().vertex_count= static_cast<uint16_t>( vertices.size() );
 
 	return result;
 }
@@ -389,7 +401,7 @@ static std::vector<unsigned char> DumpDataFile( const OSMParseResult& prepared_d
 
 	std::vector<unsigned char> chunk_data= DumpDataChunk( prepared_data );
 
-	data_file.chunks_offset= result.size();
+	data_file.chunks_offset= static_cast<uint32_t>( result.size() );
 	data_file.chunk_count= 1u;
 	result.insert( result.end(), chunk_data.begin(), chunk_data.end() );
 

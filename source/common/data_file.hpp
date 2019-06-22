@@ -23,6 +23,7 @@ struct Chunk
 	// All offsets - from start of chunk.
 
 	using StyleIndex= uint8_t;
+
 	struct PointObjectGroup
 	{
 		StyleIndex style_index;
@@ -51,16 +52,14 @@ struct Chunk
 	GlobalCoordType max_y;
 
 	// Data sections.
-	uint16_t point_object_groups_offset;
+	uint32_t point_object_groups_offset;
+	uint32_t linear_object_groups_offset;
+	uint32_t areal_object_groups_offset;
+	uint32_t vertices_offset;
+
 	uint16_t point_object_groups_count;
-
-	uint16_t linear_object_groups_offset;
 	uint16_t linear_object_groups_count;
-
-	uint16_t areal_object_groups_offset;
 	uint16_t areal_object_groups_count;
-
-	uint16_t vertices_offset;
 	uint16_t vertex_count;
 };
 
@@ -68,7 +67,7 @@ struct DataFile
 {
 	// All offsets - from start of file.
 
-	static constexpr char* c_expected_header= "PanzerMaps-Data";
+	static constexpr const char* c_expected_header= "PanzerMaps-Data";
 	static constexpr uint32_t c_expected_version= 1u;
 
 	uint8_t header[16];

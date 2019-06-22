@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project( PanzerMaps )
 
+add_compile_options( -Wall -Wextra -Wconversion )
+
 find_package( SDL2 REQUIRED )
 
 add_subdirectory( tinyxml2 )
