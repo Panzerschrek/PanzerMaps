@@ -27,6 +27,9 @@ enum class LinearObjectClass : uint8_t
 	None,
 	Road,
 	Waterway,
+	Railway,
+	Tram,
+	Monorail,
 };
 
 enum class ArealObjectClass : uint8_t
@@ -36,6 +39,7 @@ enum class ArealObjectClass : uint8_t
 	Water,
 	Wood,
 	Grassland,
+	Cemetery,
 };
 
 struct OSMParseResult
@@ -176,6 +180,25 @@ OSMParseResult ParseOSM( const tinyxml2::XMLDocument& doc )
 					result.linear_objects.push_back(obj);
 			}
 		}
+		else if( const char* const railway= GetTagValue( way_element, "railway" ) )
+		{
+			OSMParseResult::LinearObject obj;
+			if( std::strcmp( railway, "rail" ) == 0 )
+				obj.class_= LinearObjectClass::Railway;
+			else if( std::strcmp( railway, "monorail" ) == 0 )
+				obj.class_= LinearObjectClass::Monorail;
+			else if( std::strcmp( railway, "tram" ) == 0 )
+				obj.class_= LinearObjectClass::Tram;
+
+			if( obj.class_ != LinearObjectClass::None )
+			{
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( way_element, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+					result.linear_objects.push_back(obj);
+			}
+		}
 		else if( const char* const building= GetTagValue( way_element, "building" ) )
 		{
 			(void)building;
@@ -195,8 +218,50 @@ OSMParseResult ParseOSM( const tinyxml2::XMLDocument& doc )
 				obj.class_= ArealObjectClass::Water;
 			else if( std::strcmp( natural, "wood" ) == 0 )
 				obj.class_= ArealObjectClass::Wood;
+			else if( std::strcmp( natural, "scrub" ) == 0 )
+				obj.class_= ArealObjectClass::Wood;
 			else if( std::strcmp( natural, "grassland" ) == 0 )
 				obj.class_= ArealObjectClass::Grassland;
+			else if( std::strcmp( natural, "heath" ) == 0 )
+				obj.class_= ArealObjectClass::Grassland;
+
+			if( obj.class_ != ArealObjectClass::None )
+			{
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( way_element, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+					result.areal_objects.push_back(obj);
+			}
+		}
+		else if( const char* const landuse= GetTagValue( way_element, "landuse" ) )
+		{
+			OSMParseResult::ArealObject obj;
+				if( std::strcmp( landuse, "basin" ) == 0 )
+				obj.class_= ArealObjectClass::Water;
+			else if( std::strcmp( landuse, "cemetery" ) == 0 )
+				obj.class_= ArealObjectClass::Cemetery;
+			else if( std::strcmp( landuse, "foreset" ) == 0 )
+				obj.class_= ArealObjectClass::Wood;
+			else if( std::strcmp( landuse, "wood" ) == 0 )
+				obj.class_= ArealObjectClass::Wood;
+			else if( std::strcmp( landuse, "grass" ) == 0 )
+				obj.class_= ArealObjectClass::Grassland;
+
+			if( obj.class_ != ArealObjectClass::None )
+			{
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( way_element, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+					result.areal_objects.push_back(obj);
+			}
+		}
+		else if( const char* const amenity= GetTagValue( way_element, "amenity" ) )
+		{
+			OSMParseResult::ArealObject obj;
+			if( std::strcmp( amenity, "grave_yard" ) == 0 )
+				obj.class_= ArealObjectClass::Cemetery;
 
 			if( obj.class_ != ArealObjectClass::None )
 			{
