@@ -217,7 +217,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 	using namespace DataFileDescription;
 
 	std::vector<unsigned char> result;
-	result.resize( sizeof(DataFile), 0 );
+	result.resize( sizeof(Chunk), 0 );
 
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
@@ -285,12 +285,12 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 
 			const MercatorPoint& mercator_point= prepared_data_vetices_converted[object.vertex_index];
 			const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-			const int32_t vertex_y= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
+			const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
 			vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 		}
 	}
 	{
-		get_chunk().linear_object_groups_offset= static_cast<uint32_t>( result.size() );
+		get_chunk().linear_object_groups_offset= static_cast<uint32_t>(result.size());
 
 		auto linear_objects= prepared_data.linear_objects;
 		// Sort by class.
@@ -327,14 +327,14 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			{
 				const MercatorPoint& mercator_point= prepared_data_vetices_converted[v];
 				const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-				const int32_t vertex_y= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
+				const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
 			vertices.push_back(break_primitive_vertex);
 		}
 	}
 	{
-		get_chunk().areal_object_groups_offset= static_cast<uint32_t>( result.size() );
+		get_chunk().areal_object_groups_offset= static_cast<uint32_t>(result.size());
 
 		auto areal_objects= prepared_data.areal_objects;
 		// Sort by class.
@@ -371,18 +371,20 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			{
 				const MercatorPoint& mercator_point= prepared_data_vetices_converted[v];
 				const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-				const int32_t vertex_y= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
+				const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
 			vertices.push_back(break_primitive_vertex);
 		}
 	}
 
+	get_chunk().vertices_offset= static_cast<uint32_t>( result.size() );
+	get_chunk().vertex_count= static_cast<uint16_t>( vertices.size() );
+
 	result.insert(
 		result.end(),
 		reinterpret_cast<const unsigned char*>( vertices.data() ),
 		reinterpret_cast<const unsigned char*>( vertices.data() + vertices.size() ) );
-	get_chunk().vertex_count= static_cast<uint16_t>( vertices.size() );
 
 	return result;
 }
@@ -408,6 +410,23 @@ static std::vector<unsigned char> DumpDataFile( const OSMParseResult& prepared_d
 	return result;
 }
 
+static void WriteFile( const std::vector<unsigned char>& content, const char* file_name )
+{
+	std::FILE* const f= std::fopen( file_name, "wb" );
+	if( f == nullptr )
+		return;
+
+	size_t write_total= 0u;
+	do
+	{
+		const size_t write= std::fwrite( content.data() + write_total, 1, content.size() - write_total, f );
+		if( write == 0 )
+			break;
+
+		write_total+= write;
+	} while( write_total < content.size() );
+}
+
 } // namespace PanzerMaps
 
 int main()
@@ -415,5 +434,5 @@ int main()
 	tinyxml2::XMLDocument doc;
 	doc.LoadFile( "maps_src/small_place.osm" );
 
-	PanzerMaps::DumpDataFile( PanzerMaps::ParseOSM(doc) );
+	PanzerMaps::WriteFile( PanzerMaps::DumpDataFile( PanzerMaps::ParseOSM(doc) ), "map.pm" );
 }

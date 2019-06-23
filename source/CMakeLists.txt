@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.0)
 
 project( PanzerMaps )
 
+if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+	add_definitions( -DDEBUG )
+endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
 find_package( SDL2 REQUIRED )

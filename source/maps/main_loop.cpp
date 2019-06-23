@@ -26,9 +26,11 @@ bool MainLoop::Loop()
 		case SystemEvent::Type::Quit:
 			return false;
 		}
+		map_drawer_.ProcessEvent( event );
 	}
 
 	system_window_.BeginFrame();
+	map_drawer_.Draw();
 	system_window_.EndFrame();
 
 	return true;

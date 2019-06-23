@@ -19,6 +19,24 @@ static SystemEvent::MouseKeyEvent::Button TranslateMouseButton( const Uint8 butt
 	return Button::Unknown;
 }
 
+#ifdef DEBUG
+static void APIENTRY GLDebugMessageCallback(
+	GLenum source, GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length, const GLchar* message,
+	const void* userParam )
+{
+	(void)source;
+	(void)type;
+	(void)id;
+	(void)severity;
+	(void)length;
+	(void)userParam;
+	Log::Info( message );
+}
+#endif
+
 SystemWindow::SystemWindow()
 {
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
@@ -28,6 +46,17 @@ SystemWindow::SystemWindow()
 	const int height= 768;
 	const bool fullscreen= false;
 	const bool vsync= true;
+
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+
+	#ifdef DEBUG
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
+	#endif
+
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 
 	window_=
 		SDL_CreateWindow(
