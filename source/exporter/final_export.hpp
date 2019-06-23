@@ -1,9 +1,9 @@
 #pragma once
-#include "primary_export.hpp"
+#include "coordinates_transformation_pass.hpp"
 
 namespace PanzerMaps
 {
 
-void CreateDataFile( const OSMParseResult& prepared_data, const char* const file_name );
+void CreateDataFile( const CoordinatesTransformationPassResult& prepared_data, const char* const file_name );
 
 } // namespace PanzerMaps

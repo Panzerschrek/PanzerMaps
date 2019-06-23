@@ -7,7 +7,7 @@
 namespace PanzerMaps
 {
 
-struct OSMParseResult
+struct BaseDataRepresentation
 {
 	struct PointObject
 	{
@@ -32,6 +32,10 @@ struct OSMParseResult
 	std::vector<PointObject> point_objects;
 	std::vector<LinearObject> linear_objects;
 	std::vector<ArealObject> areal_objects;
+};
+
+struct OSMParseResult : public BaseDataRepresentation
+{
 	std::vector<GeoPoint> vertices;
 };
 

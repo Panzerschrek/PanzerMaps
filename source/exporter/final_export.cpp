@@ -9,7 +9,7 @@
 namespace PanzerMaps
 {
 
-static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_data )
+static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformationPassResult& prepared_data )
 {
 	using namespace DataFileDescription;
 
@@ -19,29 +19,11 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-	MercatorPoint min_point;
-	MercatorPoint max_point;
-	if( !prepared_data.vertices.empty() )
-		min_point= max_point= GeoPointToWebMercatorPoint( prepared_data.vertices.front() );
-	else
-		min_point.x= max_point.x= min_point.y= max_point.y= 0;
 
 	// TODO - asssert, if data chunk contains >= 65535 vertices.
 
-	// Convert input coordinates to web mercator, calculate bounding box.
-	std::vector<MercatorPoint> prepared_data_vetices_converted;
-	prepared_data_vetices_converted.reserve( prepared_data.vertices.size() );
-	for( const GeoPoint& geo_point : prepared_data.vertices )
-	{
-		const MercatorPoint mercator_point= GeoPointToWebMercatorPoint(geo_point);
-		min_point.x= std::min( min_point.x, mercator_point.x );
-		min_point.y= std::min( min_point.y, mercator_point.y );
-		max_point.x= std::max( max_point.x, mercator_point.x );
-		max_point.y= std::max( max_point.y, mercator_point.y );
-		prepared_data_vetices_converted.push_back( mercator_point );
-	}
-
-	const uint32_t coordinates_scale_log2= 4;
+	// TODO - set min_point to chunk offset
+	const CoordinatesTransformationPassResult::VertexTranspormed min_point{ 0, 0 };
 
 	std::vector<ChunkVertex> vertices;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
@@ -80,9 +62,9 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				prev_class= object.class_;
 			}
 
-			const MercatorPoint& mercator_point= prepared_data_vetices_converted[object.vertex_index];
-			const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-			const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
+			const MercatorPoint& mercator_point= prepared_data.vertices[object.vertex_index];
+			const int32_t vertex_x= mercator_point.x - min_point.x;
+			const int32_t vertex_y= mercator_point.y - min_point.y;
 			vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 		}
 		if( prev_class != PointObjectClass::None )
@@ -131,9 +113,9 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
 			{
-				const MercatorPoint& mercator_point= prepared_data_vetices_converted[v];
-				const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-				const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
+				const MercatorPoint& mercator_point= prepared_data.vertices[v];
+				const int32_t vertex_x= mercator_point.x - min_point.x;
+				const int32_t vertex_y= mercator_point.y - min_point.y;
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
 			vertices.push_back(break_primitive_vertex);
@@ -184,16 +166,11 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
 			{
-				const MercatorPoint& mercator_point= prepared_data_vetices_converted[v];
-				const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
-				const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
+				const MercatorPoint& mercator_point= prepared_data.vertices[v];
+				const int32_t vertex_x= mercator_point.x - min_point.x;
+				const int32_t vertex_y= mercator_point.y - min_point.y;
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
-
-			// Drop duplicated vertex.
-			if( prepared_data_vetices_converted[ object.first_vertex_index ] ==
-				prepared_data_vetices_converted[object.first_vertex_index + object.vertex_count - 1u ] )
-				vertices.pop_back();
 
 			vertices.push_back(break_primitive_vertex);
 		}
@@ -219,7 +196,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 	return result;
 }
 
-static std::vector<unsigned char> DumpDataFile( const OSMParseResult& prepared_data )
+static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationPassResult& prepared_data )
 {
 	using namespace DataFileDescription;
 
@@ -257,7 +234,7 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 	} while( write_total < content.size() );
 }
 
-void CreateDataFile( const OSMParseResult& prepared_data, const char* const file_name )
+void CreateDataFile( const CoordinatesTransformationPassResult& prepared_data, const char* const file_name )
 {
 	WriteFile( DumpDataFile( prepared_data ), file_name );
 }
