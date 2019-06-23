@@ -274,6 +274,45 @@ OSMParseResult ParseOSM( const tinyxml2::XMLDocument& doc )
 		}
 	}
 
+	for( const tinyxml2::XMLElement* node_element= doc.RootElement()->FirstChildElement( "node" ); node_element != nullptr; node_element= node_element->NextSiblingElement( "node" ) )
+	{
+		const char* const lon_str= node_element->Attribute( "lon" );
+		const char* const lat_str= node_element->Attribute( "lat" );
+		GeoPoint node_geo_point;
+
+		if( !( lon_str != nullptr && lat_str != nullptr ) )
+			continue;
+		if( !( std::sscanf( lon_str, "%lf", &node_geo_point.x ) == 1 && std::sscanf( lat_str, "%lf", &node_geo_point.y ) == 1 ) )
+			continue;
+
+		if( const char* const public_transport= GetTagValue( node_element, "public_transport" ) )
+		{
+			OSMParseResult::PointObject obj;
+			if( std::strcmp( public_transport, "platform" ) == 0 )
+				obj.class_= PointObjectClass::StationPlatform;
+
+			if( obj.class_ != PointObjectClass::None )
+			{
+				result.vertices.push_back( node_geo_point );
+				obj.vertex_index= result.vertices.size();
+				result.point_objects.push_back(obj);
+			}
+		}
+		if( const char* const railway= GetTagValue( node_element, "railway" ) )
+		{
+			OSMParseResult::PointObject obj;
+			if( std::strcmp( railway, "subway_entrance" ) == 0 )
+				obj.class_= PointObjectClass::SubwayEntrance;
+
+			if( obj.class_ != PointObjectClass::None )
+			{
+				result.vertices.push_back( node_geo_point );
+				obj.vertex_index= result.vertices.size();
+				result.point_objects.push_back(obj);
+			}
+		}
+	}
+
 	return result;
 }
 

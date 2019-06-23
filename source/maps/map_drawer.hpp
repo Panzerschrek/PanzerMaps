@@ -17,9 +17,11 @@ public:
 
 private:
 	const ViewportSize viewport_size_;
+	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
 
+	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer areal_objects_polygon_buffer_;
 

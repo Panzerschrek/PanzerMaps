@@ -10,6 +10,34 @@ namespace PanzerMaps
 namespace Shaders
 {
 
+const char point_vertex[]=
+R"(
+	#version 330
+	uniform mat4 view_matrix;
+	in vec2 pos;
+	in float color_index;
+	out vec4 f_color;
+	void main()
+	{
+		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
+		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
+	}
+)";
+
+const char point_fragment[]=
+R"(
+	#version 330
+	in vec4 f_color;
+	out vec4 color;
+	void main()
+	{
+		vec2 r= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
+		if( dot( r, r ) > 1.0 )
+			discard;
+		color= f_color * step( 0.0, r.x * r.y );
+	}
+)";
+
 const char linear_vertex[]=
 R"(
 	#version 330
@@ -96,6 +124,12 @@ static bool ReadFile( const char* const name, std::vector<unsigned char>& out_fi
 	return !read_error;
 }
 
+struct PointObjectVertex
+{
+	uint16_t xy[2];
+	uint32_t color_index;
+};
+
 struct LinearObjectVertex
 {
 	uint16_t xy[2];
@@ -129,6 +163,8 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	if( data_file.version != DataFile::c_expected_version )
 		return;
 
+	std::vector<PointObjectVertex> point_objects_vertices;
+
 	std::vector<LinearObjectVertex> linear_objects_vertices;
 	std::vector<uint16_t> linear_objects_indicies;
 
@@ -148,6 +184,16 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 
 		for( uint16_t i= 0u; i < chunk.point_object_groups_count; ++i )
 		{
+			const Chunk::PointObjectGroup group= point_object_groups[i];
+			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
+			{
+				const ChunkVertex& vertex= vertices[v];
+				PointObjectVertex out_vertex;
+				out_vertex.xy[0]= vertex.x;
+				out_vertex.xy[1]= vertex.y;
+				out_vertex.color_index= group.style_index;
+				point_objects_vertices.push_back( out_vertex );
+			}
 		}
 
 		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
@@ -194,6 +240,11 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		}
 	}
 
+	point_objects_polygon_buffer_.VertexData( point_objects_vertices.data(), point_objects_vertices.size() * sizeof(PointObjectVertex), sizeof(PointObjectVertex) );
+	point_objects_polygon_buffer_.SetPrimitiveType( GL_POINTS );
+	point_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+	point_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+
 	linear_objects_polygon_buffer_.VertexData( linear_objects_vertices.data(), linear_objects_vertices.size() * sizeof(LinearObjectVertex), sizeof(LinearObjectVertex) );
 	linear_objects_polygon_buffer_.IndexData( linear_objects_indicies.data(), linear_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_LINE_STRIP );
 	linear_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
@@ -205,6 +256,11 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 
 	// Create shaders
+
+	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
+	point_objets_shader_.SetAttribLocation( "pos", 0 );
+	point_objets_shader_.SetAttribLocation( "color_index", 1 );
+	point_objets_shader_.Create();
 
 	linear_objets_shader_.ShaderSource( Shaders::linear_fragment, Shaders::linear_vertex );
 	linear_objets_shader_.SetAttribLocation( "pos", 0 );
@@ -244,6 +300,13 @@ void MapDrawer::Draw()
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		linear_objects_polygon_buffer_.Draw();
 		glDisable( GL_PRIMITIVE_RESTART );
+	}
+	{
+		point_objets_shader_.Bind();
+		point_objets_shader_.Uniform( "view_matrix", view_matrix );
+
+		glPointSize( 12.0f );
+		point_objects_polygon_buffer_.Draw();
 	}
 }
 
