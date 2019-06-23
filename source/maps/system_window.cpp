@@ -38,12 +38,11 @@ static void APIENTRY GLDebugMessageCallback(
 #endif
 
 SystemWindow::SystemWindow()
+	: viewport_size_{ 1024u, 768u }
 {
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
 		Log::FatalError( "Can not initialize sdl video" );
 
-	const int width= 1024;
-	const int height= 768;
 	const bool fullscreen= false;
 	const bool vsync= true;
 
@@ -62,7 +61,7 @@ SystemWindow::SystemWindow()
 		SDL_CreateWindow(
 			"PanzerMaps",
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			width, height,
+			viewport_size_.width, viewport_size_.height,
 			SDL_WINDOW_OPENGL | ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_SHOWN );
 
 	gl_context_= SDL_GL_CreateContext( window_ );

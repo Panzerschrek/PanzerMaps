@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include "../common/data_file.hpp"
+#include "log.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps
@@ -47,7 +48,8 @@ struct LinearObjectVertex
 
 static const uint16_t c_primitive_restart_index= 65535u;
 
-MapDrawer::MapDrawer()
+MapDrawer::MapDrawer( const ViewportSize& viewport_size )
+	: viewport_size_(viewport_size)
 {
 	using namespace DataFileDescription;
 
@@ -156,8 +158,12 @@ void MapDrawer::Draw()
 {
 	linear_objets_shader_.Bind();
 
-	m_Mat4 view_matrix;
-	view_matrix.Scale( 1.0f / 16384.0f );
+	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
+
+	scale_matrix.Scale( 1.0f / scale_ );
+	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
+	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
+	view_matrix= translate_matrix * scale_matrix * aspect_matrix;
 
 	linear_objets_shader_.Uniform( "view_matrix", view_matrix );
 
@@ -171,6 +177,32 @@ void MapDrawer::Draw()
 
 void MapDrawer::ProcessEvent( const SystemEvent& event )
 {
+	switch( event.type )
+	{
+	case SystemEvent::Type::MouseKey:
+		if( event.event.mouse_key.mouse_button == SystemEvent::MouseKeyEvent::Button::Left )
+			mouse_pressed_= event.event.mouse_key.pressed;
+		break;
+
+	case SystemEvent::Type::MouseMove:
+		if( mouse_pressed_ )
+		{
+			cam_pos_+= m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * scale_;
+			cam_pos_.x= std::max( -65536.0f, std::min( cam_pos_.x, 65536.0f ) );
+			cam_pos_.y= std::max( -65536.0f, std::min( cam_pos_.y, 65536.0f ) );
+			Log::User( "Shift is ", cam_pos_.x, " ", cam_pos_.y );
+		}
+		break;
+
+	case SystemEvent::Type::Wheel:
+		scale_*= std::exp2( -float( event.event.wheel.delta ) );
+		scale_= std::max( 1.0f, std::min( scale_, 4096.0f ) );
+		Log::User( "Scale is ", scale_ );
+		break;
+
+	case SystemEvent::Type::Quit:
+		return;
+	}
 }
 
 } // namespace PanzerMaps

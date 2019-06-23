@@ -54,6 +54,12 @@ struct SystemEvent
 
 typedef std::vector<SystemEvent> SystemEvents;
 
+struct ViewportSize
+{
+	unsigned int width;
+	unsigned int height;
+};
+
 class SystemWindow final
 {
 public:
@@ -65,7 +71,10 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
+	const ViewportSize GetViewportSize(){ return viewport_size_; }
+
 private:
+	const ViewportSize viewport_size_;
 	SDL_Window* window_= nullptr;
 	SDL_GLContext gl_context_= nullptr;
 };

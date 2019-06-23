@@ -4,6 +4,8 @@ namespace PanzerMaps
 {
 
 MainLoop::MainLoop()
+	: system_window_()
+	, map_drawer_( system_window_.GetViewportSize() )
 {
 }
 
