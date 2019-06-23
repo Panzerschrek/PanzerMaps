@@ -496,6 +496,12 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
+
+			// Drop duplicated vertex.
+			if( prepared_data_vetices_converted[ object.first_vertex_index ] ==
+				prepared_data_vetices_converted[object.first_vertex_index + object.vertex_count - 1u ] )
+				vertices.pop_back();
+
 			vertices.push_back(break_primitive_vertex);
 		}
 		if( prev_class != ArealObjectClass::None )
