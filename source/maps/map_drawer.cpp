@@ -7,6 +7,62 @@
 namespace PanzerMaps
 {
 
+namespace Shaders
+{
+
+const char linear_vertex[]=
+R"(
+	#version 330
+	uniform mat4 view_matrix;
+	in vec2 pos;
+	in float color_index;
+	out vec4 f_color;
+	void main()
+	{
+		//f_color= vec4( color_index, mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 2.0, 0.5 );
+		f_color= vec4( 1.0, 0.0, 1.0, 0.0 );
+		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
+	}
+)";
+
+const char linear_fragment[]=
+R"(
+	#version 330
+	in vec4 f_color;
+	out vec4 color;
+	void main()
+	{
+		color= f_color;
+	}
+)";
+
+const char areal_vertex[]=
+R"(
+	#version 330
+	uniform mat4 view_matrix;
+	in vec2 pos;
+	in float color_index;
+	out vec4 f_color;
+	void main()
+	{
+		f_color= vec4( color_index, mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 2.0, 0.5 );
+		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
+	}
+)";
+
+const char areal_fragment[]=
+R"(
+	#version 330
+	in vec4 f_color;
+	out vec4 color;
+	void main()
+	{
+		color= f_color;
+	}
+)";
+
+}
+
 static bool ReadFile( const char* const name, std::vector<unsigned char>& out_file_content )
 {
 	std::FILE* const f= std::fopen( name, "rb" );
@@ -46,6 +102,12 @@ struct LinearObjectVertex
 	uint32_t color_index;
 };
 
+struct ArealObjectVertex
+{
+	uint16_t xy[2];
+	uint32_t color_index;
+};
+
 static const uint16_t c_primitive_restart_index= 65535u;
 
 MapDrawer::MapDrawer( const ViewportSize& viewport_size )
@@ -70,6 +132,9 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	std::vector<LinearObjectVertex> linear_objects_vertices;
 	std::vector<uint16_t> linear_objects_indicies;
 
+	std::vector<ArealObjectVertex> areal_objects_vertices;
+	std::vector<uint16_t> areal_objects_indicies;
+
 	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
 	{
 		const size_t chunk_offset= data_file.chunks_offset + chunk_index * sizeof(Chunk);
@@ -85,6 +150,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		{
 		}
 
+		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
 		for( uint16_t i= 0u; i < chunk.linear_object_groups_count; ++i )
 		{
 			const Chunk::LinearObjectGroup group= linear_object_groups[i];
@@ -105,58 +171,54 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 			}
 		}
 
+		// Areal objects must be convex polygons.
+		// Draw convex polygons, using "GL_TRIANGLE_FAN" primitive with primitive restart index.
 		for( uint16_t i= 0u; i < chunk.areal_object_groups_count; ++i )
 		{
+			const Chunk::ArealObjectGroup group= areal_object_groups[i];
+			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
+			{
+				const ChunkVertex& vertex= vertices[v];
+				if( ( vertex.x & vertex.y ) == 65535u )
+					areal_objects_indicies.push_back( c_primitive_restart_index );
+				else
+				{
+					ArealObjectVertex out_vertex;
+					out_vertex.xy[0]= vertex.x;
+					out_vertex.xy[1]= vertex.y;
+					out_vertex.color_index= group.style_index;
+					areal_objects_indicies.push_back( static_cast<uint16_t>( areal_objects_vertices.size() ) );
+					areal_objects_vertices.push_back( out_vertex );
+				}
+			}
 		}
 	}
 
-	linear_objcts_polygon_buffer_.VertexData( linear_objects_vertices.data(), linear_objects_vertices.size() * sizeof(LinearObjectVertex), sizeof(LinearObjectVertex) );
-	linear_objcts_polygon_buffer_.IndexData( linear_objects_indicies.data(), linear_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_LINE_STRIP );
-	linear_objcts_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
-	linear_objcts_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+	linear_objects_polygon_buffer_.VertexData( linear_objects_vertices.data(), linear_objects_vertices.size() * sizeof(LinearObjectVertex), sizeof(LinearObjectVertex) );
+	linear_objects_polygon_buffer_.IndexData( linear_objects_indicies.data(), linear_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_LINE_STRIP );
+	linear_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+	linear_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 
+	areal_objects_polygon_buffer_.VertexData( areal_objects_vertices.data(), areal_objects_vertices.size() * sizeof(ArealObjectVertex), sizeof(ArealObjectVertex) );
+	areal_objects_polygon_buffer_.IndexData( areal_objects_indicies.data(), areal_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_FAN );
+	areal_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+	areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 
 	// Create shaders
 
-	const char* const c_vertex_shader=
-	R"(
-		#version 330
-		uniform mat4 view_matrix;
-
-		in vec2 pos;
-		in float color_index;
-
-		out vec4 f_color;
-
-		void main()
-		{
-			//f_color= vec4( color_index, mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 2.0, 0.5 );
-			f_color= vec4( 1.0, 0.0, 1.0, 0.0 );
-			gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
-		}
-	)";
-
-	const char* const c_fragment_shader=
-	R"(
-		#version 330
-		in vec4 f_color;
-		out vec4 color;
-
-		void main()
-		{
-			color= f_color;
-		}
-	)";
-
-	linear_objets_shader_.ShaderSource( c_fragment_shader, c_vertex_shader );
+	linear_objets_shader_.ShaderSource( Shaders::linear_fragment, Shaders::linear_vertex );
 	linear_objets_shader_.SetAttribLocation( "pos", 0 );
 	linear_objets_shader_.SetAttribLocation( "color_index", 1 );
 	linear_objets_shader_.Create();
+
+	areal_objects_shader_.ShaderSource( Shaders::areal_fragment, Shaders::areal_vertex );
+	areal_objects_shader_.SetAttribLocation( "pos", 0 );
+	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
+	areal_objects_shader_.Create();
 }
 
 void MapDrawer::Draw()
 {
-	linear_objets_shader_.Bind();
 
 	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
 
@@ -165,14 +227,24 @@ void MapDrawer::Draw()
 	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
 	view_matrix= translate_matrix * scale_matrix * aspect_matrix;
 
-	linear_objets_shader_.Uniform( "view_matrix", view_matrix );
+	{
+		areal_objects_shader_.Bind();
+		areal_objects_shader_.Uniform( "view_matrix", view_matrix );
 
-	glEnable( GL_PRIMITIVE_RESTART );
-	glPrimitiveRestartIndex( c_primitive_restart_index );
-	linear_objcts_polygon_buffer_.Bind();
-	linear_objcts_polygon_buffer_.Draw();
+		glEnable( GL_PRIMITIVE_RESTART );
+		glPrimitiveRestartIndex( c_primitive_restart_index );
+		areal_objects_polygon_buffer_.Draw();
+		glDisable( GL_PRIMITIVE_RESTART );
+	}
+	{
+		linear_objets_shader_.Bind();
+		linear_objets_shader_.Uniform( "view_matrix", view_matrix );
 
-	glDisable( GL_PRIMITIVE_RESTART );
+		glEnable( GL_PRIMITIVE_RESTART );
+		glPrimitiveRestartIndex( c_primitive_restart_index );
+		linear_objects_polygon_buffer_.Draw();
+		glDisable( GL_PRIMITIVE_RESTART );
+	}
 }
 
 void MapDrawer::ProcessEvent( const SystemEvent& event )
