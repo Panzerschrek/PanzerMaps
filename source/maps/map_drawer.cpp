@@ -19,8 +19,8 @@ R"(
 	out vec4 f_color;
 	void main()
 	{
-		//f_color= vec4( color_index, mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 2.0, 0.5 );
-		f_color= vec4( 1.0, 0.0, 1.0, 0.0 );
+		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
+		f_color= vec4( 1.0, 1.0, 1.0, 1.0 ) - f_color;
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
@@ -45,7 +45,7 @@ R"(
 	out vec4 f_color;
 	void main()
 	{
-		f_color= vec4( color_index, mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 2.0, 0.5 );
+		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";

@@ -265,7 +265,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		Chunk::PointObjectGroup group;
 		for( const OSMParseResult::PointObject& object : point_objects )
 		{
-			if( object.class_ != prev_class || &object == &point_objects.back() )
+			if( object.class_ != prev_class )
 			{
 				if( prev_class != PointObjectClass::None )
 				{
@@ -278,7 +278,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				}
 
 				group.first_vertex= static_cast<uint16_t>( vertices.size() );
-				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
+				group.style_index= static_cast<Chunk::StyleIndex>( object.class_ );
 
 				prev_class= object.class_;
 			}
@@ -287,6 +287,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 			const int32_t vertex_x= ( mercator_point.x - min_point.x ) >> coordinates_scale_log2;
 			const int32_t vertex_y= ( mercator_point.y - min_point.y ) >> coordinates_scale_log2;
 			vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+		}
+		if( prev_class != PointObjectClass::None )
+		{
+			group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+			result.insert(
+				result.end(),
+				reinterpret_cast<const unsigned char*>(&group),
+				reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+			++get_chunk().point_object_groups_count;
 		}
 	}
 	{
@@ -305,7 +314,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		Chunk::LinearObjectGroup group;
 		for( const OSMParseResult::LinearObject& object : linear_objects )
 		{
-			if( object.class_ != prev_class || &object == &linear_objects.back() )
+			if( object.class_ != prev_class )
 			{
 				if( prev_class != LinearObjectClass::None )
 				{
@@ -318,7 +327,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				}
 
 				group.first_vertex= static_cast<uint16_t>( vertices.size() );
-				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
+				group.style_index= static_cast<Chunk::StyleIndex>( object.class_ );
 
 				prev_class= object.class_;
 			}
@@ -331,6 +340,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
 			vertices.push_back(break_primitive_vertex);
+		}
+		if( prev_class != LinearObjectClass::None )
+		{
+			group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+			result.insert(
+				result.end(),
+				reinterpret_cast<const unsigned char*>(&group),
+				reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+			++get_chunk().linear_object_groups_count;
 		}
 	}
 	{
@@ -349,7 +367,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 		Chunk::LinearObjectGroup group;
 		for( const OSMParseResult::ArealObject& object : areal_objects )
 		{
-			if( object.class_ != prev_class || &object == &areal_objects.back() )
+			if( object.class_ != prev_class )
 			{
 				if( prev_class != ArealObjectClass::None )
 				{
@@ -362,7 +380,7 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				}
 
 				group.first_vertex= static_cast<uint16_t>( vertices.size() );
-				group.style_index= static_cast<Chunk::StyleIndex>( prev_class );
+				group.style_index= static_cast<Chunk::StyleIndex>( object.class_ );
 
 				prev_class= object.class_;
 			}
@@ -375,6 +393,15 @@ static std::vector<unsigned char> DumpDataChunk( const OSMParseResult& prepared_
 				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 			}
 			vertices.push_back(break_primitive_vertex);
+		}
+		if( prev_class != ArealObjectClass::None )
+		{
+			group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+			result.insert(
+				result.end(),
+				reinterpret_cast<const unsigned char*>(&group),
+				reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+			++get_chunk().areal_object_groups_count;
 		}
 	}
 
