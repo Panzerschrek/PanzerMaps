@@ -30,6 +30,9 @@ struct MercatorPoint
 	int32_t y; // map [ -max_latitude, max_latitude ) to [ int_min, int_max ]
 };
 
+bool operator==( const MercatorPoint& l, const MercatorPoint& r );
+bool operator!=( const MercatorPoint& l, const MercatorPoint& r );
+
 MercatorPoint GeoPointToWebMercatorPoint( const GeoPoint& point );
 
 } // namespace PanzerMaps

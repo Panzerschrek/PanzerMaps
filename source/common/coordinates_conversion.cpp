@@ -18,4 +18,14 @@ MercatorPoint GeoPointToWebMercatorPoint( const GeoPoint& point )
 	return result;
 }
 
+bool operator==( const MercatorPoint& l, const MercatorPoint& r )
+{
+	return l.x == r.x && l.y == r.y;
+}
+
+bool operator!=( const MercatorPoint& l, const MercatorPoint& r )
+{
+	return !( l == r );
+}
+
 } // namespace PanzerMaps
