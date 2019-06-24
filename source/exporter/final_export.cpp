@@ -9,6 +9,9 @@
 namespace PanzerMaps
 {
 
+static const int32_t c_max_chunk_size= 64000; // Near to 65536
+static const int32_t c_min_chunk_size= c_max_chunk_size / 512;
+
 // Returns positive value for clockwise polygon, negative - for anticlockwisi.
 static int64_t CalculatePolygonDoubleSignedArea( const MercatorPoint* const vertices, size_t vertex_count )
 {
@@ -114,7 +117,53 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 	return result;
 }
 
-static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformationPassResult& prepared_data )
+static std::vector< std::vector<MercatorPoint> > SplitPolyline(
+	const std::vector<MercatorPoint> &polyline,
+	const int32_t distance,
+	const int32_t normal_x,
+	const int32_t normal_y )
+{
+	std::vector< std::vector<MercatorPoint> > polylines;
+
+	return polylines;
+}
+
+static std::vector< std::vector<MercatorPoint> > SplitPolyline(
+	const std::vector<MercatorPoint>& polyline,
+	const int32_t bb_min_x,
+	const int32_t bb_min_y,
+	const int32_t bb_max_x,
+	const int32_t bb_max_y )
+{
+	std::vector< std::vector<MercatorPoint> > polylines;
+
+	polylines.push_back( polyline );
+
+	const int32_t normals[4][2]{ { -1, 0 }, { +1, 0 }, { 0, -1 }, { 0, +1 }, };
+	const int32_t distances[4]{ bb_min_x, bb_max_x, bb_min_y, bb_max_y };
+	for( size_t i= 0u; i < 4u; ++i )
+	{
+		std::vector< std::vector<MercatorPoint> > new_polylines;
+		for( const std::vector<MercatorPoint>& polyline : polylines )
+		{
+			std::vector< std::vector<MercatorPoint> > polyline_splitted= SplitPolyline( polyline, normals[i][0], normals[i][1], distances[i] );
+			for( std::vector<MercatorPoint>& polyline_part : polyline_splitted )
+				new_polylines.push_back( std::move( polyline_part ) );
+		}
+		polylines= std::move( new_polylines );
+	}
+
+	return polylines;
+}
+
+using ChunkData= std::vector<unsigned char>;
+using ChunksData= std::vector<ChunkData>;
+
+static ChunksData DumpDataChunk(
+	const CoordinatesTransformationPassResult& prepared_data,
+	const int32_t chunk_offset_x,
+	const int32_t chunk_offset_y,
+	const int32_t chunk_size ) // Offset and size - in scaled coordinates.
 {
 	using namespace DataFileDescription;
 
@@ -124,11 +173,10 @@ static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformation
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-
 	// TODO - asssert, if data chunk contains >= 65535 vertices.
 
 	// TODO - set min_point to chunk offset
-	const CoordinatesTransformationPassResult::VertexTranspormed min_point{ 0, 0 };
+	const CoordinatesTransformationPassResult::VertexTranspormed min_point{ chunk_offset_x, chunk_offset_y };
 
 	std::vector<ChunkVertex> vertices;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
@@ -297,6 +345,28 @@ static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformation
 		}
 	}
 
+	// If result chunk contains more vertices, then limit, split it into subchunks.
+	if( vertices.size() >= 32768u )
+	{
+		ChunksData result;
+		result.reserve(4u);
+
+		const int32_t half_chunk_size= chunk_size / 2;
+		for( int32_t x= 0; x < 2; ++x )
+		for( int32_t y= 0; y < 2; ++y )
+		{
+			ChunksData sub_chunks=
+				DumpDataChunk(
+					prepared_data,
+					chunk_offset_x + x * half_chunk_size,
+					chunk_offset_y + y * half_chunk_size,
+					half_chunk_size );
+			for( ChunkData& sub_chunk : sub_chunks )
+				result.push_back( std::move( sub_chunk ) );
+		}
+		return result;
+	}
+
 	get_chunk().vertices_offset= static_cast<uint32_t>( result.size() );
 	get_chunk().vertex_count= static_cast<uint16_t>( vertices.size() );
 
@@ -305,7 +375,7 @@ static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformation
 		reinterpret_cast<const unsigned char*>( vertices.data() ),
 		reinterpret_cast<const unsigned char*>( vertices.data() + vertices.size() ) );
 
-	return result;
+	return { result };
 }
 
 static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationPassResult& prepared_data )
@@ -315,16 +385,32 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 	std::vector<unsigned char> result;
 
 	result.resize( sizeof(DataFile), static_cast<unsigned char>(0) );
-	DataFile& data_file= *reinterpret_cast<DataFile*>( result.data() );
+	const auto get_data_file= [&]() -> DataFile& { return *reinterpret_cast<DataFile*>( result.data() ); };
 
-	std::memcpy( data_file.header, DataFile::c_expected_header, sizeof(data_file.header) );
-	data_file.version= DataFile::c_expected_version;
+	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
+	get_data_file().version= DataFile::c_expected_version;
 
-	std::vector<unsigned char> chunk_data= DumpDataChunk( prepared_data );
+	const int32_t chunks_x= ( prepared_data.max_point.x / prepared_data.coordinates_scale - prepared_data.start_point.x / prepared_data.coordinates_scale + (c_max_chunk_size-1) ) / c_max_chunk_size;
+	const int32_t chunks_y= ( prepared_data.max_point.y / prepared_data.coordinates_scale - prepared_data.start_point.y / prepared_data.coordinates_scale + (c_max_chunk_size-1) ) / c_max_chunk_size;
 
-	data_file.chunks_offset= static_cast<uint32_t>( result.size() );
-	data_file.chunk_count= 1u;
-	result.insert( result.end(), chunk_data.begin(), chunk_data.end() );
+	get_data_file().chunk_count= 0u;
+	get_data_file().chunks_offset= static_cast<uint32_t>( result.size() );
+	for( int32_t x= 0; x < chunks_x; ++x )
+	for( int32_t y= 0; y < chunks_y; ++y )
+	{
+		ChunksData chunks_data=
+			DumpDataChunk(
+				prepared_data,
+				chunks_x * c_max_chunk_size,
+				chunks_y * c_max_chunk_size,
+				c_max_chunk_size );
+
+		for( const ChunkData& chunk_data : chunks_data )
+		{
+			result.insert( result.end(), chunk_data.begin(), chunk_data.end() );
+			++get_data_file().chunk_count;
+		}
+	}
 
 	return result;
 }
