@@ -25,11 +25,14 @@ enum class LinearObjectClass : uint8_t
 enum class ArealObjectClass : uint8_t
 {
 	None,
-	Building,
 	Water,
-	Wood,
 	Grassland,
 	Cemetery,
+	Industrial,
+	Residential,
+	Administrative,
+	Wood,
+	Building,
 };
 
 } // namespace PanzerMaps

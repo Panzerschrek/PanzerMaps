@@ -201,6 +201,15 @@ OSMParseResult ParseOSM( const char* file_name )
 				obj.class_= ArealObjectClass::Wood;
 			else if( std::strcmp( landuse, "grass" ) == 0 )
 				obj.class_= ArealObjectClass::Grassland;
+			else if( std::strcmp( landuse, "residential" ) == 0 )
+				obj.class_= ArealObjectClass::Residential;
+			else if( std::strcmp( landuse, "industrial" ) == 0 ||
+				std::strcmp( landuse, "garages" ) == 0 ||
+				std::strcmp( landuse, "railway" ) == 0 )
+				obj.class_= ArealObjectClass::Industrial;
+			else if( std::strcmp( landuse, "commercial" ) == 0 ||
+				std::strcmp( landuse, "retail" ) == 0 )
+				obj.class_= ArealObjectClass::Administrative;
 
 			if( obj.class_ != ArealObjectClass::None )
 			{
@@ -216,6 +225,18 @@ OSMParseResult ParseOSM( const char* file_name )
 			OSMParseResult::ArealObject obj;
 			if( std::strcmp( amenity, "grave_yard" ) == 0 )
 				obj.class_= ArealObjectClass::Cemetery;
+			else if( std::strcmp( amenity, "school" ) == 0 ||
+				std::strcmp( amenity, "college" ) == 0  ||
+				std::strcmp( amenity, "kindergarten" ) == 0 ||
+				std::strcmp( amenity, "library" ) == 0 ||
+				std::strcmp( amenity, "university" ) == 0 )
+				obj.class_= ArealObjectClass::Administrative;
+			else if( std::strcmp( amenity, "clinic" ) == 0 ||
+				std::strcmp( amenity, "dentist" ) == 0  ||
+				std::strcmp( amenity, "doctors" ) == 0 ||
+				std::strcmp( amenity, "hospital" ) == 0 ||
+				std::strcmp( amenity, "ursing_home" ) == 0 )
+				obj.class_= ArealObjectClass::Administrative;
 
 			if( obj.class_ != ArealObjectClass::None )
 			{
