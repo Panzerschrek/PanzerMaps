@@ -401,8 +401,8 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 		ChunksData chunks_data=
 			DumpDataChunk(
 				prepared_data,
-				chunks_x * c_max_chunk_size,
-				chunks_y * c_max_chunk_size,
+				x * c_max_chunk_size,
+				y * c_max_chunk_size,
 				c_max_chunk_size );
 
 		for( const ChunkData& chunk_data : chunks_data )
