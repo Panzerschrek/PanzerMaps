@@ -9,6 +9,111 @@
 namespace PanzerMaps
 {
 
+// Returns positive value for clockwise polygon, negative - for anticlockwisi.
+static int64_t CalculatePolygonDoubleSignedArea( const MercatorPoint* const vertices, size_t vertex_count )
+{
+	int64_t result= 0;
+
+	result+= int64_t(vertices[0u].x) * int64_t(vertices[vertex_count-1u].y) - int64_t(vertices[vertex_count-1u].x) * int64_t(vertices[0u].y);
+	for( size_t i= 1u; i < vertex_count; ++i )
+		result+= int64_t(vertices[i].x) * int64_t(vertices[i-1u].y) - int64_t(vertices[i-1u].x) * int64_t(vertices[i].y);
+
+	return result;
+}
+
+// Returns non-negative value for convex vertex of clockwise polygon.
+static int64_t PolygonVertexCross( const MercatorPoint& p0, const MercatorPoint& p1, const MercatorPoint& p2 )
+{
+	const int32_t dx0= p1.x - p0.x;
+	const int32_t dy0= p1.y - p0.y;
+	const int32_t dx1= p2.x - p1.x;
+	const int32_t dy1= p2.y - p1.y;
+
+	return int64_t(dx1) * int64_t(dy0) - int64_t(dx0) * int64_t(dy1);
+}
+
+static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const vertices, size_t vertex_count, const MercatorPoint& test_vertex )
+{
+	for( size_t i= 0u; i < vertex_count; ++i )
+	{
+		if(
+			PolygonVertexCross(
+				vertices[i],
+				vertices[ (i+1u) % vertex_count ],
+				test_vertex ) < 0 )
+			return false;
+	}
+	return true;
+}
+
+static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices )
+{
+	std::vector< std::vector<MercatorPoint> > result;
+
+	const int64_t polygon_double_signed_area= CalculatePolygonDoubleSignedArea( vertices.data(), vertices.size() );
+	if( polygon_double_signed_area == 0 )
+		return { result };
+
+	if( polygon_double_signed_area < 0 )
+		std::reverse( vertices.begin(), vertices.end() ); // Make polygon clockwise.
+
+	const auto is_split_vertex=
+	[&]( const size_t vertex_index ) -> bool
+	{
+		const int64_t cross=
+		PolygonVertexCross(
+			vertices[ ( vertex_index + vertices.size() - 1u ) % vertices.size() ],
+			vertices[ vertex_index % vertices.size()  ],
+			vertices[ ( vertex_index + 1u ) % vertices.size() ] );
+
+		return cross < 0;
+	};
+
+	std::vector<MercatorPoint> triangle;
+	while( vertices.size() > 3u )
+	{
+		bool have_split_vertices= false;
+		for( size_t i= 0u; i < vertices.size(); ++i )
+			have_split_vertices= have_split_vertices || is_split_vertex(i);
+		if( !have_split_vertices )
+		{
+			// Polygon is convex, stop triangulation
+			goto finish_triangulation;
+		}
+
+		for( size_t i= 0u; i < vertices.size(); ++i )
+		{
+			if( is_split_vertex(i) )
+				continue;
+			// Try create triangle with convex vertex.
+
+			triangle.clear();
+			triangle.push_back( vertices[ ( i + vertices.size() - 1u ) % vertices.size() ] );
+			triangle.push_back( vertices[ i % vertices.size() ] );
+			triangle.push_back( vertices[ ( i + 1u ) % vertices.size() ] );
+
+			for( size_t j = 2u; j < vertices.size() - 1u; ++j )
+			{
+				if( VertexIsInisideClockwiseConvexPolygon( triangle.data(), triangle.size(), vertices[ ( i + j ) % vertices.size() ] ) )
+					goto select_next_vertex_fo_triangulation;
+			}
+
+			result.push_back( triangle );
+			vertices.erase( vertices.begin() + i );
+			break;
+
+			select_next_vertex_fo_triangulation:;
+		}
+	}
+	finish_triangulation:
+	result.push_back( vertices );
+
+
+	// TODO - merge adjusted polygons, if merge result polygon will be convex.
+
+	return result;
+}
+
 static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformationPassResult& prepared_data )
 {
 	using namespace DataFileDescription;
@@ -164,15 +269,22 @@ static std::vector<unsigned char> DumpDataChunk( const CoordinatesTransformation
 				prev_class= object.class_;
 			}
 
+			std::vector<MercatorPoint> polygon_vertices;
+			polygon_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
-			{
-				const MercatorPoint& mercator_point= prepared_data.vertices[v];
-				const int32_t vertex_x= mercator_point.x - min_point.x;
-				const int32_t vertex_y= mercator_point.y - min_point.y;
-				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
-			}
+				polygon_vertices.push_back( prepared_data.vertices[v] );
 
-			vertices.push_back(break_primitive_vertex);
+			for( const std::vector<MercatorPoint>& polygon_part : SplitPolygonIntoConvexParts( polygon_vertices ) )
+			{
+				for( const MercatorPoint& polygon_part_vertex : polygon_part )
+				{
+					const int32_t vertex_x= polygon_part_vertex.x - min_point.x;
+					const int32_t vertex_y= polygon_part_vertex.y - min_point.y;
+					vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+
+				}
+				vertices.push_back(break_primitive_vertex);
+			}
 		}
 		if( prev_class != ArealObjectClass::None )
 		{
