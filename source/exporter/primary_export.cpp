@@ -97,8 +97,18 @@ OSMParseResult ParseOSM( const char* file_name )
 				std::strcmp( highway, "trunk_link" ) == 0 ||
 				std::strcmp( highway, "primary_link" ) == 0 ||
 				std::strcmp( highway, "secondary_link" ) == 0 ||
-				std::strcmp( highway, "tertiary_link" ) == 0 )
+				std::strcmp( highway, "tertiary_link" ) == 0 ||
+				std::strcmp( highway, "living_street" ) == 0 ||
+				std::strcmp( highway, "service" ) == 0 ||
+				std::strcmp( highway, "track" ) == 0 ||
+				std::strcmp( highway, "bus_guideway" ) == 0 ||
+				std::strcmp( highway, "raceway" ) == 0 ||
+				std::strcmp( highway, "road" ) == 0 )
 				obj.class_= LinearObjectClass::Road;
+			else if( std::strcmp( highway, "pedestrian" ) == 0 ||
+				std::strcmp( highway, "footway" ) == 0 ||
+				std::strcmp( highway, "path" ) == 0)
+				obj.class_= LinearObjectClass::Pedestrian;
 
 			if( obj.class_ != LinearObjectClass::None )
 			{

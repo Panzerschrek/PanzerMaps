@@ -15,6 +15,7 @@ enum class LinearObjectClass : uint8_t
 {
 	None,
 	Road,
+	Pedestrian,
 	Waterway,
 	Railway,
 	Tram,
