@@ -247,8 +247,8 @@ OSMParseResult ParseOSM( const char* file_name )
 
 			if( obj.class_ != PointObjectClass::None )
 			{
-				result.vertices.push_back( node_geo_point );
 				obj.vertex_index= result.vertices.size();
+				result.vertices.push_back( node_geo_point );
 				result.point_objects.push_back(obj);
 			}
 		}
@@ -260,8 +260,8 @@ OSMParseResult ParseOSM( const char* file_name )
 
 			if( obj.class_ != PointObjectClass::None )
 			{
-				result.vertices.push_back( node_geo_point );
 				obj.vertex_index= result.vertices.size();
+				result.vertices.push_back( node_geo_point );
 				result.point_objects.push_back(obj);
 			}
 		}
