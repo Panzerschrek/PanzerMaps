@@ -153,6 +153,26 @@ OSMParseResult ParseOSM( const char* file_name )
 					result.linear_objects.push_back(obj);
 			}
 		}
+		else if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
+		{
+			OSMParseResult::LinearObject obj;
+			if( std::strcmp( barrier, "cable_barrier" ) == 0 ||
+				std::strcmp( barrier, "city_wall" ) == 0 ||
+				std::strcmp( barrier, "fence" ) == 0 ||
+				std::strcmp( barrier, "hedge" ) == 0 ||
+				std::strcmp( barrier, "wall" ) == 0 ||
+				std::strcmp( barrier, "hampshire_gate" ) == 0 )
+				obj.class_= LinearObjectClass::Barrier;
+
+			if( obj.class_ != LinearObjectClass::None )
+			{
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( way_element, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+					result.linear_objects.push_back(obj);
+			}
+		}
 		else if( const char* const building= GetTagValue( way_element, "building" ) )
 		{
 			(void)building;

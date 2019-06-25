@@ -20,6 +20,7 @@ enum class LinearObjectClass : uint8_t
 	Railway,
 	Tram,
 	Monorail,
+	Barrier,
 };
 
 enum class ArealObjectClass : uint8_t
