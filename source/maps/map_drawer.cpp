@@ -311,6 +311,8 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		min_cam_pos_.x= max_cam_pos_.x= min_cam_pos_.y= max_cam_pos_.y= 0.0f;
 	cam_pos_.x= ( min_cam_pos_.x + max_cam_pos_.x ) * 0.5f;
 	cam_pos_.y= ( min_cam_pos_.y + max_cam_pos_.y ) * 0.5f;
+	min_scale_= 1.0f;
+	max_scale_= std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 }
 
 MapDrawer::~MapDrawer(){}
@@ -398,8 +400,8 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 		break;
 
 	case SystemEvent::Type::Wheel:
-		scale_*= std::exp2( -float( event.event.wheel.delta ) );
-		scale_= std::max( 1.0f, std::min( scale_, 4096.0f ) );
+		scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.5f );
+		scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
 		Log::User( "Scale is ", scale_ );
 		break;
 

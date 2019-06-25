@@ -35,6 +35,8 @@ private:
 
 	m_Vec2 min_cam_pos_;
 	m_Vec2 max_cam_pos_;
+	float min_scale_;
+	float max_scale_;
 };
 
 } // namespace PanzerMaps
