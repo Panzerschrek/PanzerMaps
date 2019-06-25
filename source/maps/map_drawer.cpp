@@ -144,50 +144,30 @@ struct ArealObjectVertex
 
 static const uint16_t c_primitive_restart_index= 65535u;
 
-MapDrawer::MapDrawer( const ViewportSize& viewport_size )
-	: viewport_size_(viewport_size)
+struct MapDrawer::Chunk
 {
-	using namespace DataFileDescription;
-
-	std::vector<unsigned char> file_content;
-	const bool read_ok= ReadFile( "map.pm", file_content );
-	if( !read_ok )
-		return;
-	if( file_content.size() < sizeof(DataFile) )
-		return;
-
-	const DataFile& data_file= *reinterpret_cast<const DataFile*>( file_content.data() );
-
-	if( std::memcmp( data_file.header, DataFile::c_expected_header, sizeof(data_file.header) ) != 0 )
-		return;
-	if( data_file.version != DataFile::c_expected_version )
-		return;
-
-	std::vector<PointObjectVertex> point_objects_vertices;
-
-	std::vector<LinearObjectVertex> linear_objects_vertices;
-	std::vector<uint16_t> linear_objects_indicies;
-
-	std::vector<ArealObjectVertex> areal_objects_vertices;
-	std::vector<uint16_t> areal_objects_indicies;
-
-	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
+	explicit Chunk( const DataFileDescription::Chunk& in_chunk )
+		: coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
 	{
-		const size_t chunk_offset= data_file.chunks_offset + chunk_index * sizeof(Chunk);
-		const unsigned char* const chunk_data= file_content.data() + chunk_offset;
+		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
+		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
+		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + in_chunk.point_object_groups_offset );
+		const auto linear_object_groups= reinterpret_cast<const DataFileDescription::Chunk::LinearObjectGroup*>( chunk_data + in_chunk.linear_object_groups_offset );
+		const auto areal_object_groups= reinterpret_cast<const DataFileDescription::Chunk::ArealObjectGroup*>( chunk_data + in_chunk.areal_object_groups_offset );
+		std::vector<PointObjectVertex> point_objects_vertices;
 
-		const Chunk& chunk= *reinterpret_cast<const Chunk*>(chunk_data);
-		const ChunkVertex* const vertices= reinterpret_cast<const ChunkVertex*>( chunk_data + chunk.vertices_offset );
-		const Chunk::PointObjectGroup* const point_object_groups= reinterpret_cast<const Chunk::PointObjectGroup*>( chunk_data + chunk.point_object_groups_offset );
-		const Chunk::LinearObjectGroup* const linear_object_groups= reinterpret_cast<const Chunk::LinearObjectGroup*>( chunk_data + chunk.linear_object_groups_offset );
-		const Chunk::ArealObjectGroup* const areal_object_groups= reinterpret_cast<const Chunk::ArealObjectGroup*>( chunk_data + chunk.areal_object_groups_offset );
+		std::vector<LinearObjectVertex> linear_objects_vertices;
+		std::vector<uint16_t> linear_objects_indicies;
 
-		for( uint16_t i= 0u; i < chunk.point_object_groups_count; ++i )
+		std::vector<ArealObjectVertex> areal_objects_vertices;
+		std::vector<uint16_t> areal_objects_indicies;
+
+		for( uint16_t i= 0u; i < in_chunk.point_object_groups_count; ++i )
 		{
-			const Chunk::PointObjectGroup group= point_object_groups[i];
+			const DataFileDescription::Chunk::PointObjectGroup group= point_object_groups[i];
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
-				const ChunkVertex& vertex= vertices[v];
+				const DataFileDescription::ChunkVertex& vertex= vertices[v];
 				PointObjectVertex out_vertex;
 				out_vertex.xy[0]= vertex.x;
 				out_vertex.xy[1]= vertex.y;
@@ -197,12 +177,12 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		}
 
 		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
-		for( uint16_t i= 0u; i < chunk.linear_object_groups_count; ++i )
+		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
 		{
-			const Chunk::LinearObjectGroup group= linear_object_groups[i];
+			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
-				const ChunkVertex& vertex= vertices[v];
+				const DataFileDescription::ChunkVertex& vertex= vertices[v];
 				if( ( vertex.x & vertex.y ) == 65535u )
 					linear_objects_indicies.push_back( c_primitive_restart_index );
 				else
@@ -219,12 +199,12 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 
 		// Areal objects must be convex polygons.
 		// Draw convex polygons, using "GL_TRIANGLE_FAN" primitive with primitive restart index.
-		for( uint16_t i= 0u; i < chunk.areal_object_groups_count; ++i )
+		for( uint16_t i= 0u; i < in_chunk.areal_object_groups_count; ++i )
 		{
-			const Chunk::ArealObjectGroup group= areal_object_groups[i];
+			const DataFileDescription::Chunk::ArealObjectGroup group= areal_object_groups[i];
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
-				const ChunkVertex& vertex= vertices[v];
+				const DataFileDescription::ChunkVertex& vertex= vertices[v];
 				if( ( vertex.x & vertex.y ) == 65535u )
 					areal_objects_indicies.push_back( c_primitive_restart_index );
 				else
@@ -238,22 +218,56 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 				}
 			}
 		}
+
+		point_objects_polygon_buffer_.VertexData( point_objects_vertices.data(), point_objects_vertices.size() * sizeof(PointObjectVertex), sizeof(PointObjectVertex) );
+		point_objects_polygon_buffer_.SetPrimitiveType( GL_POINTS );
+		point_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+		point_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+
+		linear_objects_polygon_buffer_.VertexData( linear_objects_vertices.data(), linear_objects_vertices.size() * sizeof(LinearObjectVertex), sizeof(LinearObjectVertex) );
+		linear_objects_polygon_buffer_.IndexData( linear_objects_indicies.data(), linear_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_LINE_STRIP );
+		linear_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+		linear_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+
+		areal_objects_polygon_buffer_.VertexData( areal_objects_vertices.data(), areal_objects_vertices.size() * sizeof(ArealObjectVertex), sizeof(ArealObjectVertex) );
+		areal_objects_polygon_buffer_.IndexData( areal_objects_indicies.data(), areal_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_FAN );
+		areal_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
+		areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 	}
 
-	point_objects_polygon_buffer_.VertexData( point_objects_vertices.data(), point_objects_vertices.size() * sizeof(PointObjectVertex), sizeof(PointObjectVertex) );
-	point_objects_polygon_buffer_.SetPrimitiveType( GL_POINTS );
-	point_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
-	point_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+	r_PolygonBuffer point_objects_polygon_buffer_;
+	r_PolygonBuffer linear_objects_polygon_buffer_;
+	r_PolygonBuffer areal_objects_polygon_buffer_;
+	const int32_t coord_start_x_;
+	const int32_t coord_start_y_;
+};
 
-	linear_objects_polygon_buffer_.VertexData( linear_objects_vertices.data(), linear_objects_vertices.size() * sizeof(LinearObjectVertex), sizeof(LinearObjectVertex) );
-	linear_objects_polygon_buffer_.IndexData( linear_objects_indicies.data(), linear_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_LINE_STRIP );
-	linear_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
-	linear_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+MapDrawer::MapDrawer( const ViewportSize& viewport_size )
+	: viewport_size_(viewport_size)
+{
+	std::vector<unsigned char> file_content;
+	const bool read_ok= ReadFile( "map.pm", file_content );
+	if( !read_ok )
+		return;
+	if( file_content.size() < sizeof(DataFileDescription::DataFile) )
+		return;
 
-	areal_objects_polygon_buffer_.VertexData( areal_objects_vertices.data(), areal_objects_vertices.size() * sizeof(ArealObjectVertex), sizeof(ArealObjectVertex) );
-	areal_objects_polygon_buffer_.IndexData( areal_objects_indicies.data(), areal_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_FAN );
-	areal_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
-	areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( file_content.data() );
+
+	if( std::memcmp( data_file.header, DataFileDescription::DataFile::c_expected_header, sizeof(data_file.header) ) != 0 )
+		return;
+	if( data_file.version != DataFileDescription::DataFile::c_expected_version )
+		return;
+
+	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content.data() + data_file.chunks_description_offset );
+
+	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
+	{
+		const size_t chunk_offset= chunks_description[chunk_index].offset;
+		const unsigned char* const chunk_data= file_content.data() + chunk_offset;
+		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
+		chunks_.emplace_back( chunk );
+	}
 
 	// Create shaders
 
@@ -271,11 +285,32 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	areal_objects_shader_.SetAttribLocation( "pos", 0 );
 	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
 	areal_objects_shader_.Create();
+
+	// Setup camera
+	if( !chunks_.empty() )
+	{
+		min_cam_pos_.x= +1e20f;
+		min_cam_pos_.y= +1e20f;
+		max_cam_pos_.x= -1e20f;
+		max_cam_pos_.y= -1e20f;
+		for( const Chunk& chunk : chunks_ )
+		{
+			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
+			min_cam_pos_.y= std::min( min_cam_pos_.y, float(chunk.coord_start_y_) );
+			max_cam_pos_.x= std::max( max_cam_pos_.x, float(chunk.coord_start_x_ + 65536) );
+			max_cam_pos_.y= std::max( max_cam_pos_.y, float(chunk.coord_start_y_ + 65536) );
+		}
+	}
+	else
+		min_cam_pos_.x= max_cam_pos_.x= min_cam_pos_.y= max_cam_pos_.y= 0.0f;
+	cam_pos_.x= ( min_cam_pos_.x + max_cam_pos_.x ) * 0.5f;
+	cam_pos_.y= ( min_cam_pos_.y + max_cam_pos_.y ) * 0.5f;
 }
+
+MapDrawer::~MapDrawer(){}
 
 void MapDrawer::Draw()
 {
-
 	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
 
 	scale_matrix.Scale( 1.0f / scale_ );
@@ -285,28 +320,46 @@ void MapDrawer::Draw()
 
 	{
 		areal_objects_shader_.Bind();
-		areal_objects_shader_.Uniform( "view_matrix", view_matrix );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
-		areal_objects_polygon_buffer_.Draw();
+		for( const Chunk& chunk : chunks_ )
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			areal_objects_shader_.Uniform( "view_matrix", chunk_view_matrix );
+			chunk.areal_objects_polygon_buffer_.Draw();
+		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
 	{
 		linear_objets_shader_.Bind();
-		linear_objets_shader_.Uniform( "view_matrix", view_matrix );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
-		linear_objects_polygon_buffer_.Draw();
+		for( const Chunk& chunk : chunks_ )
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			linear_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
+			chunk.linear_objects_polygon_buffer_.Draw();;
+		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
 	{
 		point_objets_shader_.Bind();
-		point_objets_shader_.Uniform( "view_matrix", view_matrix );
 
 		glPointSize( 12.0f );
-		point_objects_polygon_buffer_.Draw();
+		for( const Chunk& chunk : chunks_ )
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			point_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
+			chunk.point_objects_polygon_buffer_.Draw();
+		}
 	}
 }
 
@@ -323,8 +376,8 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 		if( mouse_pressed_ )
 		{
 			cam_pos_+= m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * scale_;
-			cam_pos_.x= std::max( -65536.0f, std::min( cam_pos_.x, 65536.0f ) );
-			cam_pos_.y= std::max( -65536.0f, std::min( cam_pos_.y, 65536.0f ) );
+			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
+			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
 			Log::User( "Shift is ", cam_pos_.x, " ", cam_pos_.y );
 		}
 		break;
