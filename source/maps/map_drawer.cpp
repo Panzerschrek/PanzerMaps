@@ -147,6 +147,7 @@ static const uint16_t c_primitive_restart_index= 65535u;
 struct MapDrawer::Chunk
 {
 	explicit Chunk( const DataFileDescription::Chunk& in_chunk )
+		: coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
 	{
 		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
 		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
@@ -237,6 +238,8 @@ struct MapDrawer::Chunk
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer areal_objects_polygon_buffer_;
+	const int32_t coord_start_x_;
+	const int32_t coord_start_y_;
 };
 
 MapDrawer::MapDrawer( const ViewportSize& viewport_size )
@@ -256,10 +259,11 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	if( data_file.version != DataFileDescription::DataFile::c_expected_version )
 		return;
 
+	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content.data() + data_file.chunks_description_offset );
 
 	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
 	{
-		const size_t chunk_offset= data_file.chunks_offset + chunk_index * sizeof(DataFileDescription::Chunk);
+		const size_t chunk_offset= chunks_description[chunk_index].offset;
 		const unsigned char* const chunk_data= file_content.data() + chunk_offset;
 		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
 		chunks_.emplace_back( chunk );
@@ -287,7 +291,6 @@ MapDrawer::~MapDrawer(){}
 
 void MapDrawer::Draw()
 {
-
 	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
 
 	scale_matrix.Scale( 1.0f / scale_ );
@@ -297,30 +300,46 @@ void MapDrawer::Draw()
 
 	{
 		areal_objects_shader_.Bind();
-		areal_objects_shader_.Uniform( "view_matrix", view_matrix );
+
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		for( const Chunk& chunk : chunks_ )
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			areal_objects_shader_.Uniform( "view_matrix", chunk_view_matrix );
 			chunk.areal_objects_polygon_buffer_.Draw();
+		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
 	{
 		linear_objets_shader_.Bind();
-		linear_objets_shader_.Uniform( "view_matrix", view_matrix );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		for( const Chunk& chunk : chunks_ )
-			chunk.linear_objects_polygon_buffer_.Draw();
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			linear_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
+			chunk.linear_objects_polygon_buffer_.Draw();;
+		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
 	{
 		point_objets_shader_.Bind();
-		point_objets_shader_.Uniform( "view_matrix", view_matrix );
 
 		glPointSize( 12.0f );
 		for( const Chunk& chunk : chunks_ )
+		{
+			m_Mat4 coords_shift_matrix, chunk_view_matrix;
+			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+			chunk_view_matrix= coords_shift_matrix * view_matrix;
+			point_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
 			chunk.point_objects_polygon_buffer_.Draw();
+		}
 	}
 }
 

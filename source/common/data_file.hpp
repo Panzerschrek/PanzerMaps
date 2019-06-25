@@ -46,6 +46,9 @@ struct Chunk
 		uint16_t vertex_count;
 	};
 
+	GlobalCoordType coord_start_x;
+	GlobalCoordType coord_start_y;
+
 	// Bounding box.
 	GlobalCoordType min_x;
 	GlobalCoordType min_y;
@@ -66,6 +69,12 @@ struct Chunk
 
 struct DataFile
 {
+	struct ChunkDescription
+	{
+		uint32_t offset;
+		uint32_t size;
+	};
+
 	// All offsets - from start of file.
 
 	static constexpr const char* c_expected_header= "PanzerMaps-Data";
@@ -74,7 +83,7 @@ struct DataFile
 	uint8_t header[16];
 	uint32_t version;
 
-	uint32_t chunks_offset;
+	uint32_t chunks_description_offset;
 	uint32_t chunk_count;
 };
 

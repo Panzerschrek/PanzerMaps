@@ -125,6 +125,64 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 {
 	std::vector< std::vector<MercatorPoint> > polylines;
 
+	const auto vertex_pos=
+	[&]( const MercatorPoint& vertex ) -> int
+	{
+		const int32_t signed_plane_distance= vertex.x * normal_x + vertex.y * normal_y - distance;
+		if( signed_plane_distance > 0 ) return +1;
+		if( signed_plane_distance < 0 ) return -1;
+		return 0;
+	};
+
+	const auto split_segment=
+	[&]( const size_t segment_index ) -> MercatorPoint
+	{
+		const MercatorPoint& v0= polyline[ segment_index ];
+		const MercatorPoint& v1= polyline[ segment_index + 1u ];
+		const int64_t dist0= int64_t( std::abs( v0.x * normal_x + v0.y * normal_y - distance ) );
+		const int64_t dist1= int64_t( std::abs( v1.x * normal_x + v1.y * normal_y - distance ) );
+		const int64_t dist_sum= dist0 + dist1;
+		MercatorPoint result;
+		if( dist_sum > 0 )
+		{
+			result.x= int32_t( ( int64_t(v0.x) * dist1 + int64_t(v1.x) * dist0 ) / dist_sum );
+			result.y= int32_t( ( int64_t(v0.y) * dist1 + int64_t(v1.y) * dist0 ) / dist_sum );
+		}
+		else
+			result= v0;
+
+		return result;
+	};
+
+	int prev_vertex_pos= vertex_pos( polyline.front() );
+	std::vector<MercatorPoint> result_polyline;
+	if( prev_vertex_pos >= 0 )
+		result_polyline.push_back( polyline.front() );
+
+	for( size_t i= 1u; i < polyline.size(); ++i )
+	{
+		const int cur_vertex_pos= vertex_pos( polyline[i] );
+			 if( prev_vertex_pos >= 0 && cur_vertex_pos >= 0 )
+			result_polyline.push_back( polyline[i] );
+		else if( prev_vertex_pos >= 0 && cur_vertex_pos < 0 )
+		{
+			result_polyline.push_back( split_segment(i-1u) );
+			polylines.emplace_back();
+			polylines.back().swap( result_polyline );
+		}
+		else if( prev_vertex_pos < 0 && cur_vertex_pos >= 0 )
+		{
+			result_polyline.push_back( split_segment(i-1u) );
+			result_polyline.push_back( polyline[i] );
+		}
+		else if( prev_vertex_pos < 0 && cur_vertex_pos < 0 )
+		{}
+		prev_vertex_pos= cur_vertex_pos;
+	}
+
+	if( result_polyline.size() >= 2u )
+		polylines.push_back( std::move( result_polyline ) );
+
 	return polylines;
 }
 
@@ -139,14 +197,14 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 
 	polylines.push_back( polyline );
 
-	const int32_t normals[4][2]{ { -1, 0 }, { +1, 0 }, { 0, -1 }, { 0, +1 }, };
-	const int32_t distances[4]{ bb_min_x, bb_max_x, bb_min_y, bb_max_y };
+	const int32_t normals[4][2]{ { +1, 0 }, { -1, 0 }, { 0, +1 }, { 0, -1 }, };
+	const int32_t distances[4]{ +bb_min_x, -bb_max_x, +bb_min_y, -bb_max_y };
 	for( size_t i= 0u; i < 4u; ++i )
 	{
 		std::vector< std::vector<MercatorPoint> > new_polylines;
 		for( const std::vector<MercatorPoint>& polyline : polylines )
 		{
-			std::vector< std::vector<MercatorPoint> > polyline_splitted= SplitPolyline( polyline, normals[i][0], normals[i][1], distances[i] );
+			std::vector< std::vector<MercatorPoint> > polyline_splitted= SplitPolyline( polyline, distances[i], normals[i][0], normals[i][1] );
 			for( std::vector<MercatorPoint>& polyline_part : polyline_splitted )
 				new_polylines.push_back( std::move( polyline_part ) );
 		}
@@ -175,8 +233,12 @@ static ChunksData DumpDataChunk(
 
 	// TODO - asssert, if data chunk contains >= 65535 vertices.
 
-	// TODO - set min_point to chunk offset
-	const CoordinatesTransformationPassResult::VertexTranspormed min_point{ chunk_offset_x, chunk_offset_y };
+	const CoordinatesTransformationPassResult::VertexTranspormed min_point{
+		chunk_offset_x - ( 65535 - c_max_chunk_size ) / 2,
+		chunk_offset_y - ( 65535 - c_max_chunk_size ) / 2 };
+
+	get_chunk().coord_start_x= min_point.x;
+	get_chunk().coord_start_y= min_point.y;
 
 	std::vector<ChunkVertex> vertices;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
@@ -216,9 +278,13 @@ static ChunksData DumpDataChunk(
 			}
 
 			const MercatorPoint& mercator_point= prepared_data.vertices[object.vertex_index];
-			const int32_t vertex_x= mercator_point.x - min_point.x;
-			const int32_t vertex_y= mercator_point.y - min_point.y;
-			vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+			if( mercator_point.x >= chunk_offset_x && mercator_point.y >= chunk_offset_y &&
+				mercator_point.x < chunk_offset_x + chunk_size && mercator_point.y < chunk_offset_y + chunk_size )
+			{
+				const int32_t vertex_x= mercator_point.x - min_point.x;
+				const int32_t vertex_y= mercator_point.y - min_point.y;
+				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+			}
 		}
 		if( prev_class != PointObjectClass::None )
 		{
@@ -264,14 +330,22 @@ static ChunksData DumpDataChunk(
 				prev_class= object.class_;
 			}
 
+			std::vector<MercatorPoint> polyline_vertices;
+			polyline_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
+				polyline_vertices.push_back( prepared_data.vertices[v] );
+
+			for( const std::vector<MercatorPoint>& polyline_part : SplitPolyline( polyline_vertices, chunk_offset_x, chunk_offset_y, chunk_offset_x + chunk_size, chunk_offset_y + chunk_size ) )
 			{
-				const MercatorPoint& mercator_point= prepared_data.vertices[v];
-				const int32_t vertex_x= mercator_point.x - min_point.x;
-				const int32_t vertex_y= mercator_point.y - min_point.y;
-				vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+				for( const MercatorPoint& polyline_part_vertex : polyline_part )
+				{
+					const int32_t vertex_x= polyline_part_vertex.x - min_point.x;
+					const int32_t vertex_y= polyline_part_vertex.y - min_point.y;
+					vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+
+				}
+				vertices.push_back(break_primitive_vertex);
 			}
-			vertices.push_back(break_primitive_vertex);
 		}
 		if( prev_class != LinearObjectClass::None )
 		{
@@ -390,26 +464,37 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
 	get_data_file().version= DataFile::c_expected_version;
 
-	const int32_t chunks_x= ( prepared_data.max_point.x / prepared_data.coordinates_scale - prepared_data.start_point.x / prepared_data.coordinates_scale + (c_max_chunk_size-1) ) / c_max_chunk_size;
-	const int32_t chunks_y= ( prepared_data.max_point.y / prepared_data.coordinates_scale - prepared_data.start_point.y / prepared_data.coordinates_scale + (c_max_chunk_size-1) ) / c_max_chunk_size;
+	const int32_t used_chunk_size= c_max_chunk_size;
+	const int32_t chunks_x= ( prepared_data.max_point.x / prepared_data.coordinates_scale - prepared_data.start_point.x / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+	const int32_t chunks_y= ( prepared_data.max_point.y / prepared_data.coordinates_scale - prepared_data.start_point.y / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
 
-	get_data_file().chunk_count= 0u;
-	get_data_file().chunks_offset= static_cast<uint32_t>( result.size() );
+	ChunksData final_chunks_data;
 	for( int32_t x= 0; x < chunks_x; ++x )
 	for( int32_t y= 0; y < chunks_y; ++y )
 	{
 		ChunksData chunks_data=
 			DumpDataChunk(
 				prepared_data,
-				x * c_max_chunk_size,
-				y * c_max_chunk_size,
-				c_max_chunk_size );
+				x * used_chunk_size,
+				y * used_chunk_size,
+				used_chunk_size );
+		for( ChunkData& chunk_data : chunks_data )
+			final_chunks_data.push_back( std::move( chunk_data ) );
+	}
 
-		for( const ChunkData& chunk_data : chunks_data )
-		{
-			result.insert( result.end(), chunk_data.begin(), chunk_data.end() );
-			++get_data_file().chunk_count;
-		}
+	get_data_file().chunk_count= static_cast<uint32_t>(final_chunks_data.size());
+	get_data_file().chunks_description_offset= static_cast<uint32_t>(result.size());
+	const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*
+	{
+		return reinterpret_cast<DataFile::ChunkDescription*>( result.data() + get_data_file().chunks_description_offset );
+	};
+	result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
+
+	for( size_t i= 0u; i < final_chunks_data.size(); ++i )
+	{
+		get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
+		get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
+		result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
 	}
 
 	return result;
