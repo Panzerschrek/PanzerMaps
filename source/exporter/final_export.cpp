@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -125,13 +125,10 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 {
 	std::vector< std::vector<MercatorPoint> > polylines;
 
-	const auto vertex_pos=
-	[&]( const MercatorPoint& vertex ) -> int
+	const auto vertex_signed_plane_distance=
+	[&]( const MercatorPoint& vertex ) -> int32_t
 	{
-		const int32_t signed_plane_distance= vertex.x * normal_x + vertex.y * normal_y - distance;
-		if( signed_plane_distance > 0 ) return +1;
-		if( signed_plane_distance < 0 ) return -1;
-		return 0;
+		return vertex.x * normal_x + vertex.y * normal_y - distance;
 	};
 
 	const auto split_segment=
@@ -139,8 +136,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	{
 		const MercatorPoint& v0= polyline[ segment_index ];
 		const MercatorPoint& v1= polyline[ segment_index + 1u ];
-		const int64_t dist0= int64_t( std::abs( v0.x * normal_x + v0.y * normal_y - distance ) );
-		const int64_t dist1= int64_t( std::abs( v1.x * normal_x + v1.y * normal_y - distance ) );
+		const int64_t dist0= int64_t( std::abs( vertex_signed_plane_distance(v0) ) );
+		const int64_t dist1= int64_t( std::abs( vertex_signed_plane_distance(v1) ) );
 		const int64_t dist_sum= dist0 + dist1;
 		MercatorPoint result;
 		if( dist_sum > 0 )
@@ -154,14 +151,14 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 		return result;
 	};
 
-	int prev_vertex_pos= vertex_pos( polyline.front() );
+	int32_t prev_vertex_pos= vertex_signed_plane_distance( polyline.front() );
 	std::vector<MercatorPoint> result_polyline;
 	if( prev_vertex_pos >= 0 )
 		result_polyline.push_back( polyline.front() );
 
 	for( size_t i= 1u; i < polyline.size(); ++i )
 	{
-		const int cur_vertex_pos= vertex_pos( polyline[i] );
+		const int32_t cur_vertex_pos= vertex_signed_plane_distance( polyline[i] );
 			 if( prev_vertex_pos >= 0 && cur_vertex_pos >= 0 )
 			result_polyline.push_back( polyline[i] );
 		else if( prev_vertex_pos >= 0 && cur_vertex_pos < 0 )
@@ -212,6 +209,95 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	}
 
 	return polylines;
+}
+
+static std::vector<MercatorPoint> SplitConvexPolygon(
+	const std::vector<MercatorPoint>& polygon,
+	const int32_t distance,
+	const int32_t normal_x,
+	const int32_t normal_y )
+{
+	const auto vertex_signed_plane_distance=
+	[&]( const MercatorPoint& vertex ) -> int32_t
+	{
+		return vertex.x * normal_x + vertex.y * normal_y - distance;
+	};
+
+	const auto split_segment=
+	[&]( const size_t segment_index ) -> MercatorPoint
+	{
+		const MercatorPoint& v0= polygon[ segment_index ];
+		const MercatorPoint& v1= polygon[ ( segment_index + 1u ) % polygon.size() ];
+		const int64_t dist0= int64_t( std::abs( vertex_signed_plane_distance(v0) ) );
+		const int64_t dist1= int64_t( std::abs( vertex_signed_plane_distance(v1) ) );
+		const int64_t dist_sum= dist0 + dist1;
+		MercatorPoint result;
+		if( dist_sum > 0 )
+		{
+			result.x= int32_t( ( int64_t(v0.x) * dist1 + int64_t(v1.x) * dist0 ) / dist_sum );
+			result.y= int32_t( ( int64_t(v0.y) * dist1 + int64_t(v1.y) * dist0 ) / dist_sum );
+		}
+		else
+			result= v0;
+
+		return result;
+	};
+
+	const int32_t first_vertex_pos= vertex_signed_plane_distance( polygon.front() );
+	int32_t prev_vertex_pos= first_vertex_pos;
+	std::vector<MercatorPoint> result_polygon;
+	if( prev_vertex_pos >= 0 )
+		result_polygon.push_back( polygon.front() );
+
+	for( size_t i= 1u; i < polygon.size(); ++i )
+	{
+		const int32_t cur_vertex_pos= vertex_signed_plane_distance( polygon[i] );
+			 if( prev_vertex_pos >= 0 && cur_vertex_pos >= 0 )
+			result_polygon.push_back( polygon[i] );
+		else if( prev_vertex_pos >= 0 && cur_vertex_pos < 0 )
+			result_polygon.push_back( split_segment(i-1u) );
+		else if( prev_vertex_pos < 0 && cur_vertex_pos >= 0 )
+		{
+			result_polygon.push_back( split_segment(i-1u) );
+			result_polygon.push_back( polygon[i] );
+		}
+		else if( prev_vertex_pos < 0 && cur_vertex_pos < 0 )
+		{}
+		prev_vertex_pos= cur_vertex_pos;
+	}
+
+	if( ( first_vertex_pos >= 0 && prev_vertex_pos < 0 ) || ( first_vertex_pos < 0 && prev_vertex_pos >= 0 ) )
+		result_polygon.push_back( split_segment( polygon.size() - 1u ) );
+
+	return std::move(result_polygon);
+}
+
+static std::vector< std::vector<MercatorPoint> > SplitConvexPolygon(
+	const std::vector<MercatorPoint>& polygon,
+	const int32_t bb_min_x,
+	const int32_t bb_min_y,
+	const int32_t bb_max_x,
+	const int32_t bb_max_y )
+{
+	std::vector< std::vector<MercatorPoint> > polygons;
+
+	polygons.push_back( polygon );
+
+	const int32_t normals[4][2]{ { +1, 0 }, { -1, 0 }, { 0, +1 }, { 0, -1 }, };
+	const int32_t distances[4]{ +bb_min_x, -bb_max_x, +bb_min_y, -bb_max_y };
+	for( size_t i= 0u; i < 4u; ++i )
+	{
+		std::vector< std::vector<MercatorPoint> > new_polygons;
+		for( const std::vector<MercatorPoint>& polygon : polygons )
+		{
+			std::vector<MercatorPoint> polygon_splitted= SplitConvexPolygon( polygon, distances[i], normals[i][0], normals[i][1] );
+			if( polygon_splitted.size() >= 3u )
+				new_polygons.push_back( std::move( polygon_splitted ) );
+		}
+		polygons= std::move( new_polygons );
+	}
+
+	return polygons;
 }
 
 using ChunkData= std::vector<unsigned char>;
@@ -396,16 +482,21 @@ static ChunksData DumpDataChunk(
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
 				polygon_vertices.push_back( prepared_data.vertices[v] );
 
+			// Split polygon intom convex parts, the, split by bounding box.
+			// TODO - split by bounding box first.
 			for( const std::vector<MercatorPoint>& polygon_part : SplitPolygonIntoConvexParts( polygon_vertices ) )
 			{
-				for( const MercatorPoint& polygon_part_vertex : polygon_part )
+				for( const std::vector<MercatorPoint> ploygon_part_bbox_splitted : SplitConvexPolygon( polygon_part, chunk_offset_x, chunk_offset_y, chunk_offset_x + chunk_size, chunk_offset_y + chunk_size ) )
 				{
-					const int32_t vertex_x= polygon_part_vertex.x - min_point.x;
-					const int32_t vertex_y= polygon_part_vertex.y - min_point.y;
-					vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
+					for( const MercatorPoint& polygon_part_vertex : ploygon_part_bbox_splitted )
+					{
+						const int32_t vertex_x= polygon_part_vertex.x - min_point.x;
+						const int32_t vertex_y= polygon_part_vertex.y - min_point.y;
+						vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 
+					}
+					vertices.push_back(break_primitive_vertex);
 				}
-				vertices.push_back(break_primitive_vertex);
 			}
 		}
 		if( prev_class != ArealObjectClass::None )
