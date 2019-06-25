@@ -273,6 +273,19 @@ OSMParseResult ParseOSM( const char* file_name )
 				result.point_objects.push_back(obj);
 			}
 		}
+		else if( const char* const highway= GetTagValue( node_element, "highway" ) )
+		{
+			OSMParseResult::PointObject obj;
+			if( std::strcmp( highway, "bus_stop" ) == 0 )
+				obj.class_= PointObjectClass::StationPlatform;
+
+			if( obj.class_ != PointObjectClass::None )
+			{
+				result.vertices.push_back( node_geo_point );
+				obj.vertex_index= result.vertices.size();
+				result.point_objects.push_back(obj);
+			}
+		}
 		if( const char* const railway= GetTagValue( node_element, "railway" ) )
 		{
 			OSMParseResult::PointObject obj;
