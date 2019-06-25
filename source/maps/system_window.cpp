@@ -158,8 +158,6 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 
 void SystemWindow::BeginFrame()
 {
-	glClearColor( 0.1f, 0.0f, 0.1f, 0.0f );
-	glClear( GL_COLOR_BUFFER_BIT );
 }
 
 void SystemWindow::EndFrame()

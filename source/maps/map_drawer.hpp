@@ -43,6 +43,7 @@ private:
 	GLuint linear_objects_texture_id_= ~0u;
 	// 1D texture with colors for areal objects.
 	GLuint areal_objects_texture_id_= ~0u;
+	unsigned char background_color_[4]= {0};
 };
 
 } // namespace PanzerMaps

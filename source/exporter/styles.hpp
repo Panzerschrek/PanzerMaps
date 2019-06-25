@@ -16,13 +16,15 @@ struct Styles
 
 	struct LinearObjectStyle
 	{
-		ColorRGBA color = {0};
+		ColorRGBA color= {0};
 	};
 
 	struct ArealObjectStyle
 	{
-		ColorRGBA color = {0};
+		ColorRGBA color= {0};
 	};
+
+	ColorRGBA background_color= {0};
 
 	std::unordered_map<PointObjectClass, PointObjectStyle> point_object_styles;
 	std::unordered_map<LinearObjectClass, LinearObjectStyle> linear_object_styles;

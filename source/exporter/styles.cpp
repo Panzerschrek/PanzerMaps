@@ -86,6 +86,9 @@ Styles LoadStyles( const char* const file_name )
 	if( json_parse_result->error != PanzerJson::Parser::Result::Error::NoError )
 		return result;
 
+	if( json_parse_result->root.IsMember( "background_color" ) )
+		ParseColor( json_parse_result->root["background_color"].AsString(), result.background_color );
+
 	for( const auto& point_style_json : json_parse_result->root["point_styles"].object_elements() )
 	{
 		const PointObjectClass object_class= StringToPointObjectClass( point_style_json.first );

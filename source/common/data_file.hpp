@@ -82,6 +82,11 @@ struct ArealObjectStyle
 	ColorRGBA color;
 };
 
+struct CommonStyle
+{
+	ColorRGBA background_color;
+};
+
 struct DataFile
 {
 	struct ChunkDescription
@@ -107,6 +112,8 @@ struct DataFile
 	uint32_t linear_styles_count;
 	uint32_t areal_styles_offset;
 	uint32_t areal_styles_count;
+
+	CommonStyle common_style;
 };
 
 } // namespace DataFile

@@ -316,6 +316,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 	}
+	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
 
 	// Create shaders
 
@@ -366,6 +367,10 @@ MapDrawer::~MapDrawer()
 
 void MapDrawer::Draw()
 {
+	// Clear background.
+	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
+	glClear( GL_COLOR_BUFFER_BIT );
+
 	// Calculate view matrix.
 	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
 	scale_matrix.Scale( 1.0f / scale_ );

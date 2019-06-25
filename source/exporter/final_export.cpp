@@ -636,6 +636,8 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 		++get_data_file().areal_styles_count;
 	}
 
+	std::memcpy( get_data_file().common_style.background_color, styles.background_color, sizeof(unsigned char) * 4u );
+
 	return result;
 }
 
