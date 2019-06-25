@@ -235,6 +235,12 @@ struct MapDrawer::Chunk
 		areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 	}
 
+	Chunk( const Chunk& )= delete;
+	Chunk( Chunk&& )= default;
+
+	Chunk& operator=( const Chunk& )= delete;
+	Chunk& operator=( Chunk&& )= default;
+
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer areal_objects_polygon_buffer_;
@@ -325,6 +331,9 @@ void MapDrawer::Draw()
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		for( const Chunk& chunk : chunks_ )
 		{
+			if( chunk.areal_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+				continue;
+
 			m_Mat4 coords_shift_matrix, chunk_view_matrix;
 			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
 			chunk_view_matrix= coords_shift_matrix * view_matrix;
@@ -340,6 +349,9 @@ void MapDrawer::Draw()
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		for( const Chunk& chunk : chunks_ )
 		{
+			if( chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+				continue;
+
 			m_Mat4 coords_shift_matrix, chunk_view_matrix;
 			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
 			chunk_view_matrix= coords_shift_matrix * view_matrix;
@@ -354,6 +366,9 @@ void MapDrawer::Draw()
 		glPointSize( 12.0f );
 		for( const Chunk& chunk : chunks_ )
 		{
+			if( chunk.point_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+				continue;
+
 			m_Mat4 coords_shift_matrix, chunk_view_matrix;
 			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
 			chunk_view_matrix= coords_shift_matrix * view_matrix;
