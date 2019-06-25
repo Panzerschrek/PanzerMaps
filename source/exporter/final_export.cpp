@@ -325,6 +325,10 @@ static ChunksData DumpDataChunk(
 
 	get_chunk().coord_start_x= min_point.x;
 	get_chunk().coord_start_y= min_point.y;
+	get_chunk().min_x= chunk_offset_x;
+	get_chunk().min_y= chunk_offset_y;
+	get_chunk().max_x= chunk_offset_x + chunk_size;
+	get_chunk().max_y= chunk_offset_y + chunk_size;
 
 	std::vector<ChunkVertex> vertices;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };

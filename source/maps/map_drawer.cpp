@@ -148,6 +148,7 @@ struct MapDrawer::Chunk
 {
 	explicit Chunk( const DataFileDescription::Chunk& in_chunk )
 		: coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
+		, bb_min_x_(in_chunk.min_x), bb_min_y_(in_chunk.min_y), bb_max_x_(in_chunk.max_x), bb_max_y_(in_chunk.max_y)
 	{
 		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
 		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
@@ -246,6 +247,16 @@ struct MapDrawer::Chunk
 	r_PolygonBuffer areal_objects_polygon_buffer_;
 	const int32_t coord_start_x_;
 	const int32_t coord_start_y_;
+	const int32_t bb_min_x_;
+	const int32_t bb_min_y_;
+	const int32_t bb_max_x_;
+	const int32_t bb_max_y_;
+};
+
+struct MapDrawer::ChunkToDraw
+{
+	const MapDrawer::Chunk& chunk;
+	m_Mat4 matrix;
 };
 
 MapDrawer::MapDrawer( const ViewportSize& viewport_size )
@@ -313,34 +324,59 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	cam_pos_.y= ( min_cam_pos_.y + max_cam_pos_.y ) * 0.5f;
 	min_scale_= 1.0f;
 	max_scale_= std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
+	scale_= max_scale_;
 }
 
 MapDrawer::~MapDrawer(){}
 
 void MapDrawer::Draw()
 {
+	// Calculate view matrix.
 	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
-
 	scale_matrix.Scale( 1.0f / scale_ );
 	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
 	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
 	view_matrix= translate_matrix * scale_matrix * aspect_matrix;
 
+	// Calculate viewport bounding box.
+	const int32_t bb_extend_eps= 16;
+	const int32_t viewport_half_size_x_world_space= int32_t( float(viewport_size_.width  ) * 0.5f * scale_ ) + bb_extend_eps;
+	const int32_t viewport_half_size_y_world_space= int32_t( float(viewport_size_.height ) * 0.5f * scale_ ) + bb_extend_eps;
+	const int32_t cam_pos_x_world_space= int32_t(cam_pos_.x);
+	const int32_t cam_pos_y_world_space= int32_t(cam_pos_.y);
+	const int32_t bb_min_x= cam_pos_x_world_space - viewport_half_size_x_world_space;
+	const int32_t bb_max_x= cam_pos_x_world_space + viewport_half_size_x_world_space;
+	const int32_t bb_min_y= cam_pos_y_world_space - viewport_half_size_y_world_space;
+	const int32_t bb_max_y= cam_pos_y_world_space + viewport_half_size_y_world_space;
+
+	// Setup chunks list, calculate matrices.
+	std::vector<ChunkToDraw> visible_chunks;
+	for( const Chunk& chunk : chunks_ )
+	{
+		if( chunk.bb_min_x_ >= bb_max_x || chunk.bb_min_y_ >= bb_max_y ||
+			chunk.bb_max_x_ <= bb_min_x || chunk.bb_max_y_ <= bb_min_y )
+			continue;
+
+		m_Mat4 coords_shift_matrix, chunk_view_matrix;
+		coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+		chunk_view_matrix= coords_shift_matrix * view_matrix;
+
+		visible_chunks.push_back( ChunkToDraw{ chunk, chunk_view_matrix } );
+	}
+
+	// Draw chunks.
 	{
 		areal_objects_shader_.Bind();
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
-		for( const Chunk& chunk : chunks_ )
+		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
-			if( chunk.areal_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+			if( chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetVertexDataSize() == 0u )
 				continue;
 
-			m_Mat4 coords_shift_matrix, chunk_view_matrix;
-			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
-			chunk_view_matrix= coords_shift_matrix * view_matrix;
-			areal_objects_shader_.Uniform( "view_matrix", chunk_view_matrix );
-			chunk.areal_objects_polygon_buffer_.Draw();
+			areal_objects_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+			chunk_to_draw.chunk.areal_objects_polygon_buffer_.Draw();
 		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
@@ -349,16 +385,13 @@ void MapDrawer::Draw()
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
-		for( const Chunk& chunk : chunks_ )
+		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
-			if( chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+			if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u )
 				continue;
 
-			m_Mat4 coords_shift_matrix, chunk_view_matrix;
-			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
-			chunk_view_matrix= coords_shift_matrix * view_matrix;
-			linear_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
-			chunk.linear_objects_polygon_buffer_.Draw();;
+			linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+			chunk_to_draw.chunk.linear_objects_polygon_buffer_.Draw();
 		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
@@ -366,16 +399,13 @@ void MapDrawer::Draw()
 		point_objets_shader_.Bind();
 
 		glPointSize( 12.0f );
-		for( const Chunk& chunk : chunks_ )
+		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
-			if( chunk.point_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+			if( chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() == 0u )
 				continue;
 
-			m_Mat4 coords_shift_matrix, chunk_view_matrix;
-			coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
-			chunk_view_matrix= coords_shift_matrix * view_matrix;
-			point_objets_shader_.Uniform( "view_matrix", chunk_view_matrix );
-			chunk.point_objects_polygon_buffer_.Draw();
+			point_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+			chunk_to_draw.chunk.point_objects_polygon_buffer_.Draw();
 		}
 	}
 }

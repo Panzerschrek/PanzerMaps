@@ -18,6 +18,7 @@ public:
 
 private:
 	struct Chunk;
+	struct ChunkToDraw;
 
 private:
 	const ViewportSize viewport_size_;
@@ -28,10 +29,10 @@ private:
 	std::vector<Chunk> chunks_;
 
 	bool mouse_pressed_= false;
-	float scale_= 256.0f; // Scale = map units in pixel
+	float scale_; // Scale = map units in pixel
 
 	// Camera position in map space.
-	m_Vec2 cam_pos_= m_Vec2( 0.0f, 0.0f );
+	m_Vec2 cam_pos_;
 
 	m_Vec2 min_cam_pos_;
 	m_Vec2 max_cam_pos_;
