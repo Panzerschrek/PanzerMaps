@@ -10,11 +10,14 @@ add_compile_options( -Wall -Wextra -Wconversion )
 find_package( SDL2 REQUIRED )
 
 add_subdirectory( tinyxml2 )
+add_subdirectory( PanzerJson )
 
 file( GLOB EXPORTER_SOURCES "exporter/*.hpp" "exporter/*.cpp" "common/*.hpp" "common/*.cpp" )
 
 add_executable( Exporter ${EXPORTER_SOURCES} )
+target_include_directories( Exporter PRIVATE PanzerJson/include )
 target_link_libraries( Exporter PRIVATE tinyxml2 )
+target_link_libraries( Exporter PRIVATE PanzerJsonLib )
 
 file( GLOB MAPS_SOURCES
 	"maps/*.hpp"
