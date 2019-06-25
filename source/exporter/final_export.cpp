@@ -600,8 +600,22 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 	{
 	}
 
+	get_data_file().linear_styles_offset= static_cast<uint32_t>( result.size() );
 	for( LinearObjectClass object_class= LinearObjectClass::None; object_class < LinearObjectClass::Last; object_class= static_cast<LinearObjectClass>( size_t(object_class) + 1u ) )
 	{
+		const auto style_it= styles.linear_object_styles.find(object_class);
+
+		result.resize( result.size() + sizeof(ArealObjectStyle) );
+		LinearObjectStyle& out_style= *reinterpret_cast<LinearObjectStyle*>( result.data() + result.size() - sizeof(ArealObjectStyle) );
+		if( style_it == styles.linear_object_styles.end() )
+		{
+			out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
+			out_style.color[3]= 255u;
+		}
+		else
+			std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
+
+		++get_data_file().linear_styles_count;
 	}
 
 	get_data_file().areal_styles_offset= static_cast<uint32_t>( result.size() );

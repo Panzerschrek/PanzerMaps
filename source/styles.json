@@ -6,6 +6,34 @@
 
     "linear_styles":
     {
+        "Road":
+        {
+            "color" : "#d0d0d0"
+        },
+        "Pedestrian":
+        {
+            "color" : "#A080A0"
+        },
+        "Waterway":
+        {
+            "color" : "#aad3df"
+        },
+        "Railway":
+        {
+            "color" : "#808080"
+        },
+        "Tram":
+        {
+            "color" : "#101010"
+        },
+        "Monorail":
+        {
+            "color" : "#101010"
+        },
+        "Barrier":
+        {
+            "color" : "#706050"
+        }
     },
 
     "areal_styles":

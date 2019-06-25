@@ -39,6 +39,8 @@ private:
 	float min_scale_;
 	float max_scale_;
 
+	// 1D texture with colors for linear objects.
+	GLuint linear_objects_texture_id_= ~0u;
 	// 1D texture with colors for areal objects.
 	GLuint areal_objects_texture_id_= ~0u;
 };
