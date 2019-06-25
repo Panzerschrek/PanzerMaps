@@ -32,6 +32,9 @@ private:
 
 	// Camera position in map space.
 	m_Vec2 cam_pos_= m_Vec2( 0.0f, 0.0f );
+
+	m_Vec2 min_cam_pos_;
+	m_Vec2 max_cam_pos_;
 };
 
 } // namespace PanzerMaps

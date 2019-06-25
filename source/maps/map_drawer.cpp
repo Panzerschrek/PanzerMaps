@@ -285,6 +285,26 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	areal_objects_shader_.SetAttribLocation( "pos", 0 );
 	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
 	areal_objects_shader_.Create();
+
+	// Setup camera
+	if( !chunks_.empty() )
+	{
+		min_cam_pos_.x= +1e20f;
+		min_cam_pos_.y= +1e20f;
+		max_cam_pos_.x= -1e20f;
+		max_cam_pos_.y= -1e20f;
+		for( const Chunk& chunk : chunks_ )
+		{
+			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
+			min_cam_pos_.y= std::min( min_cam_pos_.y, float(chunk.coord_start_y_) );
+			max_cam_pos_.x= std::max( max_cam_pos_.x, float(chunk.coord_start_x_ + 65536) );
+			max_cam_pos_.y= std::max( max_cam_pos_.y, float(chunk.coord_start_y_ + 65536) );
+		}
+	}
+	else
+		min_cam_pos_.x= max_cam_pos_.x= min_cam_pos_.y= max_cam_pos_.y= 0.0f;
+	cam_pos_.x= ( min_cam_pos_.x + max_cam_pos_.x ) * 0.5f;
+	cam_pos_.y= ( min_cam_pos_.y + max_cam_pos_.y ) * 0.5f;
 }
 
 MapDrawer::~MapDrawer(){}
@@ -356,8 +376,8 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 		if( mouse_pressed_ )
 		{
 			cam_pos_+= m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * scale_;
-			cam_pos_.x= std::max( -65536.0f, std::min( cam_pos_.x, 65536.0f ) );
-			cam_pos_.y= std::max( -65536.0f, std::min( cam_pos_.y, 65536.0f ) );
+			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
+			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
 			Log::User( "Shift is ", cam_pos_.x, " ", cam_pos_.y );
 		}
 		break;
