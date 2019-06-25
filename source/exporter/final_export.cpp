@@ -547,7 +547,7 @@ static ChunksData DumpDataChunk(
 	return { result };
 }
 
-static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationPassResult& prepared_data )
+static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationPassResult& prepared_data, const Styles& styles )
 {
 	using namespace DataFileDescription;
 
@@ -592,6 +592,36 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 		result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
 	}
 
+	get_data_file().point_styles_count= 0u;
+	get_data_file().linear_styles_count= 0u;
+	get_data_file().areal_styles_count= 0u;
+
+	for( PointObjectClass object_class= PointObjectClass::None; object_class < PointObjectClass::Last; object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
+	{
+	}
+
+	for( LinearObjectClass object_class= LinearObjectClass::None; object_class < LinearObjectClass::Last; object_class= static_cast<LinearObjectClass>( size_t(object_class) + 1u ) )
+	{
+	}
+
+	get_data_file().areal_styles_offset= static_cast<uint32_t>( result.size() );
+	for( ArealObjectClass object_class= ArealObjectClass::None; object_class < ArealObjectClass::Last; object_class= static_cast<ArealObjectClass>( size_t(object_class) + 1u ) )
+	{
+		const auto style_it= styles.areal_object_styles.find(object_class);
+
+		result.resize( result.size() + sizeof(ArealObjectStyle) );
+		ArealObjectStyle& out_style= *reinterpret_cast<ArealObjectStyle*>( result.data() + result.size() - sizeof(ArealObjectStyle) );
+		if( style_it == styles.areal_object_styles.end() )
+		{
+			out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
+			out_style.color[3]= 255u;
+		}
+		else
+			std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
+
+		++get_data_file().areal_styles_count;
+	}
+
 	return result;
 }
 
@@ -612,9 +642,9 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 	} while( write_total < content.size() );
 }
 
-void CreateDataFile( const CoordinatesTransformationPassResult& prepared_data, const char* const file_name )
+void CreateDataFile( const CoordinatesTransformationPassResult& prepared_data, const Styles& styles, const char* const file_name )
 {
-	WriteFile( DumpDataFile( prepared_data ), file_name );
+	WriteFile( DumpDataFile( prepared_data, styles ), file_name );
 }
 
 } // namespace PanzerMaps

@@ -1,0 +1,46 @@
+{
+
+    "point_styles":
+    {
+    },
+
+    "linear_styles":
+    {
+    },
+
+    "areal_styles":
+    {
+        "Water":
+        {
+            "color" : "#aad3df"
+        },
+        "Grassland":
+        {
+            "color" : "#cdebb0"
+        },
+        "Cemetery":
+        {
+            "color" : "#aacbaf"
+        },
+        "Industrial":
+        {
+            "color" : "#ebdbe8"
+        },
+        "Residential":
+        {
+            "color" : "#e0dfdf"
+        },
+        "Administrative":
+        {
+            "color" : "#f2dad9"
+        },
+        "Wood":
+        {
+            "color" : "#add19e"
+        },
+        "Building":
+        {
+            "color" : "#d9d0c9"
+        }
+    }
+}

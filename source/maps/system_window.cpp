@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include "../panzer_ogl_lib/panzer_ogl_lib.hpp"
+#include "../panzer_ogl_lib/shaders_loading.hpp"
 #include "log.hpp"
 #include "system_window.hpp"
 
@@ -91,6 +92,8 @@ SystemWindow::SystemWindow()
 	if( glDebugMessageCallback != nullptr )
 		glDebugMessageCallback( reinterpret_cast<GLDEBUGPROC>(&GLDebugMessageCallback), NULL );
 	#endif
+
+	rSetShaderLoadingLogCallback( []( const char* log_data ){ Log::Warning( log_data ); } );
 }
 
 SystemWindow::~SystemWindow()

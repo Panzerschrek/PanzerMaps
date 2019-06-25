@@ -7,5 +7,6 @@ int main()
 	CreateDataFile(
 		TransformCoordinates(
 			ParseOSM( "maps_src/Щ.osm" ) ),
+		LoadStyles( "source/styles.json" ),
 		"map.pm" );
 }

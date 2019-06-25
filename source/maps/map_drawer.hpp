@@ -38,6 +38,9 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
+
+	// 1D texture with colors for areal objects.
+	GLuint areal_objects_texture_id_= ~0u;
 };
 
 } // namespace PanzerMaps

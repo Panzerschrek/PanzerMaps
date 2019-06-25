@@ -67,13 +67,14 @@ R"(
 const char areal_vertex[]=
 R"(
 	#version 330
+	uniform sampler1D tex;
 	uniform mat4 view_matrix;
 	in vec2 pos;
 	in float color_index;
 	out vec4 f_color;
 	void main()
 	{
-		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
+		f_color= texelFetch( tex, int(color_index), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
@@ -286,6 +287,22 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		chunks_.emplace_back( chunk );
 	}
 
+	// Create textures
+	{
+		DataFileDescription::ColorRGBA texture_data[256u]= {0};
+
+		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content.data() + data_file.areal_styles_offset );
+
+		for( uint32_t i= 0u; i < data_file.areal_styles_count; ++i )
+			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+
+		glGenTextures( 1, &areal_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
+		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	}
+
 	// Create shaders
 
 	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
@@ -327,7 +344,10 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	scale_= max_scale_;
 }
 
-MapDrawer::~MapDrawer(){}
+MapDrawer::~MapDrawer()
+{
+	glDeleteTextures( 1, &areal_objects_texture_id_ );
+}
 
 void MapDrawer::Draw()
 {
@@ -367,6 +387,9 @@ void MapDrawer::Draw()
 	// Draw chunks.
 	{
 		areal_objects_shader_.Bind();
+		areal_objects_shader_.Uniform( "tex", 0 );
+
+		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );

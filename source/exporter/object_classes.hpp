@@ -7,33 +7,32 @@ namespace PanzerMaps
 enum class PointObjectClass : uint8_t
 {
 	None,
-	StationPlatform,
-	SubwayEntrance,
+	#define PROCESS_OBJECT_CLASS(X) X,
+	#include "point_objects_classes.hpp"
+	#undef PROCESS_OBJECT_CLASS
+	Last
 };
 
 enum class LinearObjectClass : uint8_t
 {
 	None,
-	Road,
-	Pedestrian,
-	Waterway,
-	Railway,
-	Tram,
-	Monorail,
-	Barrier,
+	#define PROCESS_OBJECT_CLASS(X) X,
+	#include "linear_objects_classes.hpp"
+	#undef PROCESS_OBJECT_CLASS
+	Last
 };
 
 enum class ArealObjectClass : uint8_t
 {
 	None,
-	Water,
-	Grassland,
-	Cemetery,
-	Industrial,
-	Residential,
-	Administrative,
-	Wood,
-	Building,
+	#define PROCESS_OBJECT_CLASS(X) X,
+	#include "areal_objects_classes.hpp"
+	#undef PROCESS_OBJECT_CLASS
+	Last
 };
+
+PointObjectClass StringToPointObjectClass( const char* str );
+LinearObjectClass StringToLinearObjectClass( const char* str );
+ArealObjectClass StringToArealObjectClass( const char* str );
 
 } // namespace PanzerMaps

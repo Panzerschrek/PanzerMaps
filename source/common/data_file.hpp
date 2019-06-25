@@ -67,6 +67,21 @@ struct Chunk
 	uint16_t vertex_count;
 };
 
+using ColorRGBA= unsigned char[4];
+struct PointObjectStyle
+{
+};
+
+struct LinearObjectStyle
+{
+	ColorRGBA color;
+};
+
+struct ArealObjectStyle
+{
+	ColorRGBA color;
+};
+
 struct DataFile
 {
 	struct ChunkDescription
@@ -85,6 +100,13 @@ struct DataFile
 
 	uint32_t chunks_description_offset;
 	uint32_t chunk_count;
+
+	uint32_t point_styles_offset;
+	uint32_t point_styles_count;
+	uint32_t linear_styles_offset;
+	uint32_t linear_styles_count;
+	uint32_t areal_styles_offset;
+	uint32_t areal_styles_count;
 };
 
 } // namespace DataFile
