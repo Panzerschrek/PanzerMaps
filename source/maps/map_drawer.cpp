@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include "../common/data_file.hpp"
-#include "log.hpp"
+#include "../common/log.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps

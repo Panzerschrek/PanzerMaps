@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <string>
 #include <PanzerJson/parser.hpp>
+#include "../common/log.hpp"
 #include "styles.hpp"
 
 namespace PanzerMaps
@@ -80,11 +81,20 @@ Styles LoadStyles( const char* const file_name )
 	std::string json_content;
 	const bool file_read_ok= ReadFile( file_name, json_content );
 	if( !file_read_ok )
+	{
+		Log::FatalError( "Can not read file \"", file_name, "\"" );
 		return result;
+	}
 
 	const PanzerJson::Parser::ResultPtr json_parse_result= PanzerJson::Parser().Parse( json_content.data(), json_content.size() );
 	if( json_parse_result->error != PanzerJson::Parser::Result::Error::NoError )
 		return result;
+
+	if( !json_parse_result->root.IsObject() )
+	{
+		Log::FatalError( "styles json root expected to be object" );
+		return result;
+	}
 
 	if( json_parse_result->root.IsMember( "background_color" ) )
 		ParseColor( json_parse_result->root["background_color"].AsString(), result.background_color );

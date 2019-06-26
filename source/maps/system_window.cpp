@@ -1,7 +1,7 @@
 #include <SDL.h>
+#include "../common/log.hpp"
 #include "../panzer_ogl_lib/panzer_ogl_lib.hpp"
 #include "../panzer_ogl_lib/shaders_loading.hpp"
-#include "log.hpp"
 #include "system_window.hpp"
 
 namespace PanzerMaps

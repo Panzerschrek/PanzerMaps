@@ -1,6 +1,6 @@
 #include <unordered_map>
 #include <tinyxml2.h>
-
+#include "../common/log.hpp"
 #include "primary_export.hpp"
 
 namespace PanzerMaps
@@ -77,7 +77,10 @@ OSMParseResult ParseOSM( const char* file_name )
 	tinyxml2::XMLDocument doc;
 	const tinyxml2::XMLError load_result= doc.LoadFile( file_name );
 	if( load_result != tinyxml2::XML_SUCCESS )
+	{
+		Log::FatalError( "XML Parse error: ", doc.ErrorStr() );
 		return result;
+	}
 
 	const NodesMap nodes= ExtractNodes(doc);
 
@@ -320,6 +323,13 @@ OSMParseResult ParseOSM( const char* file_name )
 			}
 		}
 	}
+
+	Log::Info( "Primary export: " );
+	Log::Info( result.point_objects.size(), " point objects" );
+	Log::Info( result.linear_objects.size(), " linear objects" );
+	Log::Info( result.areal_objects.size(), " areal objects" );
+	Log::Info( result.vertices.size(), " vertices" );
+	Log::Info( "" );
 
 	return result;
 }

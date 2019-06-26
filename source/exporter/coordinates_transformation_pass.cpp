@@ -1,3 +1,4 @@
+#include "../common/log.hpp"
 #include "coordinates_transformation_pass.hpp"
 
 namespace PanzerMaps
@@ -117,6 +118,14 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 
 		result.areal_objects.push_back( out_object );
 	}
+
+	Log::Info( "Coordinates transformation pass: " );
+	Log::Info( "Unit size: ", result.coordinates_scale );
+	Log::Info( result.point_objects.size(), " point objects" );
+	Log::Info( result.linear_objects.size(), " linear objects" );
+	Log::Info( result.areal_objects.size(), " areal objects" );
+	Log::Info( result.vertices.size(), " vertices" );
+	Log::Info( "" );
 
 	return result;
 }

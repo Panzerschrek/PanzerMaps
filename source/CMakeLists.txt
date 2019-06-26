@@ -4,6 +4,7 @@ project( PanzerMaps )
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	add_definitions( -DDEBUG )
+	add_definitions( -DPM_DEBUG )
 endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
@@ -29,6 +30,7 @@ file( GLOB MAPS_SOURCES
 	"panzer_ogl_lib/*.cpp" )
 
 add_executable( PanzerMaps ${MAPS_SOURCES} )
+target_compile_definitions( PanzerMaps PRIVATE -DHAVE_SDL )
 target_include_directories( PanzerMaps PRIVATE ${SDL2_INCLUDE_DIRS} )
 target_link_libraries( PanzerMaps PRIVATE ${SDL2_LIBRARIES} )
 target_link_libraries( PanzerMaps PRIVATE GL )

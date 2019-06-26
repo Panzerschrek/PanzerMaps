@@ -3,7 +3,9 @@
 #include <cstring>
 #include <limits>
 
+#include "../common/assert.hpp"
 #include "../common/data_file.hpp"
+#include "../common/log.hpp"
 #include "final_export.hpp"
 
 namespace PanzerMaps
@@ -15,6 +17,8 @@ static const int32_t c_min_chunk_size= c_max_chunk_size / 512;
 // Returns positive value for clockwise polygon, negative - for anticlockwisi.
 static int64_t CalculatePolygonDoubleSignedArea( const MercatorPoint* const vertices, size_t vertex_count )
 {
+	PM_ASSERT( vertex_count >= 3u );
+
 	int64_t result= 0;
 
 	result+= int64_t(vertices[0u].x) * int64_t(vertices[vertex_count-1u].y) - int64_t(vertices[vertex_count-1u].x) * int64_t(vertices[0u].y);
@@ -37,6 +41,8 @@ static int64_t PolygonVertexCross( const MercatorPoint& p0, const MercatorPoint&
 
 static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const vertices, size_t vertex_count, const MercatorPoint& test_vertex )
 {
+	PM_ASSERT( vertex_count >= 3u );
+
 	for( size_t i= 0u; i < vertex_count; ++i )
 	{
 		if(
@@ -51,6 +57,7 @@ static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const ve
 
 static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices )
 {
+	PM_ASSERT( vertices.size() >= 3u );
 	std::vector< std::vector<MercatorPoint> > result;
 
 	const int64_t polygon_double_signed_area= CalculatePolygonDoubleSignedArea( vertices.data(), vertices.size() );
@@ -180,6 +187,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 				poly_combined.push_back( poly0[ ( adjusted_end0 + p0_size_add + i ) % poly0.size() ] );
 			for( size_t i= 0u; i < poly1_vertex_count; ++i )
 				poly_combined.push_back( poly1[ ( adjusted_end1 + p1_size_add + i ) % poly1.size() ] );
+			PM_ASSERT( poly_combined.size() >= 3u );
 
 			result[p0]= std::move( poly_combined );
 			if( p1 + 1u < result.size() )
@@ -202,6 +210,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	const int32_t normal_x,
 	const int32_t normal_y )
 {
+	PM_ASSERT( polyline.size() >= 2u );
 	std::vector< std::vector<MercatorPoint> > polylines;
 
 	const auto vertex_signed_plane_distance=
@@ -243,6 +252,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 		else if( prev_vertex_pos >= 0 && cur_vertex_pos < 0 )
 		{
 			result_polyline.push_back( split_segment(i-1u) );
+			PM_ASSERT( result_polyline.size() >= 2u );
 			polylines.emplace_back();
 			polylines.back().swap( result_polyline );
 		}
@@ -257,7 +267,10 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	}
 
 	if( result_polyline.size() >= 2u )
+	{
+		PM_ASSERT( result_polyline.size() >= 2u );
 		polylines.push_back( std::move( result_polyline ) );
+	}
 
 	return polylines;
 }
@@ -269,6 +282,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	const int32_t bb_max_x,
 	const int32_t bb_max_y )
 {
+	PM_ASSERT( polyline.size() >= 2u );
 	std::vector< std::vector<MercatorPoint> > polylines;
 
 	polylines.push_back( polyline );
@@ -296,6 +310,8 @@ static std::vector<MercatorPoint> SplitConvexPolygon(
 	const int32_t normal_x,
 	const int32_t normal_y )
 {
+	PM_ASSERT( polygon.size() >= 3u );
+
 	const auto vertex_signed_plane_distance=
 	[&]( const MercatorPoint& vertex ) -> int32_t
 	{
@@ -348,6 +364,8 @@ static std::vector<MercatorPoint> SplitConvexPolygon(
 	if( ( first_vertex_pos >= 0 && prev_vertex_pos < 0 ) || ( first_vertex_pos < 0 && prev_vertex_pos >= 0 ) )
 		result_polygon.push_back( split_segment( polygon.size() - 1u ) );
 
+	PM_ASSERT( result_polygon.size() == 0u || result_polygon.size() >= 3u );
+
 	return std::move(result_polygon);
 }
 
@@ -358,6 +376,7 @@ static std::vector< std::vector<MercatorPoint> > SplitConvexPolygon(
 	const int32_t bb_max_x,
 	const int32_t bb_max_y )
 {
+	PM_ASSERT( polygon.size() >= 3u );
 	std::vector< std::vector<MercatorPoint> > polygons;
 
 	polygons.push_back( polygon );
@@ -623,11 +642,15 @@ static ChunksData DumpDataChunk(
 		reinterpret_cast<const unsigned char*>( vertices.data() ),
 		reinterpret_cast<const unsigned char*>( vertices.data() + vertices.size() ) );
 
+	Log::Info( "Chunk ", chunk_offset_x, " ", chunk_offset_y, " done. Vertices: ", vertices.size() );
+
 	return { result };
 }
 
 static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationPassResult& prepared_data, const Styles& styles )
 {
+	Log::Info( "Final export: " );
+
 	using namespace DataFileDescription;
 
 	std::vector<unsigned char> result;
@@ -664,6 +687,7 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 	};
 	result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
 
+	Log::Info( final_chunks_data.size(), " chunks" );
 	for( size_t i= 0u; i < final_chunks_data.size(); ++i )
 	{
 		get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
@@ -717,6 +741,8 @@ static std::vector<unsigned char> DumpDataFile( const CoordinatesTransformationP
 
 	std::memcpy( get_data_file().common_style.background_color, styles.background_color, sizeof(unsigned char) * 4u );
 
+	Log::Info( "result size is ", result.size(), " bytes (", result.size() / 1024u, "kb)" );
+
 	return result;
 }
 
@@ -724,7 +750,10 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 {
 	std::FILE* const f= std::fopen( file_name, "wb" );
 	if( f == nullptr )
+	{
+		Log::FatalError( "Error, opening file \"", file_name, "\"" );
 		return;
+	}
 
 	size_t write_total= 0u;
 	do
