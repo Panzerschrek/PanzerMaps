@@ -1,4 +1,5 @@
 #include <cstring>
+#include "../common/assert.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "../common/memory_mapped_file.hpp"
@@ -104,6 +105,12 @@ struct LinearObjectVertex
 	uint32_t color_index;
 };
 
+struct PolygonalLinearObjectVertex
+{
+	float xy[2];
+	uint32_t color_index;
+};
+
 struct ArealObjectVertex
 {
 	uint16_t xy[2];
@@ -111,6 +118,98 @@ struct ArealObjectVertex
 };
 
 static const uint16_t c_primitive_restart_index= 65535u;
+
+// Creates triangle strip mesh.
+static void CreatePolygonalLine(
+	const DataFileDescription::ChunkVertex* const in_vertices,
+	const size_t vertex_count,
+	const uint32_t color_index,
+	std::vector<PolygonalLinearObjectVertex>& out_vertices,
+	std::vector<uint16_t>& out_indices )
+{
+	PM_ASSERT( vertex_count >= 2u );
+
+	const float width= 5.0f;
+
+	// TODO - add roundings for front and back.
+
+	// Use float coordinates, because uint16_t is too low for polygonal lines with small width.
+	m_Vec2 prev_edge_base_vec;
+	{
+		const m_Vec2 edge_dir( float(in_vertices[1u].x - in_vertices[0u].x), float(in_vertices[1u].y - in_vertices[0u].y) );
+		PM_ASSERT( edge_dir.Length() > 0.0f );
+		const float edge_inv_length= edge_dir.InvLength();
+		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
+
+		const float edge_shift_x= edge_base_vec.x * width;
+		const float edge_shift_y= edge_base_vec.y * width;
+
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[0u].x) + edge_shift_x,
+					float(in_vertices[0u].y) + edge_shift_y },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[0u].x - edge_shift_x ),
+					float(in_vertices[0u].y - edge_shift_y ) },
+				color_index } );
+
+		prev_edge_base_vec= edge_base_vec;
+	}
+
+	for( size_t i= 1u; i < vertex_count - 1u; ++i )
+	{
+		const m_Vec2 edge_dir( float(in_vertices[i+1u].x - in_vertices[i].x), float(in_vertices[i+1u].y - in_vertices[i].y) );
+		PM_ASSERT( edge_dir.Length() > 0.0f );
+		const float edge_inv_length= edge_dir.InvLength();
+		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
+
+		m_Vec2 vertex_base_vec= ( prev_edge_base_vec + edge_base_vec ) * 0.5f;
+		// TODO - add rounding for sharp corners.
+		const float vertex_base_vec_square_len= std::max( 0.1f, vertex_base_vec.SquareLength() );
+		vertex_base_vec/= vertex_base_vec_square_len;
+
+		const float vertex_shift_x= vertex_base_vec.x * width;
+		const float vertex_shift_y= vertex_base_vec.y * width;
+
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[i].x) + vertex_shift_x,
+					float(in_vertices[i].y) + vertex_shift_y },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[i].x) - vertex_shift_x,
+					float(in_vertices[i].y) - vertex_shift_y },
+				color_index } );
+
+		prev_edge_base_vec= edge_base_vec;
+	}
+
+	{
+		const float edge_shift_x= prev_edge_base_vec.x * width;
+		const float edge_shift_y= prev_edge_base_vec.y * width;
+
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[vertex_count-1u].x) + edge_shift_x,
+					float(in_vertices[vertex_count-1u].y) + edge_shift_y },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					float(in_vertices[vertex_count-1u].x) - edge_shift_x,
+					float(in_vertices[vertex_count-1u].y) - edge_shift_y },
+				color_index } );
+	}
+	out_indices.push_back( c_primitive_restart_index );
+}
 
 struct MapDrawer::Chunk
 {
@@ -127,6 +226,9 @@ struct MapDrawer::Chunk
 
 		std::vector<LinearObjectVertex> linear_objects_vertices;
 		std::vector<uint16_t> linear_objects_indicies;
+
+		std::vector<PolygonalLinearObjectVertex> linear_objects_as_triangles_vertices;
+		std::vector<uint16_t> linear_objects_as_triangles_indicies;
 
 		std::vector<ArealObjectVertex> areal_objects_vertices;
 		std::vector<uint16_t> areal_objects_indicies;
@@ -145,23 +247,45 @@ struct MapDrawer::Chunk
 			}
 		}
 
-		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
-		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
+		if( false )
 		{
-			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
-			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
+			// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
+			for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
 			{
-				const DataFileDescription::ChunkVertex& vertex= vertices[v];
-				if( ( vertex.x & vertex.y ) == 65535u )
-					linear_objects_indicies.push_back( c_primitive_restart_index );
-				else
+				const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
+				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
-					LinearObjectVertex out_vertex;
-					out_vertex.xy[0]= vertex.x;
-					out_vertex.xy[1]= vertex.y;
-					out_vertex.color_index= group.style_index;
-					linear_objects_indicies.push_back( static_cast<uint16_t>( linear_objects_vertices.size() ) );
-					linear_objects_vertices.push_back( out_vertex );
+					const DataFileDescription::ChunkVertex& vertex= vertices[v];
+					if( ( vertex.x & vertex.y ) == 65535u )
+						linear_objects_indicies.push_back( c_primitive_restart_index );
+					else
+					{
+						LinearObjectVertex out_vertex;
+						out_vertex.xy[0]= vertex.x;
+						out_vertex.xy[1]= vertex.y;
+						out_vertex.color_index= group.style_index;
+						linear_objects_indicies.push_back( static_cast<uint16_t>( linear_objects_vertices.size() ) );
+						linear_objects_vertices.push_back( out_vertex );
+					}
+				}
+			}
+		}
+		else
+		{
+			std::vector<DataFileDescription::ChunkVertex> tmp_vertices;
+			for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
+			{
+				const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
+				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
+				{
+					const DataFileDescription::ChunkVertex& vertex= vertices[v];
+					if( ( vertex.x & vertex.y ) == 65535u )
+					{
+						CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+						tmp_vertices.clear();
+					}
+					else
+						tmp_vertices.push_back(vertex);
 				}
 			}
 		}
@@ -198,6 +322,11 @@ struct MapDrawer::Chunk
 		linear_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
 		linear_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 
+		linear_objects_as_triangles_buffer_.VertexData( linear_objects_as_triangles_vertices.data(), linear_objects_as_triangles_vertices.size() * sizeof(PolygonalLinearObjectVertex), sizeof(PolygonalLinearObjectVertex) );
+		linear_objects_as_triangles_buffer_.IndexData( linear_objects_as_triangles_indicies.data(), linear_objects_as_triangles_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_STRIP );
+		linear_objects_as_triangles_buffer_.VertexAttribPointer( 0, 2, GL_FLOAT, true, 0 );
+		linear_objects_as_triangles_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(float) * 2 );
+
 		areal_objects_polygon_buffer_.VertexData( areal_objects_vertices.data(), areal_objects_vertices.size() * sizeof(ArealObjectVertex), sizeof(ArealObjectVertex) );
 		areal_objects_polygon_buffer_.IndexData( areal_objects_indicies.data(), areal_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_FAN );
 		areal_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
@@ -212,6 +341,7 @@ struct MapDrawer::Chunk
 
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
+	r_PolygonBuffer linear_objects_as_triangles_buffer_;
 	r_PolygonBuffer areal_objects_polygon_buffer_;
 	const int32_t coord_start_x_;
 	const int32_t coord_start_y_;
@@ -412,11 +542,13 @@ void MapDrawer::Draw()
 		glPrimitiveRestartIndex( c_primitive_restart_index );
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
-			if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u )
+			if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u &&
+				chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
 				continue;
 
 			linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 			chunk_to_draw.chunk.linear_objects_polygon_buffer_.Draw();
+			chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.Draw();
 		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
