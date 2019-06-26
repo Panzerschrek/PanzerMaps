@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <tinyxml2.h>
 #include "../common/log.hpp"
+#include "../common/memory_mapped_file.hpp"
 #include "primary_export.hpp"
 
 namespace PanzerMaps
@@ -74,13 +75,18 @@ OSMParseResult ParseOSM( const char* file_name )
 {
 	OSMParseResult result;
 
+	MemoryMappedFilePtr file_mapped= MemoryMappedFile::Create( file_name );
+	if( file_mapped == nullptr )
+		return result;
+
 	tinyxml2::XMLDocument doc;
-	const tinyxml2::XMLError load_result= doc.LoadFile( file_name );
+	const tinyxml2::XMLError load_result= doc.Parse( static_cast<const char*>( file_mapped->Data() ), file_mapped->Size() );
 	if( load_result != tinyxml2::XML_SUCCESS )
 	{
 		Log::FatalError( "XML Parse error: ", doc.ErrorStr() );
 		return result;
 	}
+	file_mapped= nullptr;
 
 	const NodesMap nodes= ExtractNodes(doc);
 

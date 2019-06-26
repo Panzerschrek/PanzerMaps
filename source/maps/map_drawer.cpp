@@ -1,7 +1,7 @@
-#include <cstdio>
 #include <cstring>
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
+#include "../common/memory_mapped_file.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps
@@ -90,39 +90,6 @@ R"(
 	}
 )";
 
-}
-
-static bool ReadFile( const char* const name, std::vector<unsigned char>& out_file_content )
-{
-	std::FILE* const f= std::fopen( name, "rb" );
-	if( f == nullptr )
-		return false;
-
-	std::fseek( f, 0, SEEK_END );
-	const size_t file_size= size_t(std::ftell( f ));
-	std::fseek( f, 0, SEEK_SET );
-
-	out_file_content.resize(file_size);
-
-	size_t read_total= 0u;
-	bool read_error= false;
-	do
-	{
-		const size_t read= std::fread( out_file_content.data() + read_total, 1, file_size - read_total, f );
-		if( std::ferror(f) != 0 )
-		{
-			read_error= true;
-			break;
-		}
-		if( read == 0 )
-			break;
-
-		read_total+= read;
-	} while( read_total < file_size );
-
-	std::fclose(f);
-
-	return !read_error;
 }
 
 struct PointObjectVertex
@@ -263,26 +230,38 @@ struct MapDrawer::ChunkToDraw
 MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	: viewport_size_(viewport_size)
 {
-	std::vector<unsigned char> file_content;
-	const bool read_ok= ReadFile( "map.pm", file_content );
-	if( !read_ok )
+	const MemoryMappedFilePtr file= MemoryMappedFile::Create( "map.pm" );
+	if( file == nullptr )
+	{
+		Log::FatalError( "Error, opening map file" );
 		return;
-	if( file_content.size() < sizeof(DataFileDescription::DataFile) )
+	}
+	if( file->Size() < sizeof(DataFileDescription::DataFile) )
+	{
+		Log::FatalError( "Map file is too small" );
 		return;
+	}
 
-	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( file_content.data() );
+	const unsigned char* const file_content= static_cast<const unsigned char*>(file->Data());
+	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( file_content);
 
 	if( std::memcmp( data_file.header, DataFileDescription::DataFile::c_expected_header, sizeof(data_file.header) ) != 0 )
+	{
+		Log::FatalError( "File is not \"PanzerMaps\" file" );
 		return;
+	}
 	if( data_file.version != DataFileDescription::DataFile::c_expected_version )
+	{
+		Log::FatalError( "Unsupported map file version. Expected ", DataFileDescription::DataFile::c_expected_version, ", got ", data_file.version, "." );
 		return;
+	}
 
-	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content.data() + data_file.chunks_description_offset );
+	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + data_file.chunks_description_offset );
 
 	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
 	{
 		const size_t chunk_offset= chunks_description[chunk_index].offset;
-		const unsigned char* const chunk_data= file_content.data() + chunk_offset;
+		const unsigned char* const chunk_data= file_content + chunk_offset;
 		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
 		chunks_.emplace_back( chunk );
 	}
@@ -291,7 +270,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	{
 		DataFileDescription::ColorRGBA texture_data[256u]= {0};
 
-		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content.data() + data_file.linear_styles_offset );
+		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
 
 		for( uint32_t i= 0u; i < data_file.linear_styles_count; ++i )
 			std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
@@ -305,7 +284,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	{
 		DataFileDescription::ColorRGBA texture_data[256u]= {0};
 
-		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content.data() + data_file.areal_styles_offset );
+		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
 
 		for( uint32_t i= 0u; i < data_file.areal_styles_count; ++i )
 			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );

@@ -1,44 +1,11 @@
-#include <cstdio>
 #include <string>
 #include <PanzerJson/parser.hpp>
 #include "../common/log.hpp"
+#include "../common/memory_mapped_file.hpp"
 #include "styles.hpp"
 
 namespace PanzerMaps
 {
-
-static bool ReadFile( const char* const name, std::string& out_file_content )
-{
-	std::FILE* const f= std::fopen( name, "rb" );
-	if( f == nullptr )
-		return false;
-
-	std::fseek( f, 0, SEEK_END );
-	const size_t file_size= size_t(std::ftell( f ));
-	std::fseek( f, 0, SEEK_SET );
-
-	out_file_content.resize(file_size);
-
-	size_t read_total= 0u;
-	bool read_error= false;
-	do
-	{
-		const size_t read= std::fread( const_cast<char*>(out_file_content.data()) + read_total, 1, file_size - read_total, f );
-		if( std::ferror(f) != 0 )
-		{
-			read_error= true;
-			break;
-		}
-		if( read == 0 )
-			break;
-
-		read_total+= read;
-	} while( read_total < file_size );
-
-	std::fclose(f);
-
-	return !read_error;
-}
 
 static void ParseColor( const char* color_str, Styles::ColorRGBA& out_color )
 {
@@ -78,15 +45,11 @@ Styles LoadStyles( const char* const file_name )
 {
 	Styles result;
 
-	std::string json_content;
-	const bool file_read_ok= ReadFile( file_name, json_content );
-	if( !file_read_ok )
-	{
-		Log::FatalError( "Can not read file \"", file_name, "\"" );
+	const MemoryMappedFilePtr file= MemoryMappedFile::Create( file_name );
+	if( file == nullptr )
 		return result;
-	}
 
-	const PanzerJson::Parser::ResultPtr json_parse_result= PanzerJson::Parser().Parse( json_content.data(), json_content.size() );
+	const PanzerJson::Parser::ResultPtr json_parse_result= PanzerJson::Parser().Parse( static_cast<const char*>(file->Data()), file->Size() );
 	if( json_parse_result->error != PanzerJson::Parser::Result::Error::NoError )
 		return result;
 

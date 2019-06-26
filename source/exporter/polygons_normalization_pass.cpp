@@ -103,10 +103,15 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 
 			result.push_back( triangle );
 			vertices.erase( vertices.begin() + i );
-			break;
+			goto continue_triangulation;
 
 			select_next_vertex_fo_triangulation:;
 		}
+
+		Log::Warning( "Broken polygon, split into convex parts failed" );
+		return std::vector< std::vector<MercatorPoint> >();
+
+		continue_triangulation:;
 	}
 	finish_triangulation:
 	result.push_back( vertices );

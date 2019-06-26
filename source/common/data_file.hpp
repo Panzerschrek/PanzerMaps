@@ -97,8 +97,8 @@ struct DataFile
 
 	// All offsets - from start of file.
 
-	static constexpr const char* c_expected_header= "PanzerMaps-Data";
-	static constexpr uint32_t c_expected_version= 1u;
+	static constexpr const char c_expected_header[16]= "PanzerMaps-Data";
+	static constexpr const uint32_t c_expected_version= 1u;
 
 	uint8_t header[16];
 	uint32_t version;

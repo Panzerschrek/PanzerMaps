@@ -1,4 +1,5 @@
 #include "final_export.hpp"
+#include "../common/memory_mapped_file.hpp"
 
 int main()
 {
