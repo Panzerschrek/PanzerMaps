@@ -91,6 +91,7 @@ void Log::Print( std::ostringstream& stream, const Arg0& arg0, const Args&... ar
 template<class... Args>
 void Log::PrinLine( const LogLevel log_level, const Args&... args )
 {
+	(void)log_level; // TODO - use it
 	std::ostringstream stream;
 	Print( stream, args... );
 	const std::string str= stream.str();
