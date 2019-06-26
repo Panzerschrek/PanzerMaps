@@ -111,8 +111,87 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 	finish_triangulation:
 	result.push_back( vertices );
 
+	// After triangulation, merge ajusted polygons, is result polygon will be convex.
+	// TODO - optimize it, make something, like O(n*log(n)), rather then O(n^3).
+	while(true)
+	{
+		for( size_t p0= 0u; p0 < result.size(); ++p0 )
+		for( size_t p1= 0u; p1 < result.size(); ++p1 )
+		{
+			if( p0 == p1 ) continue;
+			const std::vector<MercatorPoint>& poly0= result[p0];
+			const std::vector<MercatorPoint>& poly1= result[p1];
+			const size_t p0_size_add= poly0.size() * 4u;
+			const size_t p1_size_add= poly1.size() * 4u;
 
-	// TODO - merge adjusted polygons, if merge result polygon will be convex.
+			size_t adjusted_v0= ~0u;
+			size_t adjusted_v1= ~0u;
+			for( size_t v0= 0u; v0 < poly0.size(); ++v0 )
+			for( size_t v1= 0u; v1 < poly1.size(); ++v1 )
+			{
+				if( poly0[v0] == poly1[v1] )
+				{
+					adjusted_v0= v0;
+					adjusted_v1= v1;
+					goto have_adjusted_vertices;
+				}
+			}
+			continue;
+
+			have_adjusted_vertices:
+			size_t adjusted_start0= adjusted_v0, adjusted_end0= adjusted_v0;
+			size_t adjusted_start1= adjusted_v1, adjusted_end1= adjusted_v1;
+
+			while( poly0[ ( adjusted_start0 + p0_size_add - 1u ) % poly0.size() ] ==
+				   poly1[ ( adjusted_end1   + p1_size_add + 1u ) % poly1.size() ] )
+			{
+				--adjusted_start0;
+				++adjusted_end1;
+			}
+
+			while( poly0[ ( adjusted_end0   + p0_size_add + 1u ) % poly0.size() ] ==
+				   poly1[ ( adjusted_start1 + p1_size_add - 1u ) % poly1.size() ] )
+			{
+				++adjusted_end0;
+				--adjusted_start1;
+			}
+
+			if( adjusted_start0 == adjusted_end0 )
+				continue;// Have only one adjusted vertex.
+
+			const int64_t cross0=
+				PolygonVertexCross(
+					poly0[ ( adjusted_start0 + p0_size_add - 1u ) % poly0.size() ],
+					poly0[ ( adjusted_start0 + p0_size_add + 0u ) % poly0.size() ],
+					poly1[ ( adjusted_end1   + p1_size_add + 1u ) % poly1.size() ] );
+			const int64_t cross1=
+				PolygonVertexCross(
+					poly1[ ( adjusted_start1 + p1_size_add - 1u ) % poly1.size() ],
+					poly1[ ( adjusted_start1 + p1_size_add + 0u ) % poly1.size() ],
+					poly0[ ( adjusted_end0   + p0_size_add + 1u ) % poly0.size() ] );
+			if( !( cross0 >= 0 && cross1 >= 0 ) )
+				continue; // Result polygon will be non-convex.
+
+			std::vector<MercatorPoint> poly_combined;
+
+			const size_t poly0_vertex_count= poly0.size() - ( adjusted_end0 - adjusted_start0 );
+			const size_t poly1_vertex_count= poly1.size() - ( adjusted_end1 - adjusted_start1 );
+			for( size_t i= 0u; i < poly0_vertex_count; ++i )
+				poly_combined.push_back( poly0[ ( adjusted_end0 + p0_size_add + i ) % poly0.size() ] );
+			for( size_t i= 0u; i < poly1_vertex_count; ++i )
+				poly_combined.push_back( poly1[ ( adjusted_end1 + p1_size_add + i ) % poly1.size() ] );
+
+			result[p0]= std::move( poly_combined );
+			if( p1 + 1u < result.size() )
+				result[p1]= std::move( result.back() );
+			result.pop_back();
+
+			goto next_iteration;
+		}
+
+		break;
+		next_iteration:;
+	}
 
 	return result;
 }
