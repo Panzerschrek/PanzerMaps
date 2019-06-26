@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include "../common/assert.hpp"
 #include "../common/data_file.hpp"
@@ -118,6 +119,13 @@ struct ArealObjectVertex
 };
 
 static const uint16_t c_primitive_restart_index= 65535u;
+
+static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line )
+{
+	// TODO - simplify, using line width.
+	// TODO - fix equal points in source data.
+	line.erase( std::unique( line.begin(), line.end() ), line.end() );
+}
 
 // Creates triangle strip mesh.
 static void CreatePolygonalLine(
@@ -281,7 +289,9 @@ struct MapDrawer::Chunk
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
 					if( ( vertex.x & vertex.y ) == 65535u )
 					{
-						CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+						SimplifyLine( tmp_vertices );
+						if( tmp_vertices.size() >= 2u )
+							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
 						tmp_vertices.clear();
 					}
 					else

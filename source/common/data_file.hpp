@@ -19,6 +19,9 @@ struct ChunkVertex
 	ChunkCoordType y;
 };
 
+bool operator==(const ChunkVertex& l, const ChunkVertex& r );
+bool operator!=(const ChunkVertex& l, const ChunkVertex& r );
+
 struct Chunk
 {
 	// All offsets - from start of chunk.
