@@ -5,8 +5,9 @@ int main()
 	using namespace PanzerMaps;
 
 	CreateDataFile(
-		TransformCoordinates(
-			ParseOSM( "maps_src/Щ.osm" ) ),
+		NormalizePolygons(
+			TransformCoordinates(
+				ParseOSM( "maps_src/Щ.osm" ) ) ),
 		LoadStyles( "source/styles.json" ),
 		"map.pm" );
 }

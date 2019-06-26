@@ -1,10 +1,10 @@
 #pragma once
-#include "coordinates_transformation_pass.hpp"
+#include "polygons_normalization_pass.hpp"
 #include "styles.hpp"
 
 namespace PanzerMaps
 {
 
-void CreateDataFile( const CoordinatesTransformationPassResult& prepared_data, const Styles& styles, const char* const file_name );
+void CreateDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles, const char* const file_name );
 
 } // namespace PanzerMaps
