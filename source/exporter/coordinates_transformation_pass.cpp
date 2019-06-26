@@ -32,10 +32,10 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 	}
 
 	// Calculate unit scale.
-	// For point with maximum latitude we must have accuracy, near to expected.
+	// For closest to equator point we must have accuracy, near to expected.
 	const double c_required_accuracy_m= 0.2; // 20 cm
-	const int32_t max_abs_y= std::max( std::abs( result.max_point.y ), std::abs( result.min_point.y ) );
-	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, max_abs_y } ).y * Constants::deg_to_rad );
+	const int32_t min_abs_y= std::min( std::abs( result.max_point.y ), std::abs( result.min_point.y ) );
+	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, min_abs_y } ).y * Constants::deg_to_rad );
 	const double scale_calculated= 4294967296.0 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
 	result.coordinates_scale= std::max( 1, static_cast<int32_t>(scale_calculated) );
 
