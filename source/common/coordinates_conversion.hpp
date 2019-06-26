@@ -8,7 +8,8 @@ namespace Constants
 {
 
 const double pi = 3.1415926535;
-const double earth_radius_m = 6371000;
+const double earth_radius_m = 6371000.0;
+const double earth_equator_length_m= earth_radius_m * 2.0 * pi;
 
 const double deg_to_rad = pi / 180.0;
 const double rad_to_deg = 180.0 / pi;
@@ -33,6 +34,7 @@ struct MercatorPoint
 bool operator==( const MercatorPoint& l, const MercatorPoint& r );
 bool operator!=( const MercatorPoint& l, const MercatorPoint& r );
 
-MercatorPoint GeoPointToWebMercatorPoint( const GeoPoint& point );
+MercatorPoint GeoPointToMercatorPoint( const GeoPoint& point );
+GeoPoint MercatorPointToGeoPoint( const MercatorPoint& point );
 
 } // namespace PanzerMaps

@@ -11,6 +11,7 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	MercatorPoint max_point;
 
 	MercatorPoint start_point;
+	 // Scale to Mercator unit.
 	int coordinates_scale;
 
 	// Scaled and shifted.

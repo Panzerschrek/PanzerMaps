@@ -16,14 +16,14 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		return result;
 	}
 
-	result.min_point= result.max_point= GeoPointToWebMercatorPoint( prepared_data.vertices.front() );
+	result.min_point= result.max_point= GeoPointToMercatorPoint( prepared_data.vertices.front() );
 
 	// Convert geo points to projection, calculate bounding box.
 	std::vector<MercatorPoint> src_vetices_converted;
 	src_vetices_converted.reserve( prepared_data.vertices.size() );
 	for( const GeoPoint& geo_point : prepared_data.vertices )
 	{
-		const MercatorPoint mercator_point= GeoPointToWebMercatorPoint(geo_point);
+		const MercatorPoint mercator_point= GeoPointToMercatorPoint(geo_point);
 		result.min_point.x= std::min( result.min_point.x, mercator_point.x );
 		result.min_point.y= std::min( result.min_point.y, mercator_point.y );
 		result.max_point.x= std::max( result.max_point.x, mercator_point.x );
@@ -31,7 +31,14 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		src_vetices_converted.push_back( mercator_point );
 	}
 
-	result.coordinates_scale= 20; // TODO - make data-dependent
+	// Calculate unit scale.
+	// For point with maximum latitude we must have accuracy, near to expected.
+	const double c_required_accuracy_m= 0.2; // 20 cm
+	const int32_t max_abs_y= std::max( std::abs( result.max_point.y ), std::abs( result.min_point.y ) );
+	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, max_abs_y } ).y * Constants::deg_to_rad );
+	const double scale_calculated= 4294967296.0 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
+	result.coordinates_scale= std::max( 1, static_cast<int32_t>(scale_calculated) );
+
 	result.start_point.x= result.min_point.x / result.coordinates_scale * result.coordinates_scale;
 	result.start_point.y= result.min_point.y / result.coordinates_scale * result.coordinates_scale;
 
