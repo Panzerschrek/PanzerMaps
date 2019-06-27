@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cstring>
 #include "../common/assert.hpp"
 #include "../common/coordinates_conversion.hpp"
@@ -143,8 +143,6 @@ static void CreatePolygonalLine(
 {
 	PM_ASSERT( vertex_count >= 2u );
 
-	// TODO - add roundings for front and back.
-
 	// Use float coordinates, because uint16_t is too low for polygonal lines with small width.
 	m_Vec2 prev_edge_base_vec;
 	{
@@ -196,31 +194,80 @@ static void CreatePolygonalLine(
 
 	for( size_t i= 1u; i < vertex_count - 1u; ++i )
 	{
-		const m_Vec2 edge_dir( float(in_vertices[i+1u].x - float(in_vertices[i].x)), float(in_vertices[i+1u].y) - float(in_vertices[i].y) );
+		const m_Vec2 vert( float(in_vertices[i].x), float(in_vertices[i].y) );
+
+		const m_Vec2 edge_dir( float(in_vertices[i+1u].x) - vert.x, float(in_vertices[i+1u].y) - vert.y );
 		PM_ASSERT( edge_dir.Length() > 0.0f );
 		const float edge_inv_length= edge_dir.InvLength();
 		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
 
-		m_Vec2 vertex_base_vec= ( prev_edge_base_vec + edge_base_vec ) * 0.5f;
-		// TODO - add rounding for sharp corners.
-		const float vertex_base_vec_square_len= std::max( 0.1f, vertex_base_vec.SquareLength() );
-		vertex_base_vec/= vertex_base_vec_square_len;
+		const m_Vec2 vertex_base_vec= ( prev_edge_base_vec + edge_base_vec ) * 0.5f;
+		const float vertex_base_vec_inv_square_len= 1.0f / std::max( 0.1f, vertex_base_vec.SquareLength() );
 
-		const float vertex_shift_x= vertex_base_vec.x * half_width;
-		const float vertex_shift_y= vertex_base_vec.y * half_width;
+		const float edges_dir_dot= prev_edge_base_vec * edge_base_vec;
 
-		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
-		out_vertices.push_back(
-			PolygonalLinearObjectVertex{ {
-					float(in_vertices[i].x) + vertex_shift_x,
-					float(in_vertices[i].y) + vertex_shift_y },
-				color_index } );
-		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
-		out_vertices.push_back(
-			PolygonalLinearObjectVertex{ {
-					float(in_vertices[i].x) - vertex_shift_x,
-					float(in_vertices[i].y) - vertex_shift_y },
-				color_index } );
+		const float c_rounding_ange= float(Constants::pi / 5.0);
+		const float c_rounding_ange_cos= std::cos(c_rounding_ange);
+		if( edges_dir_dot >= c_rounding_ange_cos )
+		{
+			const float vertex_shift_x= vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len );
+			const float vertex_shift_y= vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len );
+
+			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+			out_vertices.push_back(
+				PolygonalLinearObjectVertex{ {
+						vert.x + vertex_shift_x,
+						vert.y + vertex_shift_y },
+					color_index } );
+			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+			out_vertices.push_back(
+				PolygonalLinearObjectVertex{ {
+						vert.x - vertex_shift_x,
+						vert.y - vertex_shift_y },
+					color_index } );
+		}
+		else
+		{
+			const float angle= std::atan2( mVec2Cross( prev_edge_base_vec, edge_base_vec ), edges_dir_dot );
+			const float angle_abs= std::abs(angle);
+			const size_t rounding_edges= std::max( size_t(1u), size_t(angle_abs / c_rounding_ange) );
+
+			const float sign= angle > 0.0f ? 1.0f : -1.0f;
+
+			const uint16_t corner_vertex_index= static_cast<uint16_t>(out_vertices.size());
+			out_vertices.push_back(
+				PolygonalLinearObjectVertex{ {
+						vert.x - vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len * sign ),
+						vert.y - vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len * sign ) },
+					color_index } );
+
+			const m_Vec2 vertex_shift= prev_edge_base_vec * ( half_width * sign );
+			const float angle_step= angle / float(rounding_edges);
+			for( size_t i= 0u; i <= rounding_edges; ++i )
+			{
+				// Create one normal and one degenerated triangle.
+				if( sign > 0.0f )
+				{
+					out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+					out_indices.push_back( corner_vertex_index );
+				}
+				else
+				{
+					out_indices.push_back( corner_vertex_index );
+					out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+				}
+
+				const float vert_angle= angle_step * float(i);
+				const float vert_angle_cos= std::cos(vert_angle);
+				const float vert_angle_sin= std::sin(vert_angle);
+
+				out_vertices.push_back(
+					PolygonalLinearObjectVertex{ {
+							vert.x + vertex_shift.x * vert_angle_cos - vertex_shift.y * vert_angle_sin,
+							vert.y + vertex_shift.x * vert_angle_sin + vertex_shift.y * vert_angle_cos },
+						color_index } );
+			}
+		}
 
 		prev_edge_base_vec= edge_base_vec;
 	}
