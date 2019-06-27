@@ -13,13 +13,16 @@ namespace PanzerMaps
 namespace Shaders
 {
 
+const std::string version_prefix=
+R"(#version 300 es
+)";
+
 const char point_vertex[]=
 R"(
-	#version 330
-	uniform mat4 view_matrix;
-	in vec2 pos;
-	in float color_index;
-	out vec4 f_color;
+	uniform highp mat4 view_matrix;
+	in highp vec2 pos;
+	in highp float color_index;
+	out highp vec4 f_color;
 	void main()
 	{
 		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
@@ -29,12 +32,11 @@ R"(
 
 const char point_fragment[]=
 R"(
-	#version 330
-	in vec4 f_color;
-	out vec4 color;
+	in highp vec4 f_color;
+	out highp vec4 color;
 	void main()
 	{
-		vec2 r= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
+		highp vec2 r= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
 		if( dot( r, r ) > 1.0 )
 			discard;
 		color= f_color * step( 0.0, r.x * r.y );
@@ -43,24 +45,22 @@ R"(
 
 const char linear_vertex[]=
 R"(
-	#version 330
-	uniform sampler1D tex;
-	uniform mat4 view_matrix;
-	in vec2 pos;
-	in float color_index;
-	out vec4 f_color;
+	uniform sampler2D tex;
+	uniform highp mat4 view_matrix;
+	in highp vec2 pos;
+	in highp float color_index;
+	out highp vec4 f_color;
 	void main()
 	{
-		f_color= texelFetch( tex, int(color_index), 0 );
+		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
 
 const char linear_fragment[]=
 R"(
-	#version 330
-	in vec4 f_color;
-	out vec4 color;
+	in highp vec4 f_color;
+	out highp vec4 color;
 	void main()
 	{
 		color= f_color;
@@ -69,24 +69,22 @@ R"(
 
 const char areal_vertex[]=
 R"(
-	#version 330
-	uniform sampler1D tex;
-	uniform mat4 view_matrix;
-	in vec2 pos;
-	in float color_index;
-	out vec4 f_color;
+	uniform sampler2D tex;
+	uniform highp mat4 view_matrix;
+	in highp vec2 pos;
+	in highp float color_index;
+	out highp vec4 f_color;
 	void main()
 	{
-		f_color= texelFetch( tex, int(color_index), 0 );
+		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
 
 const char areal_fragment[]=
 R"(
-	#version 330
-	in vec4 f_color;
-	out vec4 color;
+	in highp vec4 f_color;
+	out highp vec4 color;
 	void main()
 	{
 		color= f_color;
@@ -590,10 +588,10 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 			std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
 
 		glGenTextures( 1, &linear_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		glBindTexture( GL_TEXTURE_2D, linear_objects_texture_id_ );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 256u, 1u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 	}
 	{
 		DataFileDescription::ColorRGBA texture_data[256u]= {0};
@@ -602,26 +600,25 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
 
 		glGenTextures( 1, &areal_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		glBindTexture( GL_TEXTURE_2D, areal_objects_texture_id_ );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, 256u, 1u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 	}
 	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
 
 	// Create shaders
-
-	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
+	point_objets_shader_.ShaderSource( Shaders::version_prefix + Shaders::point_fragment, Shaders::version_prefix + Shaders::point_vertex );
 	point_objets_shader_.SetAttribLocation( "pos", 0 );
 	point_objets_shader_.SetAttribLocation( "color_index", 1 );
 	point_objets_shader_.Create();
 
-	linear_objets_shader_.ShaderSource( Shaders::linear_fragment, Shaders::linear_vertex );
+	linear_objets_shader_.ShaderSource( Shaders::version_prefix + Shaders::linear_fragment, Shaders::version_prefix + Shaders::linear_vertex );
 	linear_objets_shader_.SetAttribLocation( "pos", 0 );
 	linear_objets_shader_.SetAttribLocation( "color_index", 1 );
 	linear_objets_shader_.Create();
 
-	areal_objects_shader_.ShaderSource( Shaders::areal_fragment, Shaders::areal_vertex );
+	areal_objects_shader_.ShaderSource( Shaders::version_prefix + Shaders::areal_fragment, Shaders::version_prefix + Shaders::areal_vertex );
 	areal_objects_shader_.SetAttribLocation( "pos", 0 );
 	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
 	areal_objects_shader_.Create();
@@ -698,10 +695,9 @@ void MapDrawer::Draw()
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_2D, areal_objects_texture_id_ );
 
-		glEnable( GL_PRIMITIVE_RESTART );
-		glPrimitiveRestartIndex( c_primitive_restart_index );
+		glEnable( GL_PRIMITIVE_RESTART_FIXED_INDEX );
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
 			if( chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetVertexDataSize() == 0u )
@@ -716,10 +712,9 @@ void MapDrawer::Draw()
 		linear_objets_shader_.Bind();
 		linear_objets_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_2D, linear_objects_texture_id_ );
 
-		glEnable( GL_PRIMITIVE_RESTART );
-		glPrimitiveRestartIndex( c_primitive_restart_index );
+		glEnable( GL_PRIMITIVE_RESTART_FIXED_INDEX );
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
 			if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u &&
