@@ -51,7 +51,10 @@ Styles LoadStyles( const char* const file_name )
 
 	const PanzerJson::Parser::ResultPtr json_parse_result= PanzerJson::Parser().Parse( static_cast<const char*>(file->Data()), file->Size() );
 	if( json_parse_result->error != PanzerJson::Parser::Result::Error::NoError )
+	{
+		Log::FatalError( "styles json parse error. Error code: ", int(json_parse_result->error) );
 		return result;
+	}
 
 	if( !json_parse_result->root.IsObject() )
 	{

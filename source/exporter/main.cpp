@@ -71,6 +71,7 @@ Usage:
 		return -1;
 	}
 
+	const Styles styles= LoadStyles( style_file.c_str() );
 	OSMParseResult osm_parse_result= ParseOSM( input_files.front().c_str() );
 
 	CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result );
@@ -81,6 +82,6 @@ Usage:
 
 	CreateDataFile(
 		normalize_polygons_result,
-		LoadStyles( style_file.c_str() ),
+		styles,
 		output_file.c_str() );
 }
