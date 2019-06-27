@@ -78,5 +78,29 @@
         {
             "color" : "#d9d0c9"
         }
-    }
+    },
+
+    "areal_phases" :
+    [
+        {
+            "classes" :
+            [
+                "Water",
+                "Grassland",
+                "Cemetery",
+                "Industrial",
+                "Residential",
+                "Administrative",
+                "Wood"
+            ],
+            "allow_collinear_points_removing" : false
+        },
+        {
+            "classes":
+            [
+                "Building"
+            ],
+            "allow_collinear_points_removing" : true
+        }
+    ]
 }
