@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstring>
 #include "../common/assert.hpp"
+#include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "../common/memory_mapped_file.hpp"
@@ -119,6 +120,10 @@ struct ArealObjectVertex
 };
 
 static const uint16_t c_primitive_restart_index= 65535u;
+static const float c_cos_plus_45 = +std::sqrt(0.5f);
+static const float c_sin_plus_45 = +std::sqrt(0.5f);
+static const float c_cos_minus_45= +std::sqrt(0.5f);
+static const float c_sin_minus_45= -std::sqrt(0.5f);
 
 static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line )
 {
@@ -151,17 +156,39 @@ static void CreatePolygonalLine(
 		const float edge_shift_x= edge_base_vec.x * half_width;
 		const float edge_shift_y= edge_base_vec.y * half_width;
 
+		const m_Vec2 vert0( float(in_vertices[0u].x), float(in_vertices[0u].y) );
+		// Cup.
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
-					float(in_vertices[0u].x) + edge_shift_x,
-					float(in_vertices[0u].y) + edge_shift_y },
+					vert0.x + edge_shift_y,
+					vert0.y - edge_shift_x },
 				color_index } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
-					float(in_vertices[0u].x - edge_shift_x ),
-					float(in_vertices[0u].y - edge_shift_y ) },
+					vert0.x + edge_shift_x * c_cos_minus_45 - edge_shift_y * c_sin_minus_45,
+					vert0.y + edge_shift_x * c_sin_minus_45 + edge_shift_y * c_cos_minus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert0.x - edge_shift_x * c_cos_plus_45 + edge_shift_y * c_sin_plus_45,
+					vert0.y - edge_shift_x * c_sin_plus_45 - edge_shift_y * c_cos_plus_45 },
+				color_index } );
+
+		// Start of line.
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert0.x + edge_shift_x,
+					vert0.y + edge_shift_y },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert0.x - edge_shift_x,
+					vert0.y - edge_shift_y },
 				color_index } );
 
 		prev_edge_base_vec= edge_base_vec;
@@ -202,17 +229,40 @@ static void CreatePolygonalLine(
 		const float edge_shift_x= prev_edge_base_vec.x * half_width;
 		const float edge_shift_y= prev_edge_base_vec.y * half_width;
 
+		const m_Vec2 vert_last( float(in_vertices[vertex_count-1u].x), float(in_vertices[vertex_count-1u].y) );
+
+		// End of line
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
-					float(in_vertices[vertex_count-1u].x) + edge_shift_x,
-					float(in_vertices[vertex_count-1u].y) + edge_shift_y },
+					vert_last.x + edge_shift_x,
+					vert_last.y + edge_shift_y },
 				color_index } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
-					float(in_vertices[vertex_count-1u].x) - edge_shift_x,
-					float(in_vertices[vertex_count-1u].y) - edge_shift_y },
+					vert_last.x - edge_shift_x,
+					vert_last.y - edge_shift_y },
+				color_index } );
+
+		// Cup.
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert_last.x + edge_shift_x * c_cos_plus_45 - edge_shift_y * c_sin_plus_45,
+					vert_last.y + edge_shift_x * c_sin_plus_45 + edge_shift_y * c_cos_plus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert_last.x - edge_shift_x * c_cos_minus_45 + edge_shift_y * c_sin_minus_45,
+					vert_last.y - edge_shift_x * c_sin_minus_45 - edge_shift_y * c_cos_minus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert_last.x - edge_shift_y,
+					vert_last.y + edge_shift_x },
 				color_index } );
 	}
 	out_indices.push_back( c_primitive_restart_index );
