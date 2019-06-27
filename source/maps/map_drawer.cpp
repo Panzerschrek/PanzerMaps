@@ -284,20 +284,19 @@ static void CreatePolygonalLine(
 		const float c_rounding_ange_cos= std::cos(c_rounding_ange);
 		if( edges_dir_dot >= c_rounding_ange_cos )
 		{
-			const float vertex_shift_x= vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len );
-			const float vertex_shift_y= vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len );
+			const m_Vec2 vertex_shift= vertex_base_vec * ( half_width * vertex_base_vec_inv_square_len );
 
 			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 			out_vertices.push_back(
 				PolygonalLinearObjectVertex{ {
-						vert.x + vertex_shift_x,
-						vert.y + vertex_shift_y },
+						vert.x + vertex_shift.x,
+						vert.y + vertex_shift.y },
 					color_index } );
 			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 			out_vertices.push_back(
 				PolygonalLinearObjectVertex{ {
-						vert.x - vertex_shift_x,
-						vert.y - vertex_shift_y },
+						vert.x - vertex_shift.x,
+						vert.y - vertex_shift.y },
 					color_index } );
 		}
 		else
@@ -630,10 +629,8 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	// Setup camera
 	if( !chunks_.empty() )
 	{
-		min_cam_pos_.x= +1e20f;
-		min_cam_pos_.y= +1e20f;
-		max_cam_pos_.x= -1e20f;
-		max_cam_pos_.y= -1e20f;
+		min_cam_pos_= m_Vec2( +1e20f, +1e20f );
+		max_cam_pos_= m_Vec2( -1e20f, -1e20f );
 		for( const Chunk& chunk : chunks_ )
 		{
 			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
@@ -643,9 +640,9 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		}
 	}
 	else
-		min_cam_pos_.x= max_cam_pos_.x= min_cam_pos_.y= max_cam_pos_.y= 0.0f;
-	cam_pos_.x= ( min_cam_pos_.x + max_cam_pos_.x ) * 0.5f;
-	cam_pos_.y= ( min_cam_pos_.y + max_cam_pos_.y ) * 0.5f;
+		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
+	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
+
 	min_scale_= 1.0f;
 	max_scale_= std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
