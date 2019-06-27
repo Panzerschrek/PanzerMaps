@@ -14,6 +14,8 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	 // Scale to Mercator unit.
 	int coordinates_scale;
 
+	float meters_in_unit; // Meters in unit for center.
+
 	// Scaled and shifted.
 	using VertexTranspormed= MercatorPoint;
 

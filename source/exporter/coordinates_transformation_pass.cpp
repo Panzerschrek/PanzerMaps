@@ -36,8 +36,11 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 	const double c_required_accuracy_m= 0.2; // 20 cm
 	const int32_t min_abs_y= std::min( std::abs( result.max_point.y ), std::abs( result.min_point.y ) );
 	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, min_abs_y } ).y * Constants::deg_to_rad );
-	const double scale_calculated= 4294967296.0 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
+	const double scale_calculated= Constants::two_pow_32 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
 	result.coordinates_scale= std::max( 1, static_cast<int32_t>(scale_calculated) );
+
+	const double average_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, result.min_point.y / 2 + result.max_point.y / 2 } ).y * Constants::deg_to_rad );
+	result.meters_in_unit= static_cast<float>( double(result.coordinates_scale) * Constants::earth_equator_length_m * average_latitude_scale / Constants::two_pow_32 );
 
 	result.start_point.x= result.min_point.x / result.coordinates_scale * result.coordinates_scale;
 	result.start_point.y= result.min_point.y / result.coordinates_scale * result.coordinates_scale;

@@ -78,6 +78,7 @@ struct PointObjectStyle
 struct LinearObjectStyle
 {
 	ColorRGBA color;
+	uint32_t width_mul_256; // Width of line, in units, multiplied by 256
 };
 
 struct ArealObjectStyle

@@ -132,12 +132,11 @@ static void CreatePolygonalLine(
 	const DataFileDescription::ChunkVertex* const in_vertices,
 	const size_t vertex_count,
 	const uint32_t color_index,
+	const float half_width,
 	std::vector<PolygonalLinearObjectVertex>& out_vertices,
 	std::vector<uint16_t>& out_indices )
 {
 	PM_ASSERT( vertex_count >= 2u );
-
-	const float half_width= 5.0f;
 
 	// TODO - add roundings for front and back.
 
@@ -221,10 +220,15 @@ static void CreatePolygonalLine(
 
 struct MapDrawer::Chunk
 {
-	explicit Chunk( const DataFileDescription::Chunk& in_chunk )
+	Chunk(
+		const DataFileDescription::Chunk& in_chunk,
+		const DataFileDescription::LinearObjectStyle* const linear_styles,
+		const DataFileDescription::ArealObjectStyle* const areal_styles )
 		: coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
 		, bb_min_x_(in_chunk.min_x), bb_min_y_(in_chunk.min_y), bb_max_x_(in_chunk.max_x), bb_max_y_(in_chunk.max_y)
 	{
+		(void)areal_styles;
+
 		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
 		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
 		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + in_chunk.point_object_groups_offset );
@@ -255,12 +259,31 @@ struct MapDrawer::Chunk
 			}
 		}
 
-		if( false )
+		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
+		// Or draw it as "GL_TRIANGLE_STRIP".
+		std::vector<DataFileDescription::ChunkVertex> tmp_vertices;
+		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
 		{
-			// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
-			for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
+			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
+			if( linear_styles[group.style_index].width_mul_256 > 0 )
 			{
-				const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
+				const float half_width= float(linear_styles[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
+				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
+				{
+					const DataFileDescription::ChunkVertex& vertex= vertices[v];
+					if( ( vertex.x & vertex.y ) == 65535u )
+					{
+						SimplifyLine( tmp_vertices );
+						if( tmp_vertices.size() >= 2u )
+							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+						tmp_vertices.clear();
+					}
+					else
+						tmp_vertices.push_back(vertex);
+				}
+			}
+			else
+			{
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
@@ -275,27 +298,6 @@ struct MapDrawer::Chunk
 						linear_objects_indicies.push_back( static_cast<uint16_t>( linear_objects_vertices.size() ) );
 						linear_objects_vertices.push_back( out_vertex );
 					}
-				}
-			}
-		}
-		else
-		{
-			std::vector<DataFileDescription::ChunkVertex> tmp_vertices;
-			for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
-			{
-				const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
-				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
-				{
-					const DataFileDescription::ChunkVertex& vertex= vertices[v];
-					if( ( vertex.x & vertex.y ) == 65535u )
-					{
-						SimplifyLine( tmp_vertices );
-						if( tmp_vertices.size() >= 2u )
-							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
-						tmp_vertices.clear();
-					}
-					else
-						tmp_vertices.push_back(vertex);
 				}
 			}
 		}
@@ -396,6 +398,9 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		return;
 	}
 
+	const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
+	const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
+
 	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + data_file.chunks_description_offset );
 
 	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
@@ -403,14 +408,12 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		const size_t chunk_offset= chunks_description[chunk_index].offset;
 		const unsigned char* const chunk_data= file_content + chunk_offset;
 		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
-		chunks_.emplace_back( chunk );
+		chunks_.emplace_back( chunk, linear_styles, areal_styles );
 	}
 
 	// Create textures
 	{
 		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
 
 		for( uint32_t i= 0u; i < data_file.linear_styles_count; ++i )
 			std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
@@ -423,8 +426,6 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	}
 	{
 		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
 
 		for( uint32_t i= 0u; i < data_file.areal_styles_count; ++i )
 			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );

@@ -86,6 +86,10 @@ Styles LoadStyles( const char* const file_name )
 
 		if( linear_style_json.second.IsMember( "color" ) )
 			ParseColor( linear_style_json.second["color"].AsString(), out_style.color );
+
+		const PanzerJson::Value& width_m_json= linear_style_json.second["width_m"];
+		if( width_m_json.IsNumber() )
+			out_style.width_m= width_m_json.AsFloat();
 	}
 
 	for( const auto& areal_style_json : json_parse_result->root["areal_styles"].object_elements() )
