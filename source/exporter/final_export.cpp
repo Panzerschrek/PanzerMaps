@@ -225,7 +225,6 @@ static ChunksData DumpDataChunk(
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-	// TODO - asssert, if data chunk contains >= 65535 vertices.
 
 	const CoordinatesTransformationPassResult::VertexTranspormed min_point{
 		chunk_offset_x - ( 65535 - c_max_chunk_size ) / 2,
@@ -239,6 +238,7 @@ static ChunksData DumpDataChunk(
 	get_chunk().max_y= chunk_offset_y + chunk_size;
 
 	std::vector<ChunkVertex> vertices;
+	size_t linear_vertex_count= 0u;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
 	{
 		get_chunk().point_object_groups_offset= static_cast<uint32_t>(result.size());
@@ -340,9 +340,10 @@ static ChunksData DumpDataChunk(
 					const int32_t vertex_x= polyline_part_vertex.x - min_point.x;
 					const int32_t vertex_y= polyline_part_vertex.y - min_point.y;
 					vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
-
+					++linear_vertex_count;
 				}
 				vertices.push_back(break_primitive_vertex);
+				++linear_vertex_count;
 			}
 		}
 		if( prev_class != LinearObjectClass::None )
@@ -416,8 +417,9 @@ static ChunksData DumpDataChunk(
 		}
 	}
 
-	// If result chunk contains more vertices, then limit, split it into subchunks.
-	if( vertices.size() >= 32768u )
+	// We have vertex limit= 2^16.
+	// For linear objects we limit vertex count, using approximation 4 vertices for each line vertex.
+	if( vertices.size() >= 65535u || linear_vertex_count >= 65535u / 4u )
 	{
 		ChunksData result;
 		result.reserve(4u);
