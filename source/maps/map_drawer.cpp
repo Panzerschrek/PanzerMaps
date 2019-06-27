@@ -137,20 +137,20 @@ static void CreatePolygonalLine(
 {
 	PM_ASSERT( vertex_count >= 2u );
 
-	const float width= 5.0f;
+	const float half_width= 5.0f;
 
 	// TODO - add roundings for front and back.
 
 	// Use float coordinates, because uint16_t is too low for polygonal lines with small width.
 	m_Vec2 prev_edge_base_vec;
 	{
-		const m_Vec2 edge_dir( float(in_vertices[1u].x - in_vertices[0u].x), float(in_vertices[1u].y - in_vertices[0u].y) );
+		const m_Vec2 edge_dir( float(in_vertices[1u].x) - float(in_vertices[0u].x), float(in_vertices[1u].y) - float(in_vertices[0u].y) );
 		PM_ASSERT( edge_dir.Length() > 0.0f );
 		const float edge_inv_length= edge_dir.InvLength();
 		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
 
-		const float edge_shift_x= edge_base_vec.x * width;
-		const float edge_shift_y= edge_base_vec.y * width;
+		const float edge_shift_x= edge_base_vec.x * half_width;
+		const float edge_shift_y= edge_base_vec.y * half_width;
 
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
@@ -170,7 +170,7 @@ static void CreatePolygonalLine(
 
 	for( size_t i= 1u; i < vertex_count - 1u; ++i )
 	{
-		const m_Vec2 edge_dir( float(in_vertices[i+1u].x - in_vertices[i].x), float(in_vertices[i+1u].y - in_vertices[i].y) );
+		const m_Vec2 edge_dir( float(in_vertices[i+1u].x - float(in_vertices[i].x)), float(in_vertices[i+1u].y) - float(in_vertices[i].y) );
 		PM_ASSERT( edge_dir.Length() > 0.0f );
 		const float edge_inv_length= edge_dir.InvLength();
 		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
@@ -180,8 +180,8 @@ static void CreatePolygonalLine(
 		const float vertex_base_vec_square_len= std::max( 0.1f, vertex_base_vec.SquareLength() );
 		vertex_base_vec/= vertex_base_vec_square_len;
 
-		const float vertex_shift_x= vertex_base_vec.x * width;
-		const float vertex_shift_y= vertex_base_vec.y * width;
+		const float vertex_shift_x= vertex_base_vec.x * half_width;
+		const float vertex_shift_y= vertex_base_vec.y * half_width;
 
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
@@ -200,8 +200,8 @@ static void CreatePolygonalLine(
 	}
 
 	{
-		const float edge_shift_x= prev_edge_base_vec.x * width;
-		const float edge_shift_y= prev_edge_base_vec.y * width;
+		const float edge_shift_x= prev_edge_base_vec.x * half_width;
+		const float edge_shift_y= prev_edge_base_vec.y * half_width;
 
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
