@@ -154,7 +154,69 @@ static void CreatePolygonalLine(
 	std::vector<PolygonalLinearObjectVertex>& out_vertices,
 	std::vector<uint16_t>& out_indices )
 {
-	PM_ASSERT( vertex_count >= 2u );
+	PM_ASSERT( vertex_count != 0u );
+
+	if( vertex_count == 1u )
+	{
+		// Line was too simplifyed, draw only caps.
+		const m_Vec2 vert( float(in_vertices[0u].x), float(in_vertices[0u].y) );
+		const m_Vec2 edge_shift( 0.0f, half_width );
+
+		// Cup0
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x + edge_shift.y,
+					vert.y - edge_shift.x },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x + edge_shift.x * c_cos_minus_45 - edge_shift.y * c_sin_minus_45,
+					vert.y + edge_shift.x * c_sin_minus_45 + edge_shift.y * c_cos_minus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x - edge_shift.x * c_cos_plus_45 + edge_shift.y * c_sin_plus_45,
+					vert.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
+				color_index } );
+		// Center.
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x + edge_shift.x,
+					vert.y + edge_shift.y },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x - edge_shift.x,
+					vert.y - edge_shift.y },
+				color_index } );
+		// Cup1
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x + edge_shift.x * c_cos_plus_45 - edge_shift.y * c_sin_plus_45,
+					vert.y + edge_shift.x * c_sin_plus_45 + edge_shift.y * c_cos_plus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x - edge_shift.x * c_cos_minus_45 + edge_shift.y * c_sin_minus_45,
+					vert.y - edge_shift.x * c_sin_minus_45 - edge_shift.y * c_cos_minus_45 },
+				color_index } );
+		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
+		out_vertices.push_back(
+			PolygonalLinearObjectVertex{ {
+					vert.x - edge_shift.y,
+					vert.y + edge_shift.x },
+				color_index } );
+
+		out_indices.push_back( c_primitive_restart_index );
+		return;
+	}
 
 	// Use float coordinates, because uint16_t is too low for polygonal lines with small width.
 	m_Vec2 prev_edge_base_vec;
@@ -381,7 +443,7 @@ struct MapDrawer::Chunk
 					if( ( vertex.x & vertex.y ) == 65535u )
 					{
 						SimplifyLine( tmp_vertices, square_half_width );
-						if( tmp_vertices.size() >= 2u )
+						if( !tmp_vertices.empty() )
 							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
 						tmp_vertices.clear();
 					}
