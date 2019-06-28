@@ -44,8 +44,7 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 	const double average_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, result.min_point.y / 2 + result.max_point.y / 2 } ).y * Constants::deg_to_rad );
 	result.meters_in_unit= static_cast<float>( double(result.coordinates_scale) * Constants::earth_equator_length_m * average_latitude_scale / Constants::two_pow_32 );
 
-	result.start_point.x= result.min_point.x / result.coordinates_scale * result.coordinates_scale;
-	result.start_point.y= result.min_point.y / result.coordinates_scale * result.coordinates_scale;
+	result.start_point= result.min_point;
 
 	const auto convert_point=
 	[&result]( MercatorPoint point ) -> MercatorPoint

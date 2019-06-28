@@ -439,6 +439,10 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 		const int32_t chunks_x= ( zoom_level_data.max_point.x / zoom_level_data.coordinates_scale - zoom_level_data.start_point.x / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
 		const int32_t chunks_y= ( zoom_level_data.max_point.y / zoom_level_data.coordinates_scale - zoom_level_data.start_point.y / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
 
+		// All zoom levels must have same start point.
+		PM_ASSERT( zoom_level_data.min_point == prepared_data.front().min_point );
+		PM_ASSERT( zoom_level_data.start_point == prepared_data.front().start_point );
+
 		ChunksData final_chunks_data;
 		for( int32_t x= 0; x < chunks_x; ++x )
 		for( int32_t y= 0; y < chunks_y; ++y )
