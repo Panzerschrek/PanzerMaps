@@ -93,6 +93,12 @@ struct CommonStyle
 	ColorRGBA background_color;
 };
 
+struct ZoomLevel
+{
+	uint32_t chunks_description_offset;
+	uint32_t chunk_count;
+};
+
 struct DataFile
 {
 	struct ChunkDescription
@@ -109,8 +115,8 @@ struct DataFile
 	uint8_t header[16];
 	uint32_t version;
 
-	uint32_t chunks_description_offset;
-	uint32_t chunk_count;
+	uint32_t zoom_levels_offset;
+	uint32_t zoom_level_count;
 
 	uint32_t point_styles_offset;
 	uint32_t point_styles_count;

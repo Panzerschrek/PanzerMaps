@@ -100,7 +100,7 @@ Usage:
 	}
 
 	CreateDataFile(
-		ou_data_by_zoom_level.front(),
+		ou_data_by_zoom_level,
 		styles,
 		output_file.c_str() );
 }

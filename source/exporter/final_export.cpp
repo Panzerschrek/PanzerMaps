@@ -405,7 +405,7 @@ static ChunksData DumpDataChunk(
 	return { result };
 }
 
-static std::vector<unsigned char> DumpDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles )
+static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles )
 {
 	Log::Info( "Final export: " );
 
@@ -419,39 +419,57 @@ static std::vector<unsigned char> DumpDataFile( const PolygonsNormalizationPassR
 	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
 	get_data_file().version= DataFile::c_expected_version;
 
-	const int32_t used_chunk_size= c_max_chunk_size;
-	const int32_t chunks_x= ( prepared_data.max_point.x / prepared_data.coordinates_scale - prepared_data.start_point.x / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
-	const int32_t chunks_y= ( prepared_data.max_point.y / prepared_data.coordinates_scale - prepared_data.start_point.y / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+	get_data_file().zoom_levels_offset= static_cast<uint32_t>( result.size() );
+	get_data_file().zoom_level_count= static_cast<uint32_t>( prepared_data.size() );
+	result.resize( result.size() + prepared_data.size() * sizeof(ZoomLevel) );
+	const auto get_zoom_levels= [&]() -> ZoomLevel* { return reinterpret_cast<ZoomLevel*>( result.data() + get_data_file().zoom_levels_offset ); };
 
-	ChunksData final_chunks_data;
-	for( int32_t x= 0; x < chunks_x; ++x )
-	for( int32_t y= 0; y < chunks_y; ++y )
+	for( size_t zoom_level_index= 0u; zoom_level_index < prepared_data.size(); ++zoom_level_index )
 	{
-		ChunksData chunks_data=
-			DumpDataChunk(
-				prepared_data,
-				x * used_chunk_size,
-				y * used_chunk_size,
-				used_chunk_size );
-		for( ChunkData& chunk_data : chunks_data )
-			final_chunks_data.push_back( std::move( chunk_data ) );
-	}
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL ", zoom_level_index, " ---" );
+		Log::Info( "" );
 
-	get_data_file().chunk_count= static_cast<uint32_t>(final_chunks_data.size());
-	get_data_file().chunks_description_offset= static_cast<uint32_t>(result.size());
-	const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*
-	{
-		return reinterpret_cast<DataFile::ChunkDescription*>( result.data() + get_data_file().chunks_description_offset );
-	};
-	result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
+		const PolygonsNormalizationPassResult& zoom_level_data= prepared_data[zoom_level_index];
 
-	Log::Info( final_chunks_data.size(), " chunks" );
-	for( size_t i= 0u; i < final_chunks_data.size(); ++i )
-	{
-		get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
-		get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
-		result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
-	}
+		const int32_t used_chunk_size= c_max_chunk_size;
+		const int32_t chunks_x= ( zoom_level_data.max_point.x / zoom_level_data.coordinates_scale - zoom_level_data.start_point.x / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+		const int32_t chunks_y= ( zoom_level_data.max_point.y / zoom_level_data.coordinates_scale - zoom_level_data.start_point.y / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+
+		ChunksData final_chunks_data;
+		for( int32_t x= 0; x < chunks_x; ++x )
+		for( int32_t y= 0; y < chunks_y; ++y )
+		{
+			ChunksData chunks_data=
+				DumpDataChunk(
+					zoom_level_data,
+					x * used_chunk_size,
+					y * used_chunk_size,
+					used_chunk_size );
+			for( ChunkData& chunk_data : chunks_data )
+				final_chunks_data.push_back( std::move( chunk_data ) );
+		}
+
+		get_zoom_levels()[zoom_level_index].chunk_count= static_cast<uint32_t>(final_chunks_data.size());
+		get_zoom_levels()[zoom_level_index].chunks_description_offset= static_cast<uint32_t>(result.size());
+		const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*
+		{
+			return reinterpret_cast<DataFile::ChunkDescription*>( result.data() + get_zoom_levels()[zoom_level_index].chunks_description_offset );
+		};
+		result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
+
+		Log::Info( final_chunks_data.size(), " chunks" );
+		for( size_t i= 0u; i < final_chunks_data.size(); ++i )
+		{
+			get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
+			get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
+			result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
+		}
+
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL END ---" );
+		Log::Info( "" );
+	} // for zoom levels
 
 	get_data_file().point_styles_count= 0u;
 	get_data_file().linear_styles_count= 0u;
@@ -477,7 +495,7 @@ static std::vector<unsigned char> DumpDataFile( const PolygonsNormalizationPassR
 		else
 		{
 			std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
-			out_style.width_mul_256= uint32_t( style_it->second.width_m / prepared_data.meters_in_unit * 256.0f );
+			out_style.width_mul_256= uint32_t( style_it->second.width_m / prepared_data.front().meters_in_unit * 256.0f );
 		}
 
 		++get_data_file().linear_styles_count;
@@ -528,7 +546,7 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 	} while( write_total < content.size() );
 }
 
-void CreateDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles, const char* const file_name )
+void CreateDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles, const char* const file_name )
 {
 	WriteFile( DumpDataFile( prepared_data, styles ), file_name );
 }

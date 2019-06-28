@@ -14,6 +14,9 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	 // Scale to Mercator unit.
 	int coordinates_scale;
 
+	// logarithm of zoom level of this pass.
+	size_t zoom_level;
+
 	float meters_in_unit; // Meters in unit for center.
 
 	// Scaled and shifted.

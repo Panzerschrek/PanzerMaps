@@ -577,14 +577,19 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
 	const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
 
-	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + data_file.chunks_description_offset );
-
-	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
+	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + data_file.zoom_levels_offset );
+	for( uint32_t zoom_level_index= 0u; zoom_level_index < data_file.zoom_level_count; ++zoom_level_index )
 	{
-		const size_t chunk_offset= chunks_description[chunk_index].offset;
-		const unsigned char* const chunk_data= file_content + chunk_offset;
-		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
-		chunks_.emplace_back( chunk, linear_styles, areal_styles );
+		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + zoom_levels[zoom_level_index].chunks_description_offset );
+
+		for( uint32_t chunk_index= 0u; chunk_index < zoom_levels[zoom_level_index].chunk_count; ++chunk_index )
+		{
+			const size_t chunk_offset= chunks_description[chunk_index].offset;
+			const unsigned char* const chunk_data= file_content + chunk_offset;
+			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
+			chunks_.emplace_back( chunk, linear_styles, areal_styles );
+		}
+		break;
 	}
 
 	// Create textures
