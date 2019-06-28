@@ -225,7 +225,6 @@ static ChunksData DumpDataChunk(
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-
 	const CoordinatesTransformationPassResult::VertexTranspormed min_point{
 		chunk_offset_x - ( 65535 - c_max_chunk_size ) / 2,
 		chunk_offset_y - ( 65535 - c_max_chunk_size ) / 2 };
@@ -239,7 +238,7 @@ static ChunksData DumpDataChunk(
 
 	std::vector<ChunkVertex> vertices;
 	size_t linear_vertex_count= 0u;
-	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), std::numeric_limits<ChunkCoordType>::max() };
+	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), 0 };
 	{
 		get_chunk().point_object_groups_offset= static_cast<uint32_t>(result.size());
 
@@ -251,7 +250,6 @@ static ChunksData DumpDataChunk(
 			{
 				return l.class_ < r.class_;
 			} );
-
 
 		PointObjectClass prev_class= PointObjectClass::None;
 		Chunk::PointObjectGroup group;
@@ -359,37 +357,10 @@ static ChunksData DumpDataChunk(
 	{
 		get_chunk().areal_object_groups_offset= static_cast<uint32_t>(result.size());
 
-		auto areal_objects= prepared_data.areal_objects;
-		// Sort by class.
-		std::sort(
-			areal_objects.begin(), areal_objects.end(),
-			[]( const OSMParseResult::ArealObject& l, const OSMParseResult::ArealObject& r )
-			{
-				return l.class_ < r.class_;
-			} );
-
-		ArealObjectClass prev_class= ArealObjectClass::None;
-		Chunk::LinearObjectGroup group;
-		for( const OSMParseResult::ArealObject& object : areal_objects )
+		Chunk::ArealObjectGroup group;
+		group.first_vertex= static_cast<uint16_t>(vertices.size());
+		for( const OSMParseResult::ArealObject& object : prepared_data.areal_objects )
 		{
-			if( object.class_ != prev_class )
-			{
-				if( prev_class != ArealObjectClass::None )
-				{
-					group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
-					result.insert(
-						result.end(),
-						reinterpret_cast<const unsigned char*>(&group),
-						reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
-					++get_chunk().areal_object_groups_count;
-				}
-
-				group.first_vertex= static_cast<uint16_t>( vertices.size() );
-				group.style_index= static_cast<Chunk::StyleIndex>( object.class_ );
-
-				prev_class= object.class_;
-			}
-
 			std::vector<MercatorPoint> polygon_vertices;
 			polygon_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
@@ -404,17 +375,16 @@ static ChunksData DumpDataChunk(
 					vertices.push_back( ChunkVertex{ static_cast<ChunkCoordType>(vertex_x), static_cast<ChunkCoordType>(vertex_y) } );
 				}
 				vertices.push_back(break_primitive_vertex);
+				vertices.back().y= static_cast<uint16_t>( object.class_ );
 			}
 		}
-		if( prev_class != ArealObjectClass::None )
-		{
-			group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
-			result.insert(
-				result.end(),
-				reinterpret_cast<const unsigned char*>(&group),
-				reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
-			++get_chunk().areal_object_groups_count;
-		}
+
+		group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+		result.insert(
+			result.end(),
+			reinterpret_cast<const unsigned char*>(&group),
+			reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+		++get_chunk().areal_object_groups_count;
 	}
 
 	// We have vertex limit= 2^16.

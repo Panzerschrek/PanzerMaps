@@ -51,7 +51,10 @@ Styles LoadStyles( const char* const file_name )
 
 	const PanzerJson::Parser::ResultPtr json_parse_result= PanzerJson::Parser().Parse( static_cast<const char*>(file->Data()), file->Size() );
 	if( json_parse_result->error != PanzerJson::Parser::Result::Error::NoError )
+	{
+		Log::FatalError( "styles json parse error. Error code: ", int(json_parse_result->error) );
 		return result;
+	}
 
 	if( !json_parse_result->root.IsObject() )
 	{
@@ -104,6 +107,20 @@ Styles LoadStyles( const char* const file_name )
 
 		if( areal_style_json.second.IsMember( "color" ) )
 			ParseColor( areal_style_json.second["color"].AsString(), out_style.color );
+	}
+
+	for( const PanzerJson::Value& areal_object_phase : json_parse_result->root["areal_phases"].array_elements() )
+	{
+		Styles::ArealObjectPhase result_phase;
+		for( const PanzerJson::Value& class_json : areal_object_phase["classes"].array_elements() )
+		{
+			const ArealObjectClass object_class= StringToArealObjectClass( class_json.AsString() );
+			if( object_class != ArealObjectClass::None )
+			{
+				result_phase.classes.insert( object_class );
+			}
+		}
+		result.areal_object_phases.push_back( std::move(result_phase) );
 	}
 
 	return result;

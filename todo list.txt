@@ -1,8 +1,6 @@
 Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
-* Mehanizm nastrojki vnešnego vida (stili)
-* Razbijenije poligonov po fazam i sortirovka vnutri fazy po razmeram
 * Razbijenime po vysote (dlä mostov)
 * Vygruzka multipoligonov
 * Vydelenije neobhodimyh klassov objektov
@@ -13,7 +11,6 @@ Eksport i podgotovka dannyh:
 * Optimizaçija vremeni raboty i potrebläjemoj pamäti eksportöra
 
 Priloženije
-* Risovanije linejnyh objektov treugoljnikami
 * Risovanije linejnyh objektov s teksturoj (reljsy, tropinki, zebry)
 * Risovanije ploscadnyh objektov s teksturoj (lesa, bolota)
 * Lenivaja zagruzka tajlov, vygruzka iz videopamäti nenužnyh tajlov

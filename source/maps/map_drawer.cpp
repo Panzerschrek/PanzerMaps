@@ -439,7 +439,7 @@ struct MapDrawer::Chunk
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
-					if( ( vertex.x & vertex.y ) == 65535u )
+					if( vertex.x == 65535u )
 					{
 						SimplifyLine( tmp_vertices, square_half_width );
 						if( !tmp_vertices.empty() )
@@ -455,7 +455,7 @@ struct MapDrawer::Chunk
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
-					if( ( vertex.x & vertex.y ) == 65535u )
+					if( vertex.x  == 65535u )
 						linear_objects_indicies.push_back( c_primitive_restart_index );
 					else
 					{
@@ -475,17 +475,22 @@ struct MapDrawer::Chunk
 		for( uint16_t i= 0u; i < in_chunk.areal_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::ArealObjectGroup group= areal_object_groups[i];
+			size_t prev_polygon_start_vertex_index= 0u;
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
 				const DataFileDescription::ChunkVertex& vertex= vertices[v];
-				if( ( vertex.x & vertex.y ) == 65535u )
+				if( vertex.x == 65535u )
+				{
 					areal_objects_indicies.push_back( c_primitive_restart_index );
+					for( size_t i= prev_polygon_start_vertex_index; i < areal_objects_vertices.size(); ++i )
+						areal_objects_vertices[i].color_index= vertex.y;
+					prev_polygon_start_vertex_index= areal_objects_vertices.size();
+				}
 				else
 				{
 					ArealObjectVertex out_vertex;
 					out_vertex.xy[0]= vertex.x;
 					out_vertex.xy[1]= vertex.y;
-					out_vertex.color_index= group.style_index;
 					areal_objects_indicies.push_back( static_cast<uint16_t>( areal_objects_vertices.size() ) );
 					areal_objects_vertices.push_back( out_vertex );
 				}

@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "object_classes.hpp"
 
@@ -25,11 +26,18 @@ struct Styles
 		ColorRGBA color= {0};
 	};
 
+	struct ArealObjectPhase
+	{
+		std::unordered_set<ArealObjectClass> classes;
+	};
+
 	ColorRGBA background_color= {0};
 
 	std::unordered_map<PointObjectClass, PointObjectStyle> point_object_styles;
 	std::unordered_map<LinearObjectClass, LinearObjectStyle> linear_object_styles;
 	std::unordered_map<ArealObjectClass, ArealObjectStyle> areal_object_styles;
+
+	std::vector<ArealObjectPhase> areal_object_phases;
 };
 
 Styles LoadStyles( const char* const file_name );

@@ -14,7 +14,7 @@ using GlobalCoordType= uint32_t;
 using ChunkCoordType= uint16_t;
 struct ChunkVertex
 {
-	// if x == CoordType::max && y == CoordType::max - vertex is dummy "EndPrimitive" vertex
+	// if x == CoordType::max vertex is dummy "EndPrimitive" vertex. "y" of dummy vertex may be used for additional data.
 	ChunkCoordType x;
 	ChunkCoordType y;
 };
@@ -40,13 +40,15 @@ struct Chunk
 		StyleIndex style_index;
 		uint16_t first_vertex;
 		uint16_t vertex_count;
+		// vertex with x= 65535 is break primitive vertex.
 	};
 
 	struct ArealObjectGroup
 	{
-		StyleIndex style_index;
 		uint16_t first_vertex;
 		uint16_t vertex_count;
+		// vertex with x= 65535 is break primitive vertex.
+		// "y" of this vertex is style index.
 	};
 
 	GlobalCoordType coord_start_x;
