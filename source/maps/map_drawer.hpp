@@ -9,7 +9,7 @@ namespace PanzerMaps
 class MapDrawer final
 {
 public:
-	explicit MapDrawer( const ViewportSize& viewport_size );
+	explicit MapDrawer( const SystemWindow& system_window );
 	~MapDrawer();
 
 	void Draw();
@@ -22,7 +22,11 @@ private:
 	struct ChunkToDraw;
 
 private:
+	const ZoomLevel& SelectZoomLevel() const;
+
+private:
 	const ViewportSize viewport_size_;
+	const SystemWindow& system_window_;
 	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;

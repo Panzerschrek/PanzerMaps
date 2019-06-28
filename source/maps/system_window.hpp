@@ -66,15 +66,22 @@ public:
 	SystemWindow();
 	~SystemWindow();
 
+	SystemWindow(const SystemWindow&)= delete;
+	SystemWindow(SystemWindow&&)= delete;
+	SystemWindow& operator=(const SystemWindow&)= delete;
+	SystemWindow& operator=(SystemWindow&&)= delete;
+
 	void GetInput( SystemEvents& out_events );
 
 	void BeginFrame();
 	void EndFrame();
 
-	const ViewportSize GetViewportSize(){ return viewport_size_; }
+	const ViewportSize GetViewportSize() const { return viewport_size_; }
+	float GetPixelsInScreenMeter() const { return pixels_in_screen_meter_; }
 
 private:
 	const ViewportSize viewport_size_;
+	float pixels_in_screen_meter_;
 	SDL_Window* window_= nullptr;
 	SDL_GLContext gl_context_= nullptr;
 };
