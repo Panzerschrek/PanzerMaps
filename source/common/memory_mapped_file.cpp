@@ -48,6 +48,7 @@ MemoryMappedFile::MemoryMappedFile( const void* const data, const size_t size, c
 
 MemoryMappedFile::~MemoryMappedFile()
 {
+	::munmap( const_cast<void*>(data_), size_ );
 	::close( file_descriptor_ );
 }
 
