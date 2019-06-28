@@ -4,7 +4,7 @@
 namespace PanzerMaps
 {
 
-CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& prepared_data )
+CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& prepared_data, const size_t additional_scale_log2 )
 {
 	CoordinatesTransformationPassResult result;
 
@@ -38,6 +38,7 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, min_abs_y } ).y * Constants::deg_to_rad );
 	const double scale_calculated= Constants::two_pow_32 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
 	result.coordinates_scale= std::max( 1, static_cast<int32_t>(scale_calculated) );
+	result.coordinates_scale <<= int(additional_scale_log2);
 
 	const double average_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, result.min_point.y / 2 + result.max_point.y / 2 } ).y * Constants::deg_to_rad );
 	result.meters_in_unit= static_cast<float>( double(result.coordinates_scale) * Constants::earth_equator_length_m * average_latitude_scale / Constants::two_pow_32 );
