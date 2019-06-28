@@ -354,11 +354,55 @@
                 "RoadSignificance2Lanes8More":  { "width_m" : 112.0 },
                 "RoadSignificance3Lanes1":      { "width_m" :  14.0 },
                 "RoadSignificance3Lanes2":      { "width_m" :  28.0 },
-                "RoadSignificance3Lanes4":      { "width_m" :  42.0 },
+                "RoadSignificance3Lanes4":      { "width_m" :  56.0 },
                 "RoadSignificance3Lanes6":      { "width_m" :  84.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 112.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 140.0 },
                 "Railway" : { "width_m" : 16.0 }
+            }
+        },
+
+        {
+            "scale_to_prev_log2" : 3,
+            "areal_phases" :
+            [
+                {
+                    "classes" :
+                    [
+                        "Water",
+                        "Grassland",
+                        "Cemetery",
+                        "Industrial",
+                        "Residential",
+                        "Wood"
+                    ],
+                    "allow_collinear_points_removing" : false
+                }
+            ],
+
+            "point_classes_ordered": [],
+
+            "linear_classes_ordered":
+            [
+                "RoadSignificance3Lanes1",
+                "RoadSignificance3Lanes2",
+                "RoadSignificance3Lanes4",
+                "RoadSignificance3Lanes6",
+                "RoadSignificance3Lanes8",
+                "RoadSignificance3Lanes10More",
+                "Railway"
+            ],
+
+            // Override width for linear objects.
+            "linear_styles":
+            {
+                "RoadSignificance3Lanes1":      { "width_m" : 168.0 },
+                "RoadSignificance3Lanes2":      { "width_m" : 168.0 },
+                "RoadSignificance3Lanes4":      { "width_m" : 168.0 },
+                "RoadSignificance3Lanes6":      { "width_m" : 420.0 },
+                "RoadSignificance3Lanes8":      { "width_m" : 420.0 },
+                "RoadSignificance3Lanes10More": { "width_m" : 420.0 },
+                "Railway" : { "width_m" : 96.0 }
             }
         }
     ]
