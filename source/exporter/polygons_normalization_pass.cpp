@@ -196,6 +196,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 	result.max_point= in_data.max_point;
 	result.start_point= in_data.start_point;
 	result.coordinates_scale= in_data.coordinates_scale;
+	result.zoom_level= in_data.zoom_level;
 	result.meters_in_unit= in_data.meters_in_unit;
 
 	result.point_objects.reserve( in_data.point_objects.size() );

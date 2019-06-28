@@ -72,19 +72,35 @@ Usage:
 	}
 
 	const Styles styles= LoadStyles( style_file.c_str() );
-	OSMParseResult osm_parse_result= ParseOSM( input_files.front().c_str() );
+	const OSMParseResult osm_parse_result= ParseOSM( input_files.front().c_str() );
 
-	CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result );
-	osm_parse_result= OSMParseResult();
+	std::vector<PolygonsNormalizationPassResult> ou_data_by_zoom_level;
+	ou_data_by_zoom_level.reserve( styles.zoom_levels.size() );
+	size_t zoom_level_scale_log2= 0u;
+	for( const Styles::ZoomLevel& zoom_level : styles.zoom_levels )
+	{
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL ", &zoom_level - styles.zoom_levels.data(), " ---" );
+		Log::Info( "" );
 
-	PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, styles );
-	coordinates_transform_result= CoordinatesTransformationPassResult();
+		if( &zoom_level != &styles.zoom_levels.front() )
+			zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
 
-	PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );
-	phase_sort_result= PhaseSortResult();
+		CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result, zoom_level_scale_log2 );
+
+		PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, zoom_level );
+		coordinates_transform_result= CoordinatesTransformationPassResult();
+
+		PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );
+		ou_data_by_zoom_level.push_back( normalize_polygons_result );
+
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL END ---" );
+		Log::Info( "" );
+	}
 
 	CreateDataFile(
-		normalize_polygons_result,
+		ou_data_by_zoom_level,
 		styles,
 		output_file.c_str() );
 }

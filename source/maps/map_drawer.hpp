@@ -9,7 +9,7 @@ namespace PanzerMaps
 class MapDrawer final
 {
 public:
-	explicit MapDrawer( const ViewportSize& viewport_size );
+	explicit MapDrawer( const SystemWindow& system_window );
 	~MapDrawer();
 
 	void Draw();
@@ -18,15 +18,20 @@ public:
 
 private:
 	struct Chunk;
+	struct ZoomLevel;
 	struct ChunkToDraw;
 
 private:
+	const ZoomLevel& SelectZoomLevel() const;
+
+private:
 	const ViewportSize viewport_size_;
+	const SystemWindow& system_window_;
 	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
 
-	std::vector<Chunk> chunks_;
+	std::vector<ZoomLevel> zoom_levels_;
 
 	bool mouse_pressed_= false;
 	float scale_; // Scale = map units in pixel
@@ -38,11 +43,8 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
+	float unit_size_m_;
 
-	// 1D texture with colors for linear objects.
-	GLuint linear_objects_texture_id_= ~0u;
-	// 1D texture with colors for areal objects.
-	GLuint areal_objects_texture_id_= ~0u;
 	unsigned char background_color_[4]= {0};
 };
 

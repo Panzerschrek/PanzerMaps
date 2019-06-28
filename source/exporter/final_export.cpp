@@ -405,7 +405,7 @@ static ChunksData DumpDataChunk(
 	return { result };
 }
 
-static std::vector<unsigned char> DumpDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles )
+static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles )
 {
 	Log::Info( "Final export: " );
 
@@ -419,87 +419,116 @@ static std::vector<unsigned char> DumpDataFile( const PolygonsNormalizationPassR
 	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
 	get_data_file().version= DataFile::c_expected_version;
 
-	const int32_t used_chunk_size= c_max_chunk_size;
-	const int32_t chunks_x= ( prepared_data.max_point.x / prepared_data.coordinates_scale - prepared_data.start_point.x / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
-	const int32_t chunks_y= ( prepared_data.max_point.y / prepared_data.coordinates_scale - prepared_data.start_point.y / prepared_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+	get_data_file().zoom_levels_offset= static_cast<uint32_t>( result.size() );
+	get_data_file().zoom_level_count= static_cast<uint32_t>( prepared_data.size() );
+	result.resize( result.size() + prepared_data.size() * sizeof(ZoomLevel) );
+	const auto get_zoom_levels= [&]() -> ZoomLevel* { return reinterpret_cast<ZoomLevel*>( result.data() + get_data_file().zoom_levels_offset ); };
+	const auto get_zoom_level= [&]( size_t index ) -> ZoomLevel& { return get_zoom_levels()[index]; };
 
-	ChunksData final_chunks_data;
-	for( int32_t x= 0; x < chunks_x; ++x )
-	for( int32_t y= 0; y < chunks_y; ++y )
+	for( size_t zoom_level_index= 0u; zoom_level_index < prepared_data.size(); ++zoom_level_index )
 	{
-		ChunksData chunks_data=
-			DumpDataChunk(
-				prepared_data,
-				x * used_chunk_size,
-				y * used_chunk_size,
-				used_chunk_size );
-		for( ChunkData& chunk_data : chunks_data )
-			final_chunks_data.push_back( std::move( chunk_data ) );
-	}
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL ", zoom_level_index, " ---" );
+		Log::Info( "" );
 
-	get_data_file().chunk_count= static_cast<uint32_t>(final_chunks_data.size());
-	get_data_file().chunks_description_offset= static_cast<uint32_t>(result.size());
-	const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*
-	{
-		return reinterpret_cast<DataFile::ChunkDescription*>( result.data() + get_data_file().chunks_description_offset );
-	};
-	result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
+		const PolygonsNormalizationPassResult& zoom_level_data= prepared_data[zoom_level_index];
+		const Styles::ZoomLevel& zoom_level_styles= styles.zoom_levels[zoom_level_index];
 
-	Log::Info( final_chunks_data.size(), " chunks" );
-	for( size_t i= 0u; i < final_chunks_data.size(); ++i )
-	{
-		get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
-		get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
-		result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
-	}
+		// Dump zoom level chunks.
+		const int32_t used_chunk_size= c_max_chunk_size;
+		const int32_t chunks_x= ( zoom_level_data.max_point.x / zoom_level_data.coordinates_scale - zoom_level_data.start_point.x / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+		const int32_t chunks_y= ( zoom_level_data.max_point.y / zoom_level_data.coordinates_scale - zoom_level_data.start_point.y / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
 
-	get_data_file().point_styles_count= 0u;
-	get_data_file().linear_styles_count= 0u;
-	get_data_file().areal_styles_count= 0u;
+		// All zoom levels must have same start point.
+		PM_ASSERT( zoom_level_data.min_point == prepared_data.front().min_point );
+		PM_ASSERT( zoom_level_data.start_point == prepared_data.front().start_point );
 
-	for( PointObjectClass object_class= PointObjectClass::None; object_class < PointObjectClass::Last; object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
-	{
-	}
-
-	get_data_file().linear_styles_offset= static_cast<uint32_t>( result.size() );
-	for( LinearObjectClass object_class= LinearObjectClass::None; object_class < LinearObjectClass::Last; object_class= static_cast<LinearObjectClass>( size_t(object_class) + 1u ) )
-	{
-		const auto style_it= styles.linear_object_styles.find(object_class);
-
-		result.resize( result.size() + sizeof(LinearObjectStyle) );
-		LinearObjectStyle& out_style= *reinterpret_cast<LinearObjectStyle*>( result.data() + result.size() - sizeof(LinearObjectStyle) );
-		if( style_it == styles.linear_object_styles.end() )
+		ChunksData final_chunks_data;
+		for( int32_t x= 0; x < chunks_x; ++x )
+		for( int32_t y= 0; y < chunks_y; ++y )
 		{
-			out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
-			out_style.color[3]= 255u;
-			out_style.width_mul_256= 0u;
-		}
-		else
-		{
-			std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
-			out_style.width_mul_256= uint32_t( style_it->second.width_m / prepared_data.meters_in_unit * 256.0f );
+			ChunksData chunks_data=
+				DumpDataChunk(
+					zoom_level_data,
+					x * used_chunk_size,
+					y * used_chunk_size,
+					used_chunk_size );
+			for( ChunkData& chunk_data : chunks_data )
+				final_chunks_data.push_back( std::move( chunk_data ) );
 		}
 
-		++get_data_file().linear_styles_count;
-	}
-
-	get_data_file().areal_styles_offset= static_cast<uint32_t>( result.size() );
-	for( ArealObjectClass object_class= ArealObjectClass::None; object_class < ArealObjectClass::Last; object_class= static_cast<ArealObjectClass>( size_t(object_class) + 1u ) )
-	{
-		const auto style_it= styles.areal_object_styles.find(object_class);
-
-		result.resize( result.size() + sizeof(ArealObjectStyle) );
-		ArealObjectStyle& out_style= *reinterpret_cast<ArealObjectStyle*>( result.data() + result.size() - sizeof(ArealObjectStyle) );
-		if( style_it == styles.areal_object_styles.end() )
+		get_zoom_level(zoom_level_index).unit_size_m= zoom_level_data.meters_in_unit;
+		get_zoom_level(zoom_level_index).zoom_level_log2= static_cast<uint32_t>( zoom_level_data.zoom_level );
+		get_zoom_level(zoom_level_index).chunk_count= static_cast<uint32_t>(final_chunks_data.size());
+		get_zoom_level(zoom_level_index).chunks_description_offset= static_cast<uint32_t>(result.size());
+		const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*
 		{
-			out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
-			out_style.color[3]= 255u;
-		}
-		else
-			std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
+			return reinterpret_cast<DataFile::ChunkDescription*>( result.data() + get_zoom_level(zoom_level_index).chunks_description_offset );
+		};
+		result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
 
-		++get_data_file().areal_styles_count;
-	}
+		Log::Info( final_chunks_data.size(), " chunks" );
+		for( size_t i= 0u; i < final_chunks_data.size(); ++i )
+		{
+			get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
+			get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
+			result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
+		}
+
+		// Dump zoom level styles.
+
+		get_zoom_level(zoom_level_index).point_styles_count= 0u;
+		get_zoom_level(zoom_level_index).linear_styles_count= 0u;
+		get_zoom_level(zoom_level_index).areal_styles_count= 0u;
+
+		for( PointObjectClass object_class= PointObjectClass::None; object_class < PointObjectClass::Last; object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
+		{
+		}
+
+		get_zoom_level(zoom_level_index).linear_styles_offset= static_cast<uint32_t>( result.size() );
+		for( LinearObjectClass object_class= LinearObjectClass::None; object_class < LinearObjectClass::Last; object_class= static_cast<LinearObjectClass>( size_t(object_class) + 1u ) )
+		{
+			const auto style_it= zoom_level_styles.linear_object_styles.find( object_class );
+
+			result.resize( result.size() + sizeof(LinearObjectStyle) );
+			LinearObjectStyle& out_style= *reinterpret_cast<LinearObjectStyle*>( result.data() + result.size() - sizeof(LinearObjectStyle) );
+			if( style_it == zoom_level_styles.linear_object_styles.end() )
+			{
+				out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
+				out_style.color[3]= 255u;
+				out_style.width_mul_256= 0u;
+			}
+			else
+			{
+				std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
+				out_style.width_mul_256= uint32_t( style_it->second.width_m / zoom_level_data.meters_in_unit * 256.0f );
+			}
+
+			++get_zoom_level(zoom_level_index).linear_styles_count;
+		}
+
+		get_zoom_level(zoom_level_index).areal_styles_offset= static_cast<uint32_t>( result.size() );
+		for( ArealObjectClass object_class= ArealObjectClass::None; object_class < ArealObjectClass::Last; object_class= static_cast<ArealObjectClass>( size_t(object_class) + 1u ) )
+		{
+			const auto style_it= zoom_level_styles.areal_object_styles.find( object_class );
+
+			result.resize( result.size() + sizeof(ArealObjectStyle) );
+			ArealObjectStyle& out_style= *reinterpret_cast<ArealObjectStyle*>( result.data() + result.size() - sizeof(ArealObjectStyle) );
+			if( style_it == zoom_level_styles.areal_object_styles.end() )
+			{
+				out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
+				out_style.color[3]= 255u;
+			}
+			else
+				std::memcpy( out_style.color, style_it->second.color, sizeof(unsigned char) * 4u );
+
+			++get_zoom_level(zoom_level_index).areal_styles_count;
+		}
+
+		Log::Info( "" );
+		Log::Info( "-- ZOOM LEVEL END ---" );
+		Log::Info( "" );
+	} // for zoom levels
 
 	std::memcpy( get_data_file().common_style.background_color, styles.background_color, sizeof(unsigned char) * 4u );
 
@@ -528,7 +557,7 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 	} while( write_total < content.size() );
 }
 
-void CreateDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles, const char* const file_name )
+void CreateDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles, const char* const file_name )
 {
 	WriteFile( DumpDataFile( prepared_data, styles ), file_name );
 }

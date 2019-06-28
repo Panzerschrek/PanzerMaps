@@ -9,6 +9,7 @@ namespace PanzerMaps
 
 struct Styles
 {
+public:
 	using ColorRGBA= unsigned char[4];
 
 	struct PointObjectStyle
@@ -31,16 +32,25 @@ struct Styles
 		std::unordered_set<ArealObjectClass> classes;
 	};
 
+	using PointObjectStyles= std::unordered_map<PointObjectClass, PointObjectStyle>;
+	using LinearObjectStyles= std::unordered_map<LinearObjectClass, LinearObjectStyle>;
+	using ArealObjectStyles= std::unordered_map<ArealObjectClass, ArealObjectStyle>;
+
+	struct ZoomLevel
+	{
+		size_t scale_to_prev_log2= 1u; // For first zoom level - initial scale.
+		std::vector<ArealObjectPhase> areal_object_phases;
+		std::vector<PointObjectClass> point_classes_ordered;
+		std::vector<LinearObjectClass> linear_classes_ordered;
+
+		PointObjectStyles point_object_styles;
+		LinearObjectStyles linear_object_styles;
+		ArealObjectStyles areal_object_styles;
+	};
+
+public:
 	ColorRGBA background_color= {0};
-
-	std::unordered_map<PointObjectClass, PointObjectStyle> point_object_styles;
-	std::unordered_map<LinearObjectClass, LinearObjectStyle> linear_object_styles;
-	std::unordered_map<ArealObjectClass, ArealObjectStyle> areal_object_styles;
-
-	std::vector<ArealObjectPhase> areal_object_phases;
-
-	std::vector<PointObjectClass> point_classes_ordered;
-	std::vector<LinearObjectClass> linear_classes_ordered;
+	std::vector<ZoomLevel> zoom_levels;
 };
 
 Styles LoadStyles( const char* const file_name );

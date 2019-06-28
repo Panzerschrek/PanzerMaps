@@ -387,6 +387,7 @@ static void CreatePolygonalLine(
 
 struct MapDrawer::Chunk
 {
+public:
 	Chunk(
 		const DataFileDescription::Chunk& in_chunk,
 		const DataFileDescription::LinearObjectStyle* const linear_styles,
@@ -527,6 +528,7 @@ struct MapDrawer::Chunk
 	Chunk& operator=( const Chunk& )= delete;
 	Chunk& operator=( Chunk&& )= default;
 
+public:
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_as_triangles_buffer_;
@@ -539,14 +541,96 @@ struct MapDrawer::Chunk
 	const int32_t bb_max_y_;
 };
 
+struct MapDrawer::ZoomLevel
+{
+public:
+	ZoomLevel( const DataFileDescription::ZoomLevel& in_zoom_level, const unsigned char* const file_content )
+		: zoom_level_log2(in_zoom_level.zoom_level_log2)
+	{
+		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + in_zoom_level.linear_styles_offset );
+		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + in_zoom_level.areal_styles_offset );
+
+		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + in_zoom_level.chunks_description_offset );
+
+		for( uint32_t chunk_index= 0u; chunk_index < in_zoom_level.chunk_count; ++chunk_index )
+		{
+			const size_t chunk_offset= chunks_description[chunk_index].offset;
+			const unsigned char* const chunk_data= file_content + chunk_offset;
+			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
+			chunks.emplace_back( chunk, linear_styles, areal_styles );
+		}
+
+		// Create textures
+		{
+			DataFileDescription::ColorRGBA texture_data[256u]= {0};
+
+			for( uint32_t i= 0u; i < in_zoom_level.linear_styles_count; ++i )
+				std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+
+			glGenTextures( 1, &linear_objects_texture_id );
+			glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id );
+			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		}
+		{
+			DataFileDescription::ColorRGBA texture_data[256u]= {0};
+
+			for( uint32_t i= 0u; i < in_zoom_level.areal_styles_count; ++i )
+				std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+
+			glGenTextures( 1, &areal_objects_texture_id );
+			glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id );
+			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		}
+	}
+
+	~ZoomLevel()
+	{
+		if( linear_objects_texture_id != ~0u )
+			glDeleteTextures( 1, &linear_objects_texture_id );
+		if( areal_objects_texture_id != ~0u )
+			glDeleteTextures( 1, &areal_objects_texture_id );
+	}
+
+	ZoomLevel()= delete;
+	ZoomLevel(const ZoomLevel&)= delete;
+
+	ZoomLevel( ZoomLevel&& other )
+		: zoom_level_log2(other.zoom_level_log2)
+		, chunks(std::move(other.chunks))
+	{
+		linear_objects_texture_id= other.linear_objects_texture_id;
+		areal_objects_texture_id= other.areal_objects_texture_id;
+
+		other.linear_objects_texture_id= other.areal_objects_texture_id= ~0u;
+	}
+
+	ZoomLevel& operator=(const ZoomLevel&)= delete;
+	ZoomLevel&operator=( ZoomLevel&& other )= delete;
+
+public:
+	const size_t zoom_level_log2;
+	std::vector<Chunk> chunks;
+
+	// 1D texture with colors for linear objects.
+	GLuint linear_objects_texture_id= ~0u;
+	// 1D texture with colors for areal objects.
+	GLuint areal_objects_texture_id= ~0u;
+
+};
+
 struct MapDrawer::ChunkToDraw
 {
 	const MapDrawer::Chunk& chunk;
 	m_Mat4 matrix;
 };
 
-MapDrawer::MapDrawer( const ViewportSize& viewport_size )
-	: viewport_size_(viewport_size)
+MapDrawer::MapDrawer( const SystemWindow& system_window )
+	: viewport_size_(system_window.GetViewportSize())
+	, system_window_(system_window)
 {
 	const MemoryMappedFilePtr file= MemoryMappedFile::Create( "map.pm" );
 	if( file == nullptr )
@@ -574,44 +658,10 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		return;
 	}
 
-	const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
-	const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
+	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + data_file.zoom_levels_offset );
+	for( uint32_t zoom_level_index= 0u; zoom_level_index < data_file.zoom_level_count; ++zoom_level_index )
+		zoom_levels_.emplace_back( zoom_levels[zoom_level_index], file_content );
 
-	const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + data_file.chunks_description_offset );
-
-	for( uint32_t chunk_index= 0u; chunk_index < data_file.chunk_count; ++chunk_index )
-	{
-		const size_t chunk_offset= chunks_description[chunk_index].offset;
-		const unsigned char* const chunk_data= file_content + chunk_offset;
-		const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
-		chunks_.emplace_back( chunk, linear_styles, areal_styles );
-	}
-
-	// Create textures
-	{
-		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		for( uint32_t i= 0u; i < data_file.linear_styles_count; ++i )
-			std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
-
-		glGenTextures( 1, &linear_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	}
-	{
-		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		for( uint32_t i= 0u; i < data_file.areal_styles_count; ++i )
-			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
-
-		glGenTextures( 1, &areal_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	}
 	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
 
 	// Create shaders
@@ -632,11 +682,11 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	areal_objects_shader_.Create();
 
 	// Setup camera
-	if( !chunks_.empty() )
+	if( !zoom_levels_.empty() )
 	{
 		min_cam_pos_= m_Vec2( +1e20f, +1e20f );
 		max_cam_pos_= m_Vec2( -1e20f, -1e20f );
-		for( const Chunk& chunk : chunks_ )
+		for( const Chunk& chunk : zoom_levels_.front().chunks )
 		{
 			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
 			min_cam_pos_.y= std::min( min_cam_pos_.y, float(chunk.coord_start_y_) );
@@ -648,15 +698,15 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
+	unit_size_m_= zoom_levels[0u].unit_size_m;
+
 	min_scale_= 1.0f;
-	max_scale_= std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
+	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
 }
 
 MapDrawer::~MapDrawer()
 {
-	glDeleteTextures( 1, &linear_objects_texture_id_ );
-	glDeleteTextures( 1, &areal_objects_texture_id_ );
 }
 
 void MapDrawer::Draw()
@@ -665,12 +715,15 @@ void MapDrawer::Draw()
 	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
 	glClear( GL_COLOR_BUFFER_BIT );
 
+	const ZoomLevel& zoom_level= SelectZoomLevel();
+
 	// Calculate view matrix.
-	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
-	scale_matrix.Scale( 1.0f / scale_ );
+	m_Mat4 zoom_level_matrix, translate_matrix, scale_matrix, aspect_matrix, view_matrix;
+	zoom_level_matrix.Scale( float( 1u << zoom_level.zoom_level_log2 ) );
 	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
+	scale_matrix.Scale( 1.0f / scale_ );
 	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
-	view_matrix= translate_matrix * scale_matrix * aspect_matrix;
+	view_matrix= zoom_level_matrix * translate_matrix * scale_matrix * aspect_matrix;
 
 	// Calculate viewport bounding box.
 	const int32_t bb_extend_eps= 16;
@@ -678,14 +731,14 @@ void MapDrawer::Draw()
 	const int32_t viewport_half_size_y_world_space= int32_t( float(viewport_size_.height ) * 0.5f * scale_ ) + bb_extend_eps;
 	const int32_t cam_pos_x_world_space= int32_t(cam_pos_.x);
 	const int32_t cam_pos_y_world_space= int32_t(cam_pos_.y);
-	const int32_t bb_min_x= cam_pos_x_world_space - viewport_half_size_x_world_space;
-	const int32_t bb_max_x= cam_pos_x_world_space + viewport_half_size_x_world_space;
-	const int32_t bb_min_y= cam_pos_y_world_space - viewport_half_size_y_world_space;
-	const int32_t bb_max_y= cam_pos_y_world_space + viewport_half_size_y_world_space;
+	const int32_t bb_min_x= ( cam_pos_x_world_space - viewport_half_size_x_world_space ) >> zoom_level.zoom_level_log2;
+	const int32_t bb_max_x= ( cam_pos_x_world_space + viewport_half_size_x_world_space ) >> zoom_level.zoom_level_log2;
+	const int32_t bb_min_y= ( cam_pos_y_world_space - viewport_half_size_y_world_space ) >> zoom_level.zoom_level_log2;
+	const int32_t bb_max_y= ( cam_pos_y_world_space + viewport_half_size_y_world_space ) >> zoom_level.zoom_level_log2;
 
 	// Setup chunks list, calculate matrices.
 	std::vector<ChunkToDraw> visible_chunks;
-	for( const Chunk& chunk : chunks_ )
+	for( const Chunk& chunk : zoom_level.chunks )
 	{
 		if( chunk.bb_min_x_ >= bb_max_x || chunk.bb_min_y_ >= bb_max_y ||
 			chunk.bb_max_x_ <= bb_min_x || chunk.bb_max_y_ <= bb_min_y )
@@ -703,7 +756,7 @@ void MapDrawer::Draw()
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_1D, zoom_level.areal_objects_texture_id );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
@@ -721,7 +774,7 @@ void MapDrawer::Draw()
 		linear_objets_shader_.Bind();
 		linear_objets_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_1D, zoom_level.linear_objects_texture_id );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
@@ -767,12 +820,11 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 			cam_pos_+= m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * scale_;
 			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
 			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
-			Log::User( "Shift is ", cam_pos_.x, " ", cam_pos_.y );
 		}
 		break;
 
 	case SystemEvent::Type::Wheel:
-		scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.5f );
+		scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.25f );
 		scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
 		Log::User( "Scale is ", scale_ );
 		break;
@@ -780,6 +832,20 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 	case SystemEvent::Type::Quit:
 		return;
 	}
+}
+
+const MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel() const
+{
+	// Assume, that nearest scale is equivalent for WebMercator zoom 18.
+
+	const float c_default_pixels_in_m= 3779.0f;
+	const float pixel_density_scaler= c_default_pixels_in_m / system_window_.GetPixelsInScreenMeter();
+
+	for( size_t i= 1u; i < zoom_levels_.size(); ++i )
+		if( scale_ * 0.5f * pixel_density_scaler < float( 1u << zoom_levels_[i].zoom_level_log2 ) )
+			return zoom_levels_[i-1u];
+
+	return zoom_levels_.back();
 }
 
 } // namespace PanzerMaps

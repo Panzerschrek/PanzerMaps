@@ -5,6 +5,6 @@
 namespace PanzerMaps
 {
 
-void CreateDataFile( const PolygonsNormalizationPassResult& prepared_data, const Styles& styles, const char* const file_name );
+void CreateDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles, const char* const file_name );
 
 } // namespace PanzerMaps

@@ -6,18 +6,19 @@
 namespace PanzerMaps
 {
 
-PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data, const Styles& styles )
+PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data, const Styles::ZoomLevel& zoom_level )
 {
 	PhaseSortResult result;
 	result.min_point= in_data.min_point;
 	result.max_point= in_data.max_point;
 	result.start_point= in_data.start_point;
 	result.coordinates_scale= in_data.coordinates_scale;
+	result.zoom_level= in_data.zoom_level;
 	result.meters_in_unit= in_data.meters_in_unit;
 
 	// Currently, point and linear object not splitted by phase.
 
-	for( const PointObjectClass& object_class : styles.point_classes_ordered )
+	for( const PointObjectClass& object_class : zoom_level.point_classes_ordered )
 	{
 		for( const BaseDataRepresentation::PointObject& in_object : in_data.point_objects )
 		{
@@ -32,7 +33,7 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 		}
 	}
 
-	for( const LinearObjectClass& object_class : styles.linear_classes_ordered )
+	for( const LinearObjectClass& object_class : zoom_level.linear_classes_ordered )
 	{
 		for( const BaseDataRepresentation::LinearObject& in_object : in_data.linear_objects )
 		{
@@ -51,7 +52,7 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 		}
 	}
 
-	for( const Styles::ArealObjectPhase& phase : styles.areal_object_phases )
+	for( const Styles::ArealObjectPhase& phase : zoom_level.areal_object_phases )
 	{
 		 std::vector< PhaseSortResult::ArealObject > areal_objects;
 		for( const BaseDataRepresentation::ArealObject& in_object : in_data.areal_objects )
@@ -86,9 +87,9 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 	}
 
 	Log::Info( "Phase sort pass: " );
-	Log::Info( styles.point_classes_ordered.size(), " point classes" );
-	Log::Info( styles.linear_classes_ordered.size(), " linear classes" );
-	Log::Info( styles.areal_object_phases.size(), " areal objects phases" );
+	Log::Info( zoom_level.point_classes_ordered.size(), " point classes" );
+	Log::Info( zoom_level.linear_classes_ordered.size(), " linear classes" );
+	Log::Info( zoom_level.areal_object_phases.size(), " areal objects phases" );
 	Log::Info( "" );
 
 	return result;

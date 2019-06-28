@@ -158,6 +158,12 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 
 void SystemWindow::BeginFrame()
 {
+	const float c_iches_to_meters= 2.54f / 100.0f;
+
+	pixels_in_screen_meter_= 96.0f / c_iches_to_meters;
+	float dots_per_inch;
+	if( SDL_GetDisplayDPI( SDL_GetWindowDisplayIndex( window_ ), &dots_per_inch, nullptr, nullptr ) == 0 )
+		pixels_in_screen_meter_= dots_per_inch / c_iches_to_meters;
 }
 
 void SystemWindow::EndFrame()
