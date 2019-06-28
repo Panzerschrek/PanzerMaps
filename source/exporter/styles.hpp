@@ -38,6 +38,9 @@ struct Styles
 	std::unordered_map<ArealObjectClass, ArealObjectStyle> areal_object_styles;
 
 	std::vector<ArealObjectPhase> areal_object_phases;
+
+	std::vector<PointObjectClass> point_classes_ordered;
+	std::vector<LinearObjectClass> linear_classes_ordered;
 };
 
 Styles LoadStyles( const char* const file_name );

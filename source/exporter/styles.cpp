@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <string>
 #include <PanzerJson/parser.hpp>
 #include "../common/log.hpp"
@@ -121,6 +122,32 @@ Styles LoadStyles( const char* const file_name )
 			}
 		}
 		result.areal_object_phases.push_back( std::move(result_phase) );
+	}
+
+	for( const PanzerJson::Value& point_object_class_json : json_parse_result->root["point_classes_ordered"].array_elements() )
+	{
+		const PointObjectClass object_class= StringToPointObjectClass( point_object_class_json.AsString() );
+		if( object_class == PointObjectClass::None )
+			continue;
+		if( std::find( result.point_classes_ordered.begin(), result.point_classes_ordered.end(), object_class ) != result.point_classes_ordered.end() )
+		{
+			Log::Warning( "Duplicated point class: ", point_object_class_json.AsString() );
+			continue;
+		}
+		result.point_classes_ordered.push_back( object_class );
+	}
+
+	for( const PanzerJson::Value& linear_object_class_json : json_parse_result->root["linear_classes_ordered"].array_elements() )
+	{
+		const LinearObjectClass object_class= StringToLinearObjectClass( linear_object_class_json.AsString() );
+		if( object_class == LinearObjectClass::None )
+			continue;
+		if( std::find( result.linear_classes_ordered.begin(), result.linear_classes_ordered.end(), object_class ) != result.linear_classes_ordered.end() )
+		{
+			Log::Warning( "Duplicated linear class: ", linear_object_class_json.AsString() );
+			continue;
+		}
+		result.linear_classes_ordered.push_back( object_class );
 	}
 
 	return result;

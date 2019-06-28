@@ -242,18 +242,9 @@ static ChunksData DumpDataChunk(
 	{
 		get_chunk().point_object_groups_offset= static_cast<uint32_t>(result.size());
 
-		auto point_objects= prepared_data.point_objects;
-		// Sort by class.
-		std::sort(
-			point_objects.begin(), point_objects.end(),
-			[]( const OSMParseResult::PointObject& l, const OSMParseResult::PointObject& r )
-			{
-				return l.class_ < r.class_;
-			} );
-
 		PointObjectClass prev_class= PointObjectClass::None;
 		Chunk::PointObjectGroup group;
-		for( const OSMParseResult::PointObject& object : point_objects )
+		for( const OSMParseResult::PointObject& object : prepared_data.point_objects )
 		{
 			if( object.class_ != prev_class )
 			{
@@ -295,18 +286,9 @@ static ChunksData DumpDataChunk(
 	{
 		get_chunk().linear_object_groups_offset= static_cast<uint32_t>(result.size());
 
-		auto linear_objects= prepared_data.linear_objects;
-		// Sort by class.
-		std::sort(
-			linear_objects.begin(), linear_objects.end(),
-			[]( const OSMParseResult::LinearObject& l, const OSMParseResult::LinearObject& r )
-			{
-				return l.class_ < r.class_;
-			} );
-
 		LinearObjectClass prev_class= LinearObjectClass::None;
 		Chunk::LinearObjectGroup group;
-		for( const OSMParseResult::LinearObject& object : linear_objects )
+		for( const OSMParseResult::LinearObject& object : prepared_data.linear_objects )
 		{
 			if( object.class_ != prev_class )
 			{

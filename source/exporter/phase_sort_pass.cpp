@@ -17,29 +17,39 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 
 	// Currently, point and linear object not splitted by phase.
 
-	result.point_objects.reserve( in_data.point_objects.size() );
-	for( const BaseDataRepresentation::PointObject& in_object : in_data.point_objects )
+	for( const PointObjectClass& object_class : styles.point_classes_ordered )
 	{
-		BaseDataRepresentation::PointObject out_object;
-		out_object.class_= in_object.class_;
-		out_object.vertex_index= result.vertices.size();
-		result.vertices.push_back( in_data.vertices[ in_object.vertex_index ] );
-		result.point_objects.push_back( out_object );
-	} // for point objects.
+		for( const BaseDataRepresentation::PointObject& in_object : in_data.point_objects )
+		{
+			if( in_object.class_ != object_class )
+				continue;
 
-	result.linear_objects.reserve( in_data.linear_objects.size() );
-	for( const BaseDataRepresentation::LinearObject& in_object : in_data.linear_objects )
+			BaseDataRepresentation::PointObject out_object;
+			out_object.class_= in_object.class_;
+			out_object.vertex_index= result.vertices.size();
+			result.vertices.push_back( in_data.vertices[ in_object.vertex_index ] );
+			result.point_objects.push_back( out_object );
+		}
+	}
+
+	for( const LinearObjectClass& object_class : styles.linear_classes_ordered )
 	{
-		BaseDataRepresentation::LinearObject out_object;
-		out_object.class_= in_object.class_;
-		out_object.first_vertex_index= result.vertices.size();
-		out_object.vertex_count= in_object.vertex_count;
+		for( const BaseDataRepresentation::LinearObject& in_object : in_data.linear_objects )
+		{
+			if( in_object.class_ != object_class )
+				continue;
 
-		for( size_t v= 0u; v < in_object.vertex_count; ++v )
-			result.vertices.push_back( in_data.vertices[ in_object.first_vertex_index + v ] );
+			BaseDataRepresentation::LinearObject out_object;
+			out_object.class_= in_object.class_;
+			out_object.first_vertex_index= result.vertices.size();
+			out_object.vertex_count= in_object.vertex_count;
 
-		result.linear_objects.push_back( out_object );
-	} // for point objects.
+			for( size_t v= 0u; v < in_object.vertex_count; ++v )
+				result.vertices.push_back( in_data.vertices[ in_object.first_vertex_index + v ] );
+
+			result.linear_objects.push_back( out_object );
+		}
+	}
 
 	for( const Styles::ArealObjectPhase& phase : styles.areal_object_phases )
 	{
@@ -76,6 +86,8 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 	}
 
 	Log::Info( "Phase sort pass: " );
+	Log::Info( styles.point_classes_ordered.size(), " point classes" );
+	Log::Info( styles.linear_classes_ordered.size(), " linear classes" );
 	Log::Info( styles.areal_object_phases.size(), " areal objects phases" );
 	Log::Info( "" );
 

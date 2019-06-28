@@ -102,5 +102,22 @@
             ],
             "allow_collinear_points_removing" : true
         }
+    ],
+
+    "point_classes_ordered":
+    [
+        "SubwayEntrance",
+        "StationPlatform"
+    ],
+
+    "linear_classes_ordered":
+    [
+        "Waterway",
+        "Road",
+        "Tram",
+        "Railway",
+        "Pedestrian",
+        "Monorail",
+        "Barrier"
     ]
 }
