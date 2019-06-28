@@ -109,6 +109,20 @@ Styles LoadStyles( const char* const file_name )
 			ParseColor( areal_style_json.second["color"].AsString(), out_style.color );
 	}
 
+	for( const PanzerJson::Value& areal_object_phase : json_parse_result->root["areal_phases"].array_elements() )
+	{
+		Styles::ArealObjectPhase result_phase;
+		for( const PanzerJson::Value& class_json : areal_object_phase["classes"].array_elements() )
+		{
+			const ArealObjectClass object_class= StringToArealObjectClass( class_json.AsString() );
+			if( object_class != ArealObjectClass::None )
+			{
+				result_phase.classes.insert( object_class );
+			}
+		}
+		result.areal_object_phases.push_back( std::move(result_phase) );
+	}
+
 	return result;
 }
 
