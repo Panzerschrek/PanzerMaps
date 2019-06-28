@@ -400,6 +400,12 @@ static ChunksData DumpDataChunk(
 		reinterpret_cast<const unsigned char*>( vertices.data() ),
 		reinterpret_cast<const unsigned char*>( vertices.data() + vertices.size() ) );
 
+	if( vertices.empty() )
+	{
+		// Chunk without geomery.
+		result.clear();
+		return { result };
+	}
 	Log::Info( "Chunk ", chunk_offset_x, " ", chunk_offset_y, " done. Vertices: ", vertices.size() );
 
 	return { result };
@@ -454,7 +460,8 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 					y * used_chunk_size,
 					used_chunk_size );
 			for( ChunkData& chunk_data : chunks_data )
-				final_chunks_data.push_back( std::move( chunk_data ) );
+				if( !chunk_data.empty() )
+					final_chunks_data.push_back( std::move( chunk_data ) );
 		}
 
 		get_zoom_level(zoom_level_index).unit_size_m= zoom_level_data.meters_in_unit;
