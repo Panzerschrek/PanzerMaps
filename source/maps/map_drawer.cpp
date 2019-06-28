@@ -697,6 +697,8 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
+	unit_size_m_= zoom_levels[0u].unit_size_m;
+
 	min_scale_= 1.0f;
 	max_scale_= 4.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;

@@ -100,6 +100,9 @@ struct ZoomLevel
 	uint32_t chunk_count;
 	uint32_t zoom_level_log2;
 
+	// Approximate unit size.
+	float unit_size_m; // TODO - maybe use fixed?
+
 	uint32_t point_styles_offset;
 	uint32_t point_styles_count;
 	uint32_t linear_styles_offset;

@@ -39,6 +39,7 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
+	float unit_size_m_;
 
 	unsigned char background_color_[4]= {0};
 };
