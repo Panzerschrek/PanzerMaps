@@ -131,10 +131,15 @@ OSMParseResult ParseOSM( const char* file_name )
 			OSMParseResult::LinearObject obj;
 
 			const size_t lane_count= GetLaneCount( way_element );
-			if(
-				std::strcmp( highway, "residential" ) == 0 ||
-				std::strcmp( highway, "living_street" ) == 0 ||
-				std::strcmp( highway, "service" ) == 0 )
+			if( std::strcmp( highway, "living_street" ) == 0 ||
+				std::strcmp( highway, "residential" ) == 0 )
+			{
+				if( lane_count <= 1u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes1;
+				else
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes2;
+			}
+			else if( std::strcmp( highway, "service" ) == 0 )
 			{
 				if( lane_count <= 2u )
 					obj.class_= LinearObjectClass::RoadSignificance0;
@@ -143,8 +148,6 @@ OSMParseResult ParseOSM( const char* file_name )
 			}
 			else if(
 				std::strcmp( highway, "unclassified" ) == 0 ||
-				std::strcmp( highway, "secondary" ) == 0 ||
-				std::strcmp( highway, "secondary_link" ) == 0 ||
 				std::strcmp( highway, "tertiary" ) == 0 ||
 				std::strcmp( highway, "tertiary_link" ) == 0 ||
 				std::strcmp( highway, "track" ) == 0 ||
@@ -165,14 +168,10 @@ OSMParseResult ParseOSM( const char* file_name )
 					obj.class_= LinearObjectClass::RoadSignificance1Lanes8More;
 			}
 			else if(
-				std::strcmp( highway, "motorway" ) == 0 ||
-				std::strcmp( highway, "motorway_link" ) == 0 ||
-				std::strcmp( highway, "trunk" ) == 0 ||
-				std::strcmp( highway, "trunk_link" ) == 0 ||
-				std::strcmp( highway, "primary" ) == 0 ||
-				std::strcmp( highway, "primary_link" ) == 0 )
+				std::strcmp( highway, "secondary" ) == 0 ||
+				std::strcmp( highway, "secondary_link" )  == 0 )
 			{
-					 if( lane_count == 0u )
+					if( lane_count == 0u )
 					obj.class_= LinearObjectClass::RoadSignificance2Lanes2;
 				else if( lane_count <= 1u )
 					obj.class_= LinearObjectClass::RoadSignificance2Lanes1;
@@ -182,10 +181,31 @@ OSMParseResult ParseOSM( const char* file_name )
 					obj.class_= LinearObjectClass::RoadSignificance2Lanes4;
 				else if( lane_count <= 6u )
 					obj.class_= LinearObjectClass::RoadSignificance2Lanes6;
-				else if( lane_count <= 8u )
-					obj.class_= LinearObjectClass::RoadSignificance2Lanes8;
 				else
-					obj.class_= LinearObjectClass::RoadSignificance2Lanes10More;
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes8More;
+			}
+			else if(
+				std::strcmp( highway, "motorway" ) == 0 ||
+				std::strcmp( highway, "motorway_link" ) == 0 ||
+				std::strcmp( highway, "trunk" ) == 0 ||
+				std::strcmp( highway, "trunk_link" ) == 0 ||
+				std::strcmp( highway, "primary" ) == 0 ||
+				std::strcmp( highway, "primary_link" ) == 0 )
+			{
+					 if( lane_count == 0u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes2;
+				else if( lane_count <= 1u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes1;
+				else if( lane_count <= 2u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes2;
+				else if( lane_count <= 4u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes4;
+				else if( lane_count <= 6u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes6;
+				else if( lane_count <= 8u )
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes8;
+				else
+					obj.class_= LinearObjectClass::RoadSignificance3Lanes10More;
 			}
 			else if(
 				std::strcmp( highway, "pedestrian" ) == 0 ||
