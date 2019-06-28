@@ -77,8 +77,11 @@ Usage:
 	CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result );
 	osm_parse_result= OSMParseResult();
 
-	PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( coordinates_transform_result );
+	PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, styles );
 	coordinates_transform_result= CoordinatesTransformationPassResult();
+
+	PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );
+	phase_sort_result= PhaseSortResult();
 
 	CreateDataFile(
 		normalize_polygons_result,

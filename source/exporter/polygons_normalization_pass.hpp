@@ -1,13 +1,13 @@
 #pragma once
-#include "coordinates_transformation_pass.hpp"
+#include "phase_sort_pass.hpp"
 
 namespace PanzerMaps
 {
 
-using PolygonsNormalizationPassResult= CoordinatesTransformationPassResult;
+using PolygonsNormalizationPassResult= PhaseSortResult;
 
 // Split polygons into convex parts, make all polygons clockwise, etc.
 // TODO - fix also self-intersecting polygons.
-PolygonsNormalizationPassResult NormalizePolygons( const PolygonsNormalizationPassResult& in_data );
+PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_data );
 
 } // namespace PanzerMaps

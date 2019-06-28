@@ -1,24 +1,11 @@
 #include <algorithm>
 #include "../common/assert.hpp"
 #include "../common/log.hpp"
+#include "geometry_utils.hpp"
 #include "polygons_normalization_pass.hpp"
 
 namespace PanzerMaps
 {
-
-// Returns positive value for clockwise polygon, negative - for anticlockwisi.
-static int64_t CalculatePolygonDoubleSignedArea( const MercatorPoint* const vertices, size_t vertex_count )
-{
-	PM_ASSERT( vertex_count >= 3u );
-
-	int64_t result= 0;
-
-	result+= int64_t(vertices[0u].x) * int64_t(vertices[vertex_count-1u].y) - int64_t(vertices[vertex_count-1u].x) * int64_t(vertices[0u].y);
-	for( size_t i= 1u; i < vertex_count; ++i )
-		result+= int64_t(vertices[i].x) * int64_t(vertices[i-1u].y) - int64_t(vertices[i-1u].x) * int64_t(vertices[i].y);
-
-	return result;
-}
 
 // Returns non-negative value for convex vertex of clockwise polygon.
 static int64_t PolygonVertexCross( const MercatorPoint& p0, const MercatorPoint& p1, const MercatorPoint& p2 )
@@ -202,7 +189,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 	return result;
 }
 
-PolygonsNormalizationPassResult NormalizePolygons( const PolygonsNormalizationPassResult& in_data )
+PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_data )
 {
 	PolygonsNormalizationPassResult result;
 	result.min_point= in_data.min_point;
