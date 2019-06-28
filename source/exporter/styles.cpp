@@ -42,35 +42,25 @@ static void ParseColor( const char* color_str, Styles::ColorRGBA& out_color )
 	}
 }
 
-static Styles::PointObjectStyles ParsePointObjectStyles( const PanzerJson::Value& point_styles_json )
+static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, Styles::PointObjectStyles& point_styles )
 {
-	Styles::PointObjectStyles point_styles;
-
 	for( const auto& point_style_json : point_styles_json.object_elements() )
 	{
 		const PointObjectClass object_class= StringToPointObjectClass( point_style_json.first );
 		if( object_class == PointObjectClass::None )
 			continue;
-		if( point_styles.count( object_class ) > 0 )
-			continue;
 
 		Styles::PointObjectStyle& out_style= point_styles[ object_class ];
 		(void)out_style;
 	}
-
-	return point_styles;
 }
 
-static Styles::LinearObjectStyles ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json )
+static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json, Styles::LinearObjectStyles& linear_styles )
 {
-	Styles::LinearObjectStyles linear_styles;
-
 	for( const auto& linear_style_json : linear_styles_json.object_elements() )
 	{
 		const LinearObjectClass object_class= StringToLinearObjectClass( linear_style_json.first );
 		if( object_class == LinearObjectClass::None )
-			continue;
-		if( linear_styles.count( object_class ) > 0 )
 			continue;
 
 		Styles::LinearObjectStyle& out_style= linear_styles[ object_class ];
@@ -78,24 +68,21 @@ static Styles::LinearObjectStyles ParseLinearObjectStyles( const PanzerJson::Val
 		if( linear_style_json.second.IsMember( "color" ) )
 			ParseColor( linear_style_json.second["color"].AsString(), out_style.color );
 
-		const PanzerJson::Value& width_m_json= linear_style_json.second["width_m"];
-		if( width_m_json.IsNumber() )
+		if( linear_style_json.second.IsMember( "width_m" ) )
+		{
+			const PanzerJson::Value& width_m_json= linear_style_json.second["width_m"];
+			if( width_m_json.IsNumber() )
 			out_style.width_m= std::max( 0.0f, width_m_json.AsFloat() );
+		}
 	}
-
-	return linear_styles;
 }
 
-static Styles::ArealObjectStyles ParseArealObjectStyles( const PanzerJson::Value& areal_styles_json )
+static void ParseArealObjectStyles( const PanzerJson::Value& areal_styles_json, Styles::ArealObjectStyles& areal_styles )
 {
-	Styles::ArealObjectStyles areal_styles;
-
 	for( const auto& areal_style_json : areal_styles_json.object_elements() )
 	{
 		const ArealObjectClass object_class= StringToArealObjectClass( areal_style_json.first );
 		if( object_class == ArealObjectClass::None )
-			continue;
-		if( areal_styles.count( object_class ) > 0 )
 			continue;
 
 		Styles::ArealObjectStyle& out_style= areal_styles[ object_class ];
@@ -104,18 +91,24 @@ static Styles::ArealObjectStyles ParseArealObjectStyles( const PanzerJson::Value
 			ParseColor( areal_style_json.second["color"].AsString(), out_style.color );
 	}
 
-	return areal_styles;
 }
 
-static Styles::ZoomLevel ParseZoomLevel( const PanzerJson::Value& zoom_level_json )
+static Styles::ZoomLevel ParseZoomLevel(
+	const PanzerJson::Value& zoom_level_json,
+	const Styles::PointObjectStyles& default_point_styles,
+	const Styles::LinearObjectStyles& default_linear_styles,
+	const Styles::ArealObjectStyles& default_areal_styles )
 {
 	Styles::ZoomLevel zoom_level;
+	zoom_level.point_object_styles= default_point_styles;
+	zoom_level.linear_object_styles= default_linear_styles;
+	zoom_level.areal_object_styles= default_areal_styles;
 
 	zoom_level.scale_to_prev_log2= static_cast<size_t>( std::max( 1, std::min( zoom_level_json[ "scale_to_prev_log2" ].AsInt(), 4 ) ) );
 
-	zoom_level.point_object_styles_override= ParsePointObjectStyles( zoom_level_json["point_styles"] );
-	zoom_level.linear_object_styles_override= ParseLinearObjectStyles( zoom_level_json["linear_styles"] );
-	zoom_level.areal_object_styles_override= ParseArealObjectStyles( zoom_level_json["areal_styles"] );
+	ParsePointObjectStyles( zoom_level_json["point_styles"], zoom_level.point_object_styles );
+	ParseLinearObjectStyles( zoom_level_json["linear_styles"], zoom_level.linear_object_styles );
+	ParseArealObjectStyles( zoom_level_json["areal_styles"], zoom_level.areal_object_styles );
 
 	for( const PanzerJson::Value& areal_object_phase : zoom_level_json["areal_phases"].array_elements() )
 	{
@@ -184,12 +177,16 @@ Styles LoadStyles( const char* const file_name )
 	if( json_parse_result->root.IsMember( "background_color" ) )
 		ParseColor( json_parse_result->root["background_color"].AsString(), result.background_color );
 
-	result.point_object_styles= ParsePointObjectStyles( json_parse_result->root["point_styles"] );
-	result.linear_object_styles= ParseLinearObjectStyles( json_parse_result->root["linear_styles"] );
-	result.areal_object_styles= ParseArealObjectStyles( json_parse_result->root["areal_styles"] );
+	Styles::PointObjectStyles point_object_styles;
+	Styles::LinearObjectStyles linear_object_styles;
+	Styles::ArealObjectStyles areal_object_styles;
+
+	ParsePointObjectStyles( json_parse_result->root["point_styles"], point_object_styles );
+	ParseLinearObjectStyles( json_parse_result->root["linear_styles"], linear_object_styles );
+	ParseArealObjectStyles( json_parse_result->root["areal_styles"], areal_object_styles );
 
 	for( const PanzerJson::Value& zoom_json : json_parse_result->root["zoom_levels" ] )
-		result.zoom_levels.push_back( ParseZoomLevel( zoom_json ) );
+		result.zoom_levels.push_back( ParseZoomLevel( zoom_json, point_object_styles, linear_object_styles, areal_object_styles ) );
 
 	if( result.zoom_levels.empty() )
 		Log::FatalError( "No zoom levels in styles. Required at least one zoom level" );

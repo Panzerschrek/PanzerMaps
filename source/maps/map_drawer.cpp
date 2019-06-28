@@ -387,6 +387,7 @@ static void CreatePolygonalLine(
 
 struct MapDrawer::Chunk
 {
+public:
 	Chunk(
 		const DataFileDescription::Chunk& in_chunk,
 		const DataFileDescription::LinearObjectStyle* const linear_styles,
@@ -527,6 +528,7 @@ struct MapDrawer::Chunk
 	Chunk& operator=( const Chunk& )= delete;
 	Chunk& operator=( Chunk&& )= default;
 
+public:
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_as_triangles_buffer_;
@@ -541,8 +543,83 @@ struct MapDrawer::Chunk
 
 struct MapDrawer::ZoomLevel
 {
-	size_t zoom_level_log2;
+public:
+	ZoomLevel( const DataFileDescription::ZoomLevel& in_zoom_level, const unsigned char* const file_content )
+		: zoom_level_log2(in_zoom_level.zoom_level_log2)
+	{
+		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + in_zoom_level.linear_styles_offset );
+		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + in_zoom_level.areal_styles_offset );
+
+		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + in_zoom_level.chunks_description_offset );
+
+		for( uint32_t chunk_index= 0u; chunk_index < in_zoom_level.chunk_count; ++chunk_index )
+		{
+			const size_t chunk_offset= chunks_description[chunk_index].offset;
+			const unsigned char* const chunk_data= file_content + chunk_offset;
+			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
+			chunks.emplace_back( chunk, linear_styles, areal_styles );
+		}
+
+		// Create textures
+		{
+			DataFileDescription::ColorRGBA texture_data[256u]= {0};
+
+			for( uint32_t i= 0u; i < in_zoom_level.linear_styles_count; ++i )
+				std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+
+			glGenTextures( 1, &linear_objects_texture_id );
+			glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id );
+			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		}
+		{
+			DataFileDescription::ColorRGBA texture_data[256u]= {0};
+
+			for( uint32_t i= 0u; i < in_zoom_level.areal_styles_count; ++i )
+				std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+
+			glGenTextures( 1, &areal_objects_texture_id );
+			glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id );
+			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+		}
+	}
+
+	~ZoomLevel()
+	{
+		if( linear_objects_texture_id != ~0u )
+			glDeleteTextures( 1, &linear_objects_texture_id );
+		if( areal_objects_texture_id != ~0u )
+			glDeleteTextures( 1, &areal_objects_texture_id );
+	}
+
+	ZoomLevel()= delete;
+	ZoomLevel(const ZoomLevel&)= delete;
+
+	ZoomLevel( ZoomLevel&& other )
+		: zoom_level_log2(other.zoom_level_log2)
+		, chunks(std::move(other.chunks))
+	{
+		linear_objects_texture_id= other.linear_objects_texture_id;
+		areal_objects_texture_id= other.areal_objects_texture_id;
+
+		other.linear_objects_texture_id= other.areal_objects_texture_id= ~0u;
+	}
+
+	ZoomLevel& operator=(const ZoomLevel&)= delete;
+	ZoomLevel&operator=( ZoomLevel&& other )= delete;
+
+public:
+	const size_t zoom_level_log2;
 	std::vector<Chunk> chunks;
+
+	// 1D texture with colors for linear objects.
+	GLuint linear_objects_texture_id= ~0u;
+	// 1D texture with colors for areal objects.
+	GLuint areal_objects_texture_id= ~0u;
+
 };
 
 struct MapDrawer::ChunkToDraw
@@ -580,51 +657,10 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 		return;
 	}
 
-	const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + data_file.linear_styles_offset );
-	const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + data_file.areal_styles_offset );
-
 	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + data_file.zoom_levels_offset );
 	for( uint32_t zoom_level_index= 0u; zoom_level_index < data_file.zoom_level_count; ++zoom_level_index )
-	{
-		ZoomLevel zoom_level;
-		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + zoom_levels[zoom_level_index].chunks_description_offset );
+		zoom_levels_.emplace_back( zoom_levels[zoom_level_index], file_content );
 
-		for( uint32_t chunk_index= 0u; chunk_index < zoom_levels[zoom_level_index].chunk_count; ++chunk_index )
-		{
-			const size_t chunk_offset= chunks_description[chunk_index].offset;
-			const unsigned char* const chunk_data= file_content + chunk_offset;
-			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
-			zoom_level.chunks.emplace_back( chunk, linear_styles, areal_styles );
-		}
-		zoom_level.zoom_level_log2= zoom_levels[zoom_level_index].zoom_level_log2;
-		zoom_levels_.push_back( std::move(zoom_level) );
-	}
-
-	// Create textures
-	{
-		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		for( uint32_t i= 0u; i < data_file.linear_styles_count; ++i )
-			std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
-
-		glGenTextures( 1, &linear_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	}
-	{
-		DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-		for( uint32_t i= 0u; i < data_file.areal_styles_count; ++i )
-			std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
-
-		glGenTextures( 1, &areal_objects_texture_id_ );
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
-		glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	}
 	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
 
 	// Create shaders
@@ -668,8 +704,6 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 
 MapDrawer::~MapDrawer()
 {
-	glDeleteTextures( 1, &linear_objects_texture_id_ );
-	glDeleteTextures( 1, &areal_objects_texture_id_ );
 }
 
 void MapDrawer::Draw()
@@ -728,7 +762,7 @@ void MapDrawer::Draw()
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_1D, zoom_level->areal_objects_texture_id );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
@@ -746,7 +780,7 @@ void MapDrawer::Draw()
 		linear_objets_shader_.Bind();
 		linear_objets_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id_ );
+		glBindTexture( GL_TEXTURE_1D, zoom_level->linear_objects_texture_id );
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );

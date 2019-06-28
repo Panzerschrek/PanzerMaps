@@ -95,9 +95,17 @@ struct CommonStyle
 
 struct ZoomLevel
 {
+	// Offsets - from data file start.
 	uint32_t chunks_description_offset;
 	uint32_t chunk_count;
 	uint32_t zoom_level_log2;
+
+	uint32_t point_styles_offset;
+	uint32_t point_styles_count;
+	uint32_t linear_styles_offset;
+	uint32_t linear_styles_count;
+	uint32_t areal_styles_offset;
+	uint32_t areal_styles_count;
 };
 
 struct DataFile
@@ -118,13 +126,6 @@ struct DataFile
 
 	uint32_t zoom_levels_offset;
 	uint32_t zoom_level_count;
-
-	uint32_t point_styles_offset;
-	uint32_t point_styles_count;
-	uint32_t linear_styles_offset;
-	uint32_t linear_styles_count;
-	uint32_t areal_styles_offset;
-	uint32_t areal_styles_count;
 
 	CommonStyle common_style;
 };

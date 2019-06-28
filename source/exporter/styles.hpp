@@ -9,6 +9,7 @@ namespace PanzerMaps
 
 struct Styles
 {
+public:
 	using ColorRGBA= unsigned char[4];
 
 	struct PointObjectStyle
@@ -42,16 +43,13 @@ struct Styles
 		std::vector<PointObjectClass> point_classes_ordered;
 		std::vector<LinearObjectClass> linear_classes_ordered;
 
-		PointObjectStyles point_object_styles_override;
-		LinearObjectStyles linear_object_styles_override;
-		ArealObjectStyles areal_object_styles_override;
+		PointObjectStyles point_object_styles;
+		LinearObjectStyles linear_object_styles;
+		ArealObjectStyles areal_object_styles;
 	};
 
+public:
 	ColorRGBA background_color= {0};
-
-	PointObjectStyles point_object_styles;
-	LinearObjectStyles linear_object_styles;
-	ArealObjectStyles areal_object_styles;
 	std::vector<ZoomLevel> zoom_levels;
 };
 

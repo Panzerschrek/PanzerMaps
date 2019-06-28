@@ -152,8 +152,18 @@
                 "Road",
                 "Tram",
                 "Railway"
-            ]
+            ],
+
+            // Override width for linear objects.
+            "linear_styles":
+            {
+                "Road"    : { "width_m" : 8.0 },
+                "Waterway": { "width_m" : 5.0 },
+                "Railway" : { "width_m" : 6.0 },
+                "Tram"    : { "width_m" : 6.0 }
+            }
         },
+
         {
             "scale_to_prev_log2" : 2,
             "areal_phases" :
@@ -179,7 +189,14 @@
             [
                 "Road",
                 "Railway"
-            ]
+            ],
+
+            // Override width for linear objects.
+            "linear_styles":
+            {
+                "Road"    : { "width_m" : 16.0 },
+                "Railway" : { "width_m" : 12.0 }
+            }
         }
     ]
 }
