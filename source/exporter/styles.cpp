@@ -48,7 +48,10 @@ static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, 
 	{
 		const PointObjectClass object_class= StringToPointObjectClass( point_style_json.first );
 		if( object_class == PointObjectClass::None )
+		{
+			Log::Warning( "Unknown point object class: ", point_style_json.first );
 			continue;
+		}
 
 		Styles::PointObjectStyle& out_style= point_styles[ object_class ];
 		(void)out_style;
@@ -61,7 +64,10 @@ static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json
 	{
 		const LinearObjectClass object_class= StringToLinearObjectClass( linear_style_json.first );
 		if( object_class == LinearObjectClass::None )
+		{
+			Log::Warning( "Unknown linear object class: ", linear_style_json.first );
 			continue;
+		}
 
 		Styles::LinearObjectStyle& out_style= linear_styles[ object_class ];
 
@@ -83,7 +89,10 @@ static void ParseArealObjectStyles( const PanzerJson::Value& areal_styles_json, 
 	{
 		const ArealObjectClass object_class= StringToArealObjectClass( areal_style_json.first );
 		if( object_class == ArealObjectClass::None )
+		{
+			Log::Warning( "Unknown areal object class: ", areal_style_json.first );
 			continue;
+		}
 
 		Styles::ArealObjectStyle& out_style= areal_styles[ object_class ];
 
@@ -116,10 +125,12 @@ static Styles::ZoomLevel ParseZoomLevel(
 		for( const PanzerJson::Value& class_json : areal_object_phase["classes"].array_elements() )
 		{
 			const ArealObjectClass object_class= StringToArealObjectClass( class_json.AsString() );
-			if( object_class != ArealObjectClass::None )
+			if( object_class == ArealObjectClass::None )
 			{
-				result_phase.classes.insert( object_class );
+				Log::Warning( "Unknown areal object class: ", class_json.AsString() );
+				continue;
 			}
+			result_phase.classes.insert( object_class );
 		}
 		zoom_level.areal_object_phases.push_back( std::move(result_phase) );
 	}
@@ -128,7 +139,10 @@ static Styles::ZoomLevel ParseZoomLevel(
 	{
 		const PointObjectClass object_class= StringToPointObjectClass( point_object_class_json.AsString() );
 		if( object_class == PointObjectClass::None )
+		{
+			Log::Warning( "Unknown point object class: ", point_object_class_json.AsString() );
 			continue;
+		}
 		if( std::find( zoom_level.point_classes_ordered.begin(), zoom_level.point_classes_ordered.end(), object_class ) != zoom_level.point_classes_ordered.end() )
 		{
 			Log::Warning( "Duplicated point class: ", point_object_class_json.AsString() );
@@ -141,7 +155,10 @@ static Styles::ZoomLevel ParseZoomLevel(
 	{
 		const LinearObjectClass object_class= StringToLinearObjectClass( linear_object_class_json.AsString() );
 		if( object_class == LinearObjectClass::None )
+		{
+			Log::Warning( "Unknown linear object class: ", linear_object_class_json.AsString() );
 			continue;
+		}
 		if( std::find( zoom_level.linear_classes_ordered.begin(), zoom_level.linear_classes_ordered.end(), object_class ) != zoom_level.linear_classes_ordered.end() )
 		{
 			Log::Warning( "Duplicated linear class: ", linear_object_class_json.AsString() );

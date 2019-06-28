@@ -71,6 +71,40 @@ static void ExtractVertices( const tinyxml2::XMLElement* const way_element, cons
 	}
 }
 
+// Returns "0" if unknown.
+static size_t GetLaneCount( const tinyxml2::XMLElement* const way_element )
+{
+	size_t lanes= 0u;
+	if( const char* const lanes_str= GetTagValue( way_element, "lanes" ) )
+	{
+		const char* lane_num= lanes_str;
+		while( std::isdigit( *lane_num ) )
+			++lane_num;
+
+		if( lane_num != lanes_str )
+			lanes= std::atoi( lanes_str );
+
+		if( *lane_num == ';' )
+		{
+			++lane_num;
+			while( std::isdigit( *lane_num ) )
+				++lane_num;
+			lanes+= std::atoi( lane_num );
+		}
+	}
+	else if( const char* const width_str= GetTagValue( way_element, "width" ) )
+		lanes= std::max( size_t(1u), size_t( std::atof( width_str ) / 3.5 ) );
+	else
+	{
+		if( const char* const forward_str= GetTagValue( way_element, "lanes:forward" ) )
+			lanes+= std::atoi(forward_str);
+		if( const char* const backward_str= GetTagValue( way_element, "lanes:backward" ) )
+			lanes+= std::atoi(backward_str);
+	}
+
+	return lanes;
+}
+
 OSMParseResult ParseOSM( const char* file_name )
 {
 	OSMParseResult result;
@@ -95,28 +129,69 @@ OSMParseResult ParseOSM( const char* file_name )
 		if( const char* const highway= GetTagValue( way_element, "highway" ) )
 		{
 			OSMParseResult::LinearObject obj;
-			if( std::strcmp( highway, "motorway" ) == 0 ||
-				std::strcmp( highway, "trunk" ) == 0 ||
-				std::strcmp( highway, "primary" ) == 0 ||
-				std::strcmp( highway, "secondary" ) == 0 ||
-				std::strcmp( highway, "tertiary" ) == 0 ||
-				std::strcmp( highway, "unclassified" ) == 0 ||
+
+			const size_t lane_count= GetLaneCount( way_element );
+			if(
 				std::strcmp( highway, "residential" ) == 0 ||
-				std::strcmp( highway, "motorway_link" ) == 0 ||
-				std::strcmp( highway, "trunk_link" ) == 0 ||
-				std::strcmp( highway, "primary_link" ) == 0 ||
-				std::strcmp( highway, "secondary_link" ) == 0 ||
-				std::strcmp( highway, "tertiary_link" ) == 0 ||
 				std::strcmp( highway, "living_street" ) == 0 ||
-				std::strcmp( highway, "service" ) == 0 ||
+				std::strcmp( highway, "service" ) == 0 )
+			{
+				if( lane_count <= 2u )
+					obj.class_= LinearObjectClass::RoadSignificance0;
+				else
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes2;
+			}
+			else if(
+				std::strcmp( highway, "unclassified" ) == 0 ||
+				std::strcmp( highway, "secondary" ) == 0 ||
+				std::strcmp( highway, "secondary_link" ) == 0 ||
+				std::strcmp( highway, "tertiary" ) == 0 ||
+				std::strcmp( highway, "tertiary_link" ) == 0 ||
 				std::strcmp( highway, "track" ) == 0 ||
 				std::strcmp( highway, "bus_guideway" ) == 0 ||
-				std::strcmp( highway, "raceway" ) == 0 ||
 				std::strcmp( highway, "road" ) == 0 )
-				obj.class_= LinearObjectClass::Road;
-			else if( std::strcmp( highway, "pedestrian" ) == 0 ||
+			{
+					if( lane_count == 0u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes2;
+				else if( lane_count <= 1u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes1;
+				else if( lane_count <= 2u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes2;
+				else if( lane_count <= 4u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes4;
+				else if( lane_count <= 6u )
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes6;
+				else
+					obj.class_= LinearObjectClass::RoadSignificance1Lanes8More;
+			}
+			else if(
+				std::strcmp( highway, "motorway" ) == 0 ||
+				std::strcmp( highway, "motorway_link" ) == 0 ||
+				std::strcmp( highway, "trunk" ) == 0 ||
+				std::strcmp( highway, "trunk_link" ) == 0 ||
+				std::strcmp( highway, "primary" ) == 0 ||
+				std::strcmp( highway, "primary_link" ) == 0 )
+			{
+					 if( lane_count == 0u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes2;
+				else if( lane_count <= 1u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes1;
+				else if( lane_count <= 2u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes2;
+				else if( lane_count <= 4u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes4;
+				else if( lane_count <= 6u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes6;
+				else if( lane_count <= 8u )
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes8;
+				else
+					obj.class_= LinearObjectClass::RoadSignificance2Lanes10More;
+			}
+			else if(
+				std::strcmp( highway, "pedestrian" ) == 0 ||
 				std::strcmp( highway, "footway" ) == 0 ||
-				std::strcmp( highway, "path" ) == 0)
+				std::strcmp( highway, "path" ) == 0 ||
+				std::strcmp( highway, "steps" ) == 0 ) // TODO - make spearate class for stairs.
 				obj.class_= LinearObjectClass::Pedestrian;
 
 			if( obj.class_ != LinearObjectClass::None )
@@ -147,11 +222,34 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			OSMParseResult::LinearObject obj;
 			if( std::strcmp( railway, "rail" ) == 0 )
-				obj.class_= LinearObjectClass::Railway;
+			{
+				if( const char* const usage= GetTagValue( way_element, "usage" ) )
+				{
+					if( std::strcmp( usage, "main" ) == 0 )
+						obj.class_= LinearObjectClass::Railway;
+					else
+						obj.class_= LinearObjectClass::RailwaySecondary;
+				}
+				else
+					obj.class_= LinearObjectClass::RailwaySecondary;
+			}
 			else if( std::strcmp( railway, "monorail" ) == 0 )
 				obj.class_= LinearObjectClass::Monorail;
 			else if( std::strcmp( railway, "tram" ) == 0 )
-				obj.class_= LinearObjectClass::Tram;
+			{
+				if( const char* const service= GetTagValue( way_element, "service" ) )
+				{
+					if(
+						std::strcmp( service, "yard" ) == 0 ||
+						std::strcmp( service, "siding" ) == 0 ||
+						std::strcmp( service, "spur" ) == 0 )
+						obj.class_= LinearObjectClass::TramSecondary;
+					else
+						obj.class_= LinearObjectClass::Tram;
+				}
+				else
+					obj.class_= LinearObjectClass::Tram;
+			}
 
 			if( obj.class_ != LinearObjectClass::None )
 			{

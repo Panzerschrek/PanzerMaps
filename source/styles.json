@@ -8,11 +8,70 @@
 
     "linear_styles":
     {
-        "Road":
+        // 1 lane width - 3.5m
+        "RoadSignificance0":
         {
             "color" : "#d0d0d0",
-            "width_m" : 4.0
+            "width_m" : 3.5
         },
+
+        "RoadSignificance1Lanes1":
+        {
+            "color" : "#d0d0d0",
+            "width_m" : 3.5
+        },
+        "RoadSignificance1Lanes2":
+        {
+            "color" : "#d0d0d0",
+            "width_m" : 7.0
+        },
+        "RoadSignificance1Lanes4":
+        {
+            "color" : "#d0d0d0",
+            "width_m" : 14.0
+        },
+        "RoadSignificance1Lanes6":
+        {
+            "color" : "#d0d0d0",
+            "width_m" : 21.0
+        },
+        "RoadSignificance1Lanes8More":
+        {
+            "color" : "#d0d0d0",
+            "width_m" : 28.0
+        },
+
+        "RoadSignificance2Lanes1":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 3.5
+        },
+        "RoadSignificance2Lanes2":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 7.0
+        },
+        "RoadSignificance2Lanes4":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 14.0
+        },
+        "RoadSignificance2Lanes6":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 21.0
+        },
+        "RoadSignificance2Lanes8":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 28.0
+        },
+        "RoadSignificance2Lanes10More":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 35.0
+        },
+
         "Pedestrian":
         {
             "color" : "#A080A0",
@@ -28,7 +87,17 @@
             "color" : "#808080",
             "width_m" : 1.5
         },
+        "RailwaySecondary":
+        {
+            "color" : "#B0B0B0",
+            "width_m" : 1.5
+        },
         "Tram":
+        {
+            "color" : "#101010",
+            "width_m" : 1.5
+        },
+        "TramSecondary":
         {
             "color" : "#101010",
             "width_m" : 1.5
@@ -117,8 +186,21 @@
             "linear_classes_ordered":
             [
                 "Waterway",
-                "Road",
+                "RoadSignificance0",
+                "RoadSignificance1Lanes1",
+                "RoadSignificance1Lanes2",
+                "RoadSignificance1Lanes4",
+                "RoadSignificance1Lanes6",
+                "RoadSignificance1Lanes8More",
+                "RoadSignificance2Lanes1",
+                "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes4",
+                "RoadSignificance2Lanes6",
+                "RoadSignificance2Lanes8",
+                "RoadSignificance2Lanes10More",
                 "Tram",
+                "TramSecondary",
+                "RailwaySecondary",
                 "Railway",
                 "Pedestrian",
                 "Monorail",
@@ -149,7 +231,17 @@
             "linear_classes_ordered":
             [
                 "Waterway",
-                "Road",
+                "RoadSignificance1Lanes1",
+                "RoadSignificance1Lanes2",
+                "RoadSignificance1Lanes4",
+                "RoadSignificance1Lanes6",
+                "RoadSignificance1Lanes8More",
+                "RoadSignificance2Lanes1",
+                "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes4",
+                "RoadSignificance2Lanes6",
+                "RoadSignificance2Lanes8",
+                "RoadSignificance2Lanes10More",
                 "Tram",
                 "Railway"
             ],
@@ -157,10 +249,20 @@
             // Override width for linear objects.
             "linear_styles":
             {
-                "Road"    : { "width_m" : 8.0 },
-                "Waterway": { "width_m" : 5.0 },
-                "Railway" : { "width_m" : 6.0 },
-                "Tram"    : { "width_m" : 6.0 }
+                "RoadSignificance1Lanes1":      { "width_m" :  7.0 },
+                "RoadSignificance1Lanes2":      { "width_m" : 14.0 },
+                "RoadSignificance1Lanes4":      { "width_m" : 28.0 },
+                "RoadSignificance1Lanes6":      { "width_m" : 42.0 },
+                "RoadSignificance1Lanes8More":  { "width_m" : 56.0 },
+                "RoadSignificance2Lanes1":      { "width_m" :  7.0 },
+                "RoadSignificance2Lanes2":      { "width_m" : 14.0 },
+                "RoadSignificance2Lanes4":      { "width_m" : 28.0 },
+                "RoadSignificance2Lanes6":      { "width_m" : 42.0 },
+                "RoadSignificance2Lanes8":      { "width_m" : 56.0 },
+                "RoadSignificance2Lanes10More": { "width_m" : 70.0 },
+                "Waterway" : { "width_m" : 5.0 },
+                "Tram" : { "width_m" : 4.0 },
+                "Railway" : { "width_m" : 6.0 }
             }
         },
 
@@ -187,15 +289,35 @@
 
             "linear_classes_ordered":
             [
-                "Road",
+                "RoadSignificance1Lanes1",
+                "RoadSignificance1Lanes2",
+                "RoadSignificance1Lanes4",
+                "RoadSignificance1Lanes6",
+                "RoadSignificance1Lanes8More",
+                "RoadSignificance2Lanes1",
+                "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes4",
+                "RoadSignificance2Lanes6",
+                "RoadSignificance2Lanes8",
+                "RoadSignificance2Lanes10More",
                 "Railway"
             ],
 
             // Override width for linear objects.
             "linear_styles":
             {
-                "Road"    : { "width_m" : 16.0 },
-                "Railway" : { "width_m" : 12.0 }
+                "RoadSignificance1Lanes1":      { "width_m" :  14.0 },
+                "RoadSignificance1Lanes2":      { "width_m" :  28.0 },
+                "RoadSignificance1Lanes4":      { "width_m" :  42.0 },
+                "RoadSignificance1Lanes6":      { "width_m" :  84.0 },
+                "RoadSignificance1Lanes8More":  { "width_m" : 112.0 },
+                "RoadSignificance2Lanes1":      { "width_m" :  14.0 },
+                "RoadSignificance2Lanes2":      { "width_m" :  28.0 },
+                "RoadSignificance2Lanes4":      { "width_m" :  42.0 },
+                "RoadSignificance2Lanes6":      { "width_m" :  84.0 },
+                "RoadSignificance2Lanes8":      { "width_m" : 112.0 },
+                "RoadSignificance2Lanes10More": { "width_m" : 140.0 },
+                "Railway" : { "width_m" : 16.0 }
             }
         }
     ]
