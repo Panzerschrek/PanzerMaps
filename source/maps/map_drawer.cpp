@@ -703,10 +703,10 @@ void MapDrawer::Draw()
 	const int32_t viewport_half_size_y_world_space= int32_t( float(viewport_size_.height ) * 0.5f * scale_ ) + bb_extend_eps;
 	const int32_t cam_pos_x_world_space= int32_t(cam_pos_.x);
 	const int32_t cam_pos_y_world_space= int32_t(cam_pos_.y);
-	const int32_t bb_min_x= cam_pos_x_world_space - viewport_half_size_x_world_space;
-	const int32_t bb_max_x= cam_pos_x_world_space + viewport_half_size_x_world_space;
-	const int32_t bb_min_y= cam_pos_y_world_space - viewport_half_size_y_world_space;
-	const int32_t bb_max_y= cam_pos_y_world_space + viewport_half_size_y_world_space;
+	const int32_t bb_min_x= ( cam_pos_x_world_space - viewport_half_size_x_world_space ) >> zoom_level->zoom_level_log2;
+	const int32_t bb_max_x= ( cam_pos_x_world_space + viewport_half_size_x_world_space ) >> zoom_level->zoom_level_log2;
+	const int32_t bb_min_y= ( cam_pos_y_world_space - viewport_half_size_y_world_space ) >> zoom_level->zoom_level_log2;
+	const int32_t bb_max_y= ( cam_pos_y_world_space + viewport_half_size_y_world_space ) >> zoom_level->zoom_level_log2;
 
 	// Setup chunks list, calculate matrices.
 	std::vector<ChunkToDraw> visible_chunks;
