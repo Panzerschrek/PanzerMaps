@@ -77,7 +77,7 @@ Usage:
 	CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result );
 	osm_parse_result= OSMParseResult();
 
-	PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, styles );
+	PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, styles.zoom_levels.front() );
 	coordinates_transform_result= CoordinatesTransformationPassResult();
 
 	PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );

@@ -42,6 +42,124 @@ static void ParseColor( const char* color_str, Styles::ColorRGBA& out_color )
 	}
 }
 
+static Styles::PointObjectStyles ParsePointObjectStyles( const PanzerJson::Value& point_styles_json )
+{
+	Styles::PointObjectStyles point_styles;
+
+	for( const auto& point_style_json : point_styles_json.object_elements() )
+	{
+		const PointObjectClass object_class= StringToPointObjectClass( point_style_json.first );
+		if( object_class == PointObjectClass::None )
+			continue;
+		if( point_styles.count( object_class ) > 0 )
+			continue;
+
+		Styles::PointObjectStyle& out_style= point_styles[ object_class ];
+		(void)out_style;
+	}
+
+	return point_styles;
+}
+
+static Styles::LinearObjectStyles ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json )
+{
+	Styles::LinearObjectStyles linear_styles;
+
+	for( const auto& linear_style_json : linear_styles_json.object_elements() )
+	{
+		const LinearObjectClass object_class= StringToLinearObjectClass( linear_style_json.first );
+		if( object_class == LinearObjectClass::None )
+			continue;
+		if( linear_styles.count( object_class ) > 0 )
+			continue;
+
+		Styles::LinearObjectStyle& out_style= linear_styles[ object_class ];
+
+		if( linear_style_json.second.IsMember( "color" ) )
+			ParseColor( linear_style_json.second["color"].AsString(), out_style.color );
+
+		const PanzerJson::Value& width_m_json= linear_style_json.second["width_m"];
+		if( width_m_json.IsNumber() )
+			out_style.width_m= std::max( 0.0f, width_m_json.AsFloat() );
+	}
+
+	return linear_styles;
+}
+
+static Styles::ArealObjectStyles ParseArealObjectStyles( const PanzerJson::Value& areal_styles_json )
+{
+	Styles::ArealObjectStyles areal_styles;
+
+	for( const auto& areal_style_json : areal_styles_json.object_elements() )
+	{
+		const ArealObjectClass object_class= StringToArealObjectClass( areal_style_json.first );
+		if( object_class == ArealObjectClass::None )
+			continue;
+		if( areal_styles.count( object_class ) > 0 )
+			continue;
+
+		Styles::ArealObjectStyle& out_style= areal_styles[ object_class ];
+
+		if( areal_style_json.second.IsMember( "color" ) )
+			ParseColor( areal_style_json.second["color"].AsString(), out_style.color );
+	}
+
+	return areal_styles;
+}
+
+static Styles::ZoomLevel ParseZoomLevel( const PanzerJson::Value& zoom_level_json )
+{
+	Styles::ZoomLevel zoom_level;
+
+	zoom_level.scale_to_prev_log2= static_cast<size_t>( std::max( 1, std::min( zoom_level_json[ "scale_to_prev_log2" ].AsInt(), 4 ) ) );
+
+	zoom_level.point_object_styles_override= ParsePointObjectStyles( zoom_level_json["point_styles"] );
+	zoom_level.linear_object_styles_override= ParseLinearObjectStyles( zoom_level_json["linear_styles"] );
+	zoom_level.areal_object_styles_override= ParseArealObjectStyles( zoom_level_json["areal_styles"] );
+
+	for( const PanzerJson::Value& areal_object_phase : zoom_level_json["areal_phases"].array_elements() )
+	{
+		Styles::ArealObjectPhase result_phase;
+		for( const PanzerJson::Value& class_json : areal_object_phase["classes"].array_elements() )
+		{
+			const ArealObjectClass object_class= StringToArealObjectClass( class_json.AsString() );
+			if( object_class != ArealObjectClass::None )
+			{
+				result_phase.classes.insert( object_class );
+			}
+		}
+		zoom_level.areal_object_phases.push_back( std::move(result_phase) );
+	}
+
+	for( const PanzerJson::Value& point_object_class_json : zoom_level_json["point_classes_ordered"].array_elements() )
+	{
+		const PointObjectClass object_class= StringToPointObjectClass( point_object_class_json.AsString() );
+		if( object_class == PointObjectClass::None )
+			continue;
+		if( std::find( zoom_level.point_classes_ordered.begin(), zoom_level.point_classes_ordered.end(), object_class ) != zoom_level.point_classes_ordered.end() )
+		{
+			Log::Warning( "Duplicated point class: ", point_object_class_json.AsString() );
+			continue;
+		}
+		zoom_level.point_classes_ordered.push_back( object_class );
+	}
+
+	for( const PanzerJson::Value& linear_object_class_json : zoom_level_json["linear_classes_ordered"].array_elements() )
+	{
+		const LinearObjectClass object_class= StringToLinearObjectClass( linear_object_class_json.AsString() );
+		if( object_class == LinearObjectClass::None )
+			continue;
+		if( std::find( zoom_level.linear_classes_ordered.begin(), zoom_level.linear_classes_ordered.end(), object_class ) != zoom_level.linear_classes_ordered.end() )
+		{
+			Log::Warning( "Duplicated linear class: ", linear_object_class_json.AsString() );
+			continue;
+		}
+		zoom_level.linear_classes_ordered.push_back( object_class );
+	}
+
+	return zoom_level;
+}
+
 Styles LoadStyles( const char* const file_name )
 {
 	Styles result;
@@ -66,89 +184,15 @@ Styles LoadStyles( const char* const file_name )
 	if( json_parse_result->root.IsMember( "background_color" ) )
 		ParseColor( json_parse_result->root["background_color"].AsString(), result.background_color );
 
-	for( const auto& point_style_json : json_parse_result->root["point_styles"].object_elements() )
-	{
-		const PointObjectClass object_class= StringToPointObjectClass( point_style_json.first );
-		if( object_class == PointObjectClass::None )
-			continue;
-		if( result.point_object_styles.count( object_class ) > 0 )
-			continue;
+	result.point_object_styles= ParsePointObjectStyles( json_parse_result->root["point_styles"] );
+	result.linear_object_styles= ParseLinearObjectStyles( json_parse_result->root["linear_styles"] );
+	result.areal_object_styles= ParseArealObjectStyles( json_parse_result->root["areal_styles"] );
 
-		Styles::PointObjectStyle& out_style= result.point_object_styles[ object_class ];
-		(void)out_style;
-	}
+	for( const PanzerJson::Value& zoom_json : json_parse_result->root["zoom_levels" ] )
+		result.zoom_levels.push_back( ParseZoomLevel( zoom_json ) );
 
-	for( const auto& linear_style_json : json_parse_result->root["linear_styles"].object_elements() )
-	{
-		const LinearObjectClass object_class= StringToLinearObjectClass( linear_style_json.first );
-		if( object_class == LinearObjectClass::None )
-			continue;
-		if( result.linear_object_styles.count( object_class ) > 0 )
-			continue;
-
-		Styles::LinearObjectStyle& out_style= result.linear_object_styles[ object_class ];
-
-		if( linear_style_json.second.IsMember( "color" ) )
-			ParseColor( linear_style_json.second["color"].AsString(), out_style.color );
-
-		const PanzerJson::Value& width_m_json= linear_style_json.second["width_m"];
-		if( width_m_json.IsNumber() )
-			out_style.width_m= width_m_json.AsFloat();
-	}
-
-	for( const auto& areal_style_json : json_parse_result->root["areal_styles"].object_elements() )
-	{
-		const ArealObjectClass object_class= StringToArealObjectClass( areal_style_json.first );
-		if( object_class == ArealObjectClass::None )
-			continue;
-		if( result.areal_object_styles.count( object_class ) > 0 )
-			continue;
-
-		Styles::ArealObjectStyle& out_style= result.areal_object_styles[ object_class ];
-
-		if( areal_style_json.second.IsMember( "color" ) )
-			ParseColor( areal_style_json.second["color"].AsString(), out_style.color );
-	}
-
-	for( const PanzerJson::Value& areal_object_phase : json_parse_result->root["areal_phases"].array_elements() )
-	{
-		Styles::ArealObjectPhase result_phase;
-		for( const PanzerJson::Value& class_json : areal_object_phase["classes"].array_elements() )
-		{
-			const ArealObjectClass object_class= StringToArealObjectClass( class_json.AsString() );
-			if( object_class != ArealObjectClass::None )
-			{
-				result_phase.classes.insert( object_class );
-			}
-		}
-		result.areal_object_phases.push_back( std::move(result_phase) );
-	}
-
-	for( const PanzerJson::Value& point_object_class_json : json_parse_result->root["point_classes_ordered"].array_elements() )
-	{
-		const PointObjectClass object_class= StringToPointObjectClass( point_object_class_json.AsString() );
-		if( object_class == PointObjectClass::None )
-			continue;
-		if( std::find( result.point_classes_ordered.begin(), result.point_classes_ordered.end(), object_class ) != result.point_classes_ordered.end() )
-		{
-			Log::Warning( "Duplicated point class: ", point_object_class_json.AsString() );
-			continue;
-		}
-		result.point_classes_ordered.push_back( object_class );
-	}
-
-	for( const PanzerJson::Value& linear_object_class_json : json_parse_result->root["linear_classes_ordered"].array_elements() )
-	{
-		const LinearObjectClass object_class= StringToLinearObjectClass( linear_object_class_json.AsString() );
-		if( object_class == LinearObjectClass::None )
-			continue;
-		if( std::find( result.linear_classes_ordered.begin(), result.linear_classes_ordered.end(), object_class ) != result.linear_classes_ordered.end() )
-		{
-			Log::Warning( "Duplicated linear class: ", linear_object_class_json.AsString() );
-			continue;
-		}
-		result.linear_classes_ordered.push_back( object_class );
-	}
+	if( result.zoom_levels.empty() )
+		Log::FatalError( "No zoom levels in styles. Required at least one zoom level" );
 
 	return result;
 }

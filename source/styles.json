@@ -80,44 +80,50 @@
         }
     },
 
-    "areal_phases" :
+    "zoom_levels":
     [
         {
-            "classes" :
+            "scale_to_prev_log2" : 1,
+            "areal_phases" :
             [
-                "Water",
-                "Grassland",
-                "Cemetery",
-                "Industrial",
-                "Residential",
-                "Administrative",
-                "Wood"
+                {
+                    "classes" :
+                    [
+                        "Water",
+                        "Grassland",
+                        "Cemetery",
+                        "Industrial",
+                        "Residential",
+                        "Administrative",
+                        "Wood"
+                    ],
+                    "allow_collinear_points_removing" : false
+                },
+                {
+                    "classes":
+                    [
+                        "Building"
+                    ],
+                    "allow_collinear_points_removing" : true
+                }
             ],
-            "allow_collinear_points_removing" : false
-        },
-        {
-            "classes":
+
+            "point_classes_ordered":
             [
-                "Building"
+                "SubwayEntrance",
+                "StationPlatform"
             ],
-            "allow_collinear_points_removing" : true
+
+            "linear_classes_ordered":
+            [
+                "Waterway",
+                "Road",
+                "Tram",
+                "Railway",
+                "Pedestrian",
+                "Monorail",
+                "Barrier"
+            ]
         }
-    ],
-
-    "point_classes_ordered":
-    [
-        "SubwayEntrance",
-        "StationPlatform"
-    ],
-
-    "linear_classes_ordered":
-    [
-        "Waterway",
-        "Road",
-        "Tram",
-        "Railway",
-        "Pedestrian",
-        "Monorail",
-        "Barrier"
     ]
 }
