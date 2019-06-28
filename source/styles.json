@@ -11,33 +11,33 @@
         // 1 lane width - 3.5m
         "RoadSignificance0":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 3.5
         },
 
         "RoadSignificance1Lanes1":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 3.5
         },
         "RoadSignificance1Lanes2":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 7.0
         },
         "RoadSignificance1Lanes4":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 14.0
         },
         "RoadSignificance1Lanes6":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 21.0
         },
         "RoadSignificance1Lanes8More":
         {
-            "color" : "#d0d0d0",
+            "color" : "#ffffff",
             "width_m" : 28.0
         },
 
@@ -294,7 +294,7 @@
                 "RoadSignificance2Lanes2":      { "width_m" : 14.0 },
                 "RoadSignificance2Lanes4":      { "width_m" : 28.0 },
                 "RoadSignificance2Lanes6":      { "width_m" : 42.0 },
-                "RoadSignificance2Lanes8More":      { "width_m" : 56.0 },
+                "RoadSignificance2Lanes8More":  { "width_m" : 56.0 },
                 "RoadSignificance3Lanes1":      { "width_m" :  7.0 },
                 "RoadSignificance3Lanes2":      { "width_m" : 14.0 },
                 "RoadSignificance3Lanes4":      { "width_m" : 28.0 },
