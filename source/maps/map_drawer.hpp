@@ -18,6 +18,7 @@ public:
 
 private:
 	struct Chunk;
+	struct ZoomLevel;
 	struct ChunkToDraw;
 
 private:
@@ -26,7 +27,7 @@ private:
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
 
-	std::vector<Chunk> chunks_;
+	std::vector<ZoomLevel> zoom_levels_;
 
 	bool mouse_pressed_= false;
 	float scale_; // Scale = map units in pixel

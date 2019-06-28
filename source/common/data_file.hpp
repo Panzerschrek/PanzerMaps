@@ -97,6 +97,7 @@ struct ZoomLevel
 {
 	uint32_t chunks_description_offset;
 	uint32_t chunk_count;
+	uint32_t zoom_level_log2;
 };
 
 struct DataFile

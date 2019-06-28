@@ -450,6 +450,7 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 				final_chunks_data.push_back( std::move( chunk_data ) );
 		}
 
+		get_zoom_levels()[zoom_level_index].zoom_level_log2= zoom_level_data.zoom_level;
 		get_zoom_levels()[zoom_level_index].chunk_count= static_cast<uint32_t>(final_chunks_data.size());
 		get_zoom_levels()[zoom_level_index].chunks_description_offset= static_cast<uint32_t>(result.size());
 		const auto get_chunks_description= [&]() -> DataFile::ChunkDescription*

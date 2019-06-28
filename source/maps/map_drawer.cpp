@@ -539,6 +539,12 @@ struct MapDrawer::Chunk
 	const int32_t bb_max_y_;
 };
 
+struct MapDrawer::ZoomLevel
+{
+	size_t zoom_level_log2;
+	std::vector<Chunk> chunks;
+};
+
 struct MapDrawer::ChunkToDraw
 {
 	const MapDrawer::Chunk& chunk;
@@ -580,6 +586,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + data_file.zoom_levels_offset );
 	for( uint32_t zoom_level_index= 0u; zoom_level_index < data_file.zoom_level_count; ++zoom_level_index )
 	{
+		ZoomLevel zoom_level;
 		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + zoom_levels[zoom_level_index].chunks_description_offset );
 
 		for( uint32_t chunk_index= 0u; chunk_index < zoom_levels[zoom_level_index].chunk_count; ++chunk_index )
@@ -587,9 +594,10 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 			const size_t chunk_offset= chunks_description[chunk_index].offset;
 			const unsigned char* const chunk_data= file_content + chunk_offset;
 			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
-			chunks_.emplace_back( chunk, linear_styles, areal_styles );
+			zoom_level.chunks.emplace_back( chunk, linear_styles, areal_styles );
 		}
-		break;
+		zoom_level.zoom_level_log2= zoom_levels[zoom_level_index].zoom_level_log2;
+		zoom_levels_.push_back( std::move(zoom_level) );
 	}
 
 	// Create textures
@@ -637,11 +645,11 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	areal_objects_shader_.Create();
 
 	// Setup camera
-	if( !chunks_.empty() )
+	if( !zoom_levels_.empty() )
 	{
 		min_cam_pos_= m_Vec2( +1e20f, +1e20f );
 		max_cam_pos_= m_Vec2( -1e20f, -1e20f );
-		for( const Chunk& chunk : chunks_ )
+		for( const Chunk& chunk : zoom_levels_.front().chunks )
 		{
 			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
 			min_cam_pos_.y= std::min( min_cam_pos_.y, float(chunk.coord_start_y_) );
@@ -654,7 +662,7 @@ MapDrawer::MapDrawer( const ViewportSize& viewport_size )
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
 	min_scale_= 1.0f;
-	max_scale_= std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
+	max_scale_= 4.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
 }
 
@@ -670,12 +678,24 @@ void MapDrawer::Draw()
 	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
 	glClear( GL_COLOR_BUFFER_BIT );
 
+	// Select zoom level.
+	const ZoomLevel* zoom_level= &zoom_levels_.back();
+	for( const ZoomLevel& zoom_level_try : zoom_levels_ )
+	{
+		if( scale_ < 32.0f * float( 1u << zoom_level_try.zoom_level_log2 ) )
+		{
+			zoom_level= &zoom_level_try;
+			break;
+		}
+	}
+
 	// Calculate view matrix.
-	m_Mat4 view_matrix, scale_matrix, translate_matrix, aspect_matrix;
-	scale_matrix.Scale( 1.0f / scale_ );
+	m_Mat4 zoom_level_matrix, translate_matrix, scale_matrix, aspect_matrix, view_matrix;
+	zoom_level_matrix.Scale( float( 1u << zoom_level->zoom_level_log2 ) );
 	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
+	scale_matrix.Scale( 1.0f / scale_ );
 	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
-	view_matrix= translate_matrix * scale_matrix * aspect_matrix;
+	view_matrix= zoom_level_matrix * translate_matrix * scale_matrix * aspect_matrix;
 
 	// Calculate viewport bounding box.
 	const int32_t bb_extend_eps= 16;
@@ -690,7 +710,7 @@ void MapDrawer::Draw()
 
 	// Setup chunks list, calculate matrices.
 	std::vector<ChunkToDraw> visible_chunks;
-	for( const Chunk& chunk : chunks_ )
+	for( const Chunk& chunk : zoom_level->chunks )
 	{
 		if( chunk.bb_min_x_ >= bb_max_x || chunk.bb_min_y_ >= bb_max_y ||
 			chunk.bb_max_x_ <= bb_min_x || chunk.bb_max_y_ <= bb_min_y )
@@ -777,7 +797,7 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 		break;
 
 	case SystemEvent::Type::Wheel:
-		scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.5f );
+		scale_*= std::exp2( -float( event.event.wheel.delta ) / 3.0f );
 		scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
 		Log::User( "Scale is ", scale_ );
 		break;
