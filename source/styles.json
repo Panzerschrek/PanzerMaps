@@ -125,8 +125,6 @@
                 "Barrier"
             ]
         },
-
-
         {
             "scale_to_prev_log2" : 2,
             "areal_phases" :
@@ -153,6 +151,33 @@
                 "Waterway",
                 "Road",
                 "Tram",
+                "Railway"
+            ]
+        },
+        {
+            "scale_to_prev_log2" : 2,
+            "areal_phases" :
+            [
+                {
+                    "classes" :
+                    [
+                        "Water",
+                        "Grassland",
+                        "Cemetery",
+                        "Industrial",
+                        "Residential",
+                        "Administrative",
+                        "Wood"
+                    ],
+                    "allow_collinear_points_removing" : false
+                }
+            ],
+
+            "point_classes_ordered": [],
+
+            "linear_classes_ordered":
+            [
+                "Road",
                 "Railway"
             ]
         }
