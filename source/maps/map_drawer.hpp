@@ -1,6 +1,7 @@
 #pragma once
 #include "../panzer_ogl_lib/glsl_program.hpp"
 #include "../panzer_ogl_lib/polygon_buffer.hpp"
+#include "../panzer_ogl_lib/texture.hpp"
 #include "system_window.hpp"
 
 namespace PanzerMaps
@@ -29,7 +30,10 @@ private:
 	const SystemWindow& system_window_;
 	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
+	r_GLSLProgram linear_textured_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
+
+	r_Texture dashed_texture_;
 
 	std::vector<ZoomLevel> zoom_levels_;
 
