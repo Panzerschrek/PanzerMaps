@@ -46,10 +46,10 @@ SystemWindow::SystemWindow()
 
 	const bool fullscreen= false;
 	const bool vsync= true;
-	const int msaa_samples= 4; // 0 - ni multisampling.
+	const int msaa_samples= 4; // 0 - no multisampling.
 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 ); // TODO - we do not use depth buffer. Maybe set to 0?
 
 	#ifdef DEBUG
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
@@ -71,6 +71,9 @@ SystemWindow::SystemWindow()
 			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			viewport_size_.width, viewport_size_.height,
 			SDL_WINDOW_OPENGL | ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_SHOWN );
+
+	if( window_ == nullptr )
+		Log::FatalError( "Can not create window" );
 
 	gl_context_= SDL_GL_CreateContext( window_ );
 	if( gl_context_ == nullptr )
@@ -158,12 +161,12 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 
 void SystemWindow::BeginFrame()
 {
-	const float c_iches_to_meters= 2.54f / 100.0f;
+	const float c_inches_to_meters= 2.54f / 100.0f;
 
-	pixels_in_screen_meter_= 96.0f / c_iches_to_meters;
+	pixels_in_screen_meter_= 96.0f / c_inches_to_meters;
 	float dots_per_inch;
 	if( SDL_GetDisplayDPI( SDL_GetWindowDisplayIndex( window_ ), &dots_per_inch, nullptr, nullptr ) == 0 )
-		pixels_in_screen_meter_= dots_per_inch / c_iches_to_meters;
+		pixels_in_screen_meter_= dots_per_inch / c_inches_to_meters;
 }
 
 void SystemWindow::EndFrame()
