@@ -30,7 +30,11 @@ file( GLOB MAPS_SOURCES
 	"panzer_ogl_lib/*.cpp" )
 
 add_executable( PanzerMaps ${MAPS_SOURCES} )
-target_compile_definitions( PanzerMaps PRIVATE -DHAVE_SDL )
+target_compile_definitions( PanzerMaps PRIVATE -DPM_HAVE_SDL )
 target_include_directories( PanzerMaps PRIVATE ${SDL2_INCLUDE_DIRS} )
 target_link_libraries( PanzerMaps PRIVATE ${SDL2_LIBRARIES} )
 target_link_libraries( PanzerMaps PRIVATE GL )
+
+if( ANDROID )
+	target_compile_definitions( PanzerMaps PRIVATE -DPM_OPENGL_ES )
+endif()

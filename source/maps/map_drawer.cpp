@@ -649,6 +649,14 @@ MapDrawer::~MapDrawer()
 
 void MapDrawer::Draw()
 {
+#ifdef PM_OPENGL_ES
+	const auto enable_primitive_restart= [] { glEnable( GL_PRIMITIVE_RESTART_FIXED_INDEX ); };
+	const auto disable_primitive_restart= [] { glDisable( GL_PRIMITIVE_RESTART_FIXED_INDEX ); };
+#else
+	const auto enable_primitive_restart= [] { glEnable( GL_PRIMITIVE_RESTART ); glPrimitiveRestartIndex( c_primitive_restart_index ); };
+	const auto disable_primitive_restart= [] { glDisable( GL_PRIMITIVE_RESTART ); };
+#endif
+
 	// Clear background.
 	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
 	glClear( GL_COLOR_BUFFER_BIT );
@@ -698,8 +706,7 @@ void MapDrawer::Draw()
 
 		zoom_level.areal_objects_texture.Bind(0);
 
-		glEnable( GL_PRIMITIVE_RESTART );
-		glPrimitiveRestartIndex( c_primitive_restart_index );
+		enable_primitive_restart();
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
 			if( chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetVertexDataSize() == 0u )
@@ -710,7 +717,7 @@ void MapDrawer::Draw()
 			++draw_calls;
 			primitive_count+= chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetIndexDataSize() / sizeof(uint16_t);
 		}
-		glDisable( GL_PRIMITIVE_RESTART );
+		disable_primitive_restart();
 	}
 	{
 		linear_objets_shader_.Bind();
@@ -718,8 +725,7 @@ void MapDrawer::Draw()
 
 		zoom_level.linear_objects_texture.Bind(0);
 
-		glEnable( GL_PRIMITIVE_RESTART );
-		glPrimitiveRestartIndex( c_primitive_restart_index );
+		enable_primitive_restart();
 
 		// Draw linear objects ordered by style, because linear objects of neighboring chunks may overlap.
 		for( const uint8_t style_index : zoom_level.linear_styles_order )
@@ -748,12 +754,14 @@ void MapDrawer::Draw()
 				}
 			}
 		}
-		glDisable( GL_PRIMITIVE_RESTART );
+		disable_primitive_restart();
 	}
 	{
 		point_objets_shader_.Bind();
 
-		glPointSize( 12.0f );
+		#ifndef PM_OPENGL_ES
+		glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
+		#endif
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
 			if( chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() == 0u )
@@ -764,6 +772,9 @@ void MapDrawer::Draw()
 			++draw_calls;
 			primitive_count+= chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() / sizeof(PointObjectVertex);
 		}
+		#ifndef PM_OPENGL_ES
+		glDisable( GL_PROGRAM_POINT_SIZE );
+		#endif
 	}
 
 	if( ( frame_number_ & 63u ) == 0u )
