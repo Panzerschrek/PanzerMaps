@@ -39,14 +39,14 @@ R"(
 const char linear_vertex[]=
 GLSL_VERSION
 R"(
-	uniform sampler1D tex;
+	uniform sampler2D tex;
 	uniform mat4 view_matrix;
 	in vec2 pos;
 	in float color_index;
 	out vec4 f_color;
 	void main()
 	{
-		f_color= texelFetch( tex, int(color_index), 0 );
+		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
@@ -65,14 +65,14 @@ R"(
 const char areal_vertex[]=
 GLSL_VERSION
 R"(
-	uniform sampler1D tex;
+	uniform sampler2D tex;
 	uniform mat4 view_matrix;
 	in vec2 pos;
 	in float color_index;
 	out vec4 f_color;
 	void main()
 	{
-		f_color= texelFetch( tex, int(color_index), 0 );
+		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";

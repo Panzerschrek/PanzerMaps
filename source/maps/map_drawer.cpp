@@ -5,6 +5,7 @@
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "../common/memory_mapped_file.hpp"
+#include "../panzer_ogl_lib/texture.hpp"
 #include "shaders.hpp"
 #include "map_drawer.hpp"
 
@@ -519,54 +520,33 @@ public:
 		for( uint32_t i= 0u; i < in_zoom_level.linear_styles_order_count; ++i )
 			linear_styles_order.push_back( in_linear_styles_order[i].style_index );
 
-		// Create textures
+		// Create textures.
+		// Use 2d textures for color tables, instead of 1d, because OpenGL ES does not support 1d textures.
 		{
-			DataFileDescription::ColorRGBA texture_data[256u]= {0};
+			const size_t texture_with_colors_width= 256u;
+			const size_t texture_with_colors_height= 8u;
+			DataFileDescription::ColorRGBA texture_data[ texture_with_colors_width * texture_with_colors_height ];
 
-			for( uint32_t i= 0u; i < in_zoom_level.linear_styles_count; ++i )
-				std::memcpy( texture_data[i], linear_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
+			std::memset( texture_data, 0, sizeof(texture_data) );
+			for( uint32_t x= 0u; x < in_zoom_level.linear_styles_count; ++x )
+			for( uint32_t y= 0u; y < texture_with_colors_height; ++y )
+				std::memcpy( texture_data[ x + y * texture_with_colors_width ], linear_styles[x].color, sizeof(DataFileDescription::ColorRGBA) );
+			linear_objects_texture= r_Texture( r_Texture::PixelFormat::RGBA8, texture_with_colors_width, texture_with_colors_height, reinterpret_cast<const unsigned char*>( texture_data ) );
+			linear_objects_texture.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 
-			glGenTextures( 1, &linear_objects_texture_id );
-			glBindTexture( GL_TEXTURE_1D, linear_objects_texture_id );
-			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+			std::memset( texture_data, 0, sizeof(texture_data) );
+			for( uint32_t x= 0u; x < in_zoom_level.areal_styles_count; ++x )
+			for( uint32_t y= 0u; y < texture_with_colors_height; ++y )
+				std::memcpy( texture_data[ x + y * texture_with_colors_width ], areal_styles[x].color, sizeof(DataFileDescription::ColorRGBA) );
+			areal_objects_texture= r_Texture( r_Texture::PixelFormat::RGBA8, texture_with_colors_width, texture_with_colors_height, reinterpret_cast<const unsigned char*>( texture_data ) );
+			areal_objects_texture.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 		}
-		{
-			DataFileDescription::ColorRGBA texture_data[256u]= {0};
-
-			for( uint32_t i= 0u; i < in_zoom_level.areal_styles_count; ++i )
-				std::memcpy( texture_data[i], areal_styles[i].color, sizeof(DataFileDescription::ColorRGBA) );
-
-			glGenTextures( 1, &areal_objects_texture_id );
-			glBindTexture( GL_TEXTURE_1D, areal_objects_texture_id );
-			glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, 256u, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
-			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-			glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-		}
-	}
-
-	~ZoomLevel()
-	{
-		if( linear_objects_texture_id != ~0u )
-			glDeleteTextures( 1, &linear_objects_texture_id );
-		if( areal_objects_texture_id != ~0u )
-			glDeleteTextures( 1, &areal_objects_texture_id );
 	}
 
 	ZoomLevel()= delete;
+
 	ZoomLevel(const ZoomLevel&)= delete;
-
-	ZoomLevel( ZoomLevel&& other )
-		: zoom_level_log2(other.zoom_level_log2)
-		, chunks(std::move(other.chunks))
-	{
-		linear_objects_texture_id= other.linear_objects_texture_id;
-		areal_objects_texture_id= other.areal_objects_texture_id;
-		linear_styles_order= std::move(other.linear_styles_order);
-
-		other.linear_objects_texture_id= other.areal_objects_texture_id= ~0u;
-	}
+	ZoomLevel(ZoomLevel&&)= default;
 
 	ZoomLevel& operator=(const ZoomLevel&)= delete;
 	ZoomLevel&operator=( ZoomLevel&& other )= delete;
@@ -576,10 +556,8 @@ public:
 	std::vector<Chunk> chunks;
 	std::vector<uint8_t> linear_styles_order;
 
-	// 1D texture with colors for linear objects.
-	GLuint linear_objects_texture_id= ~0u;
-	// 1D texture with colors for areal objects.
-	GLuint areal_objects_texture_id= ~0u;
+	r_Texture linear_objects_texture;
+	r_Texture areal_objects_texture;
 };
 
 struct MapDrawer::ChunkToDraw
@@ -718,7 +696,7 @@ void MapDrawer::Draw()
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, zoom_level.areal_objects_texture_id );
+		zoom_level.areal_objects_texture.Bind(0);
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
@@ -738,7 +716,7 @@ void MapDrawer::Draw()
 		linear_objets_shader_.Bind();
 		linear_objets_shader_.Uniform( "tex", 0 );
 
-		glBindTexture( GL_TEXTURE_1D, zoom_level.linear_objects_texture_id );
+		zoom_level.linear_objects_texture.Bind(0);
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
