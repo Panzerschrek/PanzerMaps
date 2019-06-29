@@ -532,6 +532,24 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 			++get_zoom_level(zoom_level_index).areal_styles_count;
 		}
 
+		get_zoom_level(zoom_level_index).point_styles_order_count= static_cast<uint32_t>( zoom_level_styles.point_classes_ordered.size() );
+		get_zoom_level(zoom_level_index).point_styles_order_offset= static_cast<uint32_t>( result.size() );
+		for( const PointObjectClass& object_class : zoom_level_styles.point_classes_ordered )
+		{
+			result.resize( result.size() + sizeof(PointStylesOrder) );
+			PointStylesOrder& order= *reinterpret_cast<PointStylesOrder*>( result.data() + result.size() - sizeof(PointStylesOrder) );
+			order.style_index= Chunk::StyleIndex(object_class);
+		}
+
+		get_zoom_level(zoom_level_index).linear_styles_order_count= static_cast<uint32_t>( zoom_level_styles.linear_classes_ordered.size() );
+		get_zoom_level(zoom_level_index).linear_styles_order_offset= static_cast<uint32_t>( result.size() );
+		for( const LinearObjectClass& object_class : zoom_level_styles.linear_classes_ordered )
+		{
+			result.resize( result.size() + sizeof(LinearStylesOrder) );
+			LinearStylesOrder& order= *reinterpret_cast<LinearStylesOrder*>( result.data() + result.size() - sizeof(LinearStylesOrder) );
+			order.style_index= Chunk::StyleIndex(object_class);
+		}
+
 		Log::Info( "" );
 		Log::Info( "-- ZOOM LEVEL END ---" );
 		Log::Info( "" );

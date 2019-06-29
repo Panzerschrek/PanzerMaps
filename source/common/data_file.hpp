@@ -93,6 +93,16 @@ struct CommonStyle
 	ColorRGBA background_color;
 };
 
+struct PointStylesOrder
+{
+	Chunk::StyleIndex style_index;
+};
+
+struct LinearStylesOrder
+{
+	Chunk::StyleIndex style_index;
+};
+
 struct ZoomLevel
 {
 	// Offsets - from data file start.
@@ -109,6 +119,11 @@ struct ZoomLevel
 	uint32_t linear_styles_count;
 	uint32_t areal_styles_offset;
 	uint32_t areal_styles_count;
+
+	uint32_t point_styles_order_offset;
+	uint32_t point_styles_order_count;
+	uint32_t linear_styles_order_offset;
+	uint32_t linear_styles_order_count;
 };
 
 struct DataFile

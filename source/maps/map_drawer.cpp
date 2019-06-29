@@ -446,8 +446,13 @@ public:
 		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
+			LinearObjectsGroup out_group;
+			out_group.style_index= group.style_index;
+
 			if( linear_styles[group.style_index].width_mul_256 > 0 )
 			{
+				out_group.first_index= linear_objects_as_triangles_indicies.size();
+
 				const float half_width= float(linear_styles[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
 				const float square_half_width= half_width * half_width;
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
@@ -463,9 +468,13 @@ public:
 					else
 						tmp_vertices.push_back(vertex);
 				}
+				out_group.index_count= linear_objects_as_triangles_indicies.size() - out_group.first_index;
+				out_group.primitive_type= GL_TRIANGLE_STRIP;
 			}
 			else
 			{
+				out_group.first_index= linear_objects_indicies.size();
+
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
@@ -481,7 +490,10 @@ public:
 						linear_objects_vertices.push_back( out_vertex );
 					}
 				}
+				out_group.index_count= linear_objects_indicies.size() - out_group.first_index;
+				out_group.primitive_type= GL_LINE_STRIP;
 			}
+			linear_objects_groups_.push_back( out_group );
 		}
 
 		// Areal objects must be convex polygons.
@@ -542,16 +554,28 @@ public:
 	Chunk& operator=( Chunk&& )= default;
 
 public:
-	r_PolygonBuffer point_objects_polygon_buffer_;
-	r_PolygonBuffer linear_objects_polygon_buffer_;
-	r_PolygonBuffer linear_objects_as_triangles_buffer_;
-	r_PolygonBuffer areal_objects_polygon_buffer_;
+	struct LinearObjectsGroup
+	{
+		size_t first_index;
+		size_t index_count;
+		GLenum primitive_type;
+		uint8_t style_index;
+	};
+
+public:
 	const int32_t coord_start_x_;
 	const int32_t coord_start_y_;
 	const int32_t bb_min_x_;
 	const int32_t bb_min_y_;
 	const int32_t bb_max_x_;
 	const int32_t bb_max_y_;
+
+	r_PolygonBuffer point_objects_polygon_buffer_;
+	r_PolygonBuffer linear_objects_polygon_buffer_;
+	r_PolygonBuffer linear_objects_as_triangles_buffer_;
+	r_PolygonBuffer areal_objects_polygon_buffer_;
+
+	std::vector<LinearObjectsGroup> linear_objects_groups_;
 };
 
 struct MapDrawer::ZoomLevel
@@ -572,6 +596,12 @@ public:
 			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
 			chunks.emplace_back( chunk, linear_styles, areal_styles );
 		}
+
+		// Extract styles order
+		const auto in_linear_styles_order= reinterpret_cast<const DataFileDescription::LinearStylesOrder*>( file_content + in_zoom_level.linear_styles_order_offset );
+		linear_styles_order.reserve( in_zoom_level.linear_styles_order_count );
+		for( uint32_t i= 0u; i < in_zoom_level.linear_styles_order_count; ++i )
+			linear_styles_order.push_back( in_linear_styles_order[i].style_index );
 
 		// Create textures
 		{
@@ -617,6 +647,7 @@ public:
 	{
 		linear_objects_texture_id= other.linear_objects_texture_id;
 		areal_objects_texture_id= other.areal_objects_texture_id;
+		linear_styles_order= std::move(other.linear_styles_order);
 
 		other.linear_objects_texture_id= other.areal_objects_texture_id= ~0u;
 	}
@@ -627,12 +658,12 @@ public:
 public:
 	const size_t zoom_level_log2;
 	std::vector<Chunk> chunks;
+	std::vector<uint8_t> linear_styles_order;
 
 	// 1D texture with colors for linear objects.
 	GLuint linear_objects_texture_id= ~0u;
 	// 1D texture with colors for areal objects.
 	GLuint areal_objects_texture_id= ~0u;
-
 };
 
 struct MapDrawer::ChunkToDraw
@@ -791,15 +822,30 @@ void MapDrawer::Draw()
 
 		glEnable( GL_PRIMITIVE_RESTART );
 		glPrimitiveRestartIndex( c_primitive_restart_index );
-		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
-		{
-			if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u &&
-				chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
-				continue;
 
-			linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
-			chunk_to_draw.chunk.linear_objects_polygon_buffer_.Draw();
-			chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.Draw();
+		// Draw linear objects ordered by style, because linear objects of neighboring chunks may overlap.
+		for( const uint8_t style_index : zoom_level.linear_styles_order )
+		{
+			for( const ChunkToDraw& chunk_to_draw : visible_chunks )
+			{
+				if( chunk_to_draw.chunk.linear_objects_polygon_buffer_.GetVertexDataSize() == 0u &&
+					chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
+					continue;
+
+				for( const Chunk::LinearObjectsGroup& group : chunk_to_draw.chunk.linear_objects_groups_ )
+				{
+					if( group.style_index == style_index )
+					{
+						linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+
+						if( group.primitive_type == GL_LINE_STRIP )
+							chunk_to_draw.chunk.linear_objects_polygon_buffer_.Bind();
+						else
+							chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.Bind();
+						glDrawElements( group.primitive_type, group.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
+					}
+				}
+			}
 		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
