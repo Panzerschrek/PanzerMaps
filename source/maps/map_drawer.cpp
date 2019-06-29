@@ -796,6 +796,8 @@ void MapDrawer::Draw()
 	}
 
 	// Draw chunks.
+	size_t draw_calls= 0u;
+	size_t primitive_count= 0u;
 	{
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
@@ -811,6 +813,8 @@ void MapDrawer::Draw()
 
 			areal_objects_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 			chunk_to_draw.chunk.areal_objects_polygon_buffer_.Draw();
+			++draw_calls;
+			primitive_count+= chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetIndexDataSize() / sizeof(uint16_t);
 		}
 		glDisable( GL_PRIMITIVE_RESTART );
 	}
@@ -832,17 +836,20 @@ void MapDrawer::Draw()
 					chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
 					continue;
 
+				linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+
 				for( const Chunk::LinearObjectsGroup& group : chunk_to_draw.chunk.linear_objects_groups_ )
 				{
-					if( group.style_index == style_index )
+					if( group.style_index == style_index && group.index_count > 0u )
 					{
-						linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
-
 						if( group.primitive_type == GL_LINE_STRIP )
 							chunk_to_draw.chunk.linear_objects_polygon_buffer_.Bind();
 						else
 							chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.Bind();
 						glDrawElements( group.primitive_type, group.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
+						++draw_calls;
+						primitive_count+= group.index_count;
+
 					}
 				}
 			}
@@ -860,8 +867,14 @@ void MapDrawer::Draw()
 
 			point_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 			chunk_to_draw.chunk.point_objects_polygon_buffer_.Draw();
+			++draw_calls;
+			primitive_count+= chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() / sizeof(PointObjectVertex);
 		}
 	}
+
+	if( ( frame_number_ & 63u ) == 0u )
+		Log::User( "Visible chunks: ", visible_chunks.size(), " draw calls: ", draw_calls, " index count: ", primitive_count );
+	++frame_number_;
 }
 
 void MapDrawer::ProcessEvent( const SystemEvent& event )

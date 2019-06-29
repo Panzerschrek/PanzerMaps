@@ -33,6 +33,8 @@ private:
 
 	std::vector<ZoomLevel> zoom_levels_;
 
+	size_t frame_number_= 0u;
+
 	bool mouse_pressed_= false;
 	float scale_; // Scale = map units in pixel
 
