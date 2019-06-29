@@ -131,6 +131,7 @@ static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line, c
 	PM_ASSERT( line.size() >= 2u );
 
 	const int32_t square_half_width_int= std::max( 1, int32_t(suqare_half_width) );
+	const auto last_vertex= line.back();
 
 	line.erase(
 		std::unique(
@@ -143,6 +144,18 @@ static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line, c
 				return dx * dx + dy * dy < square_half_width_int;
 			}),
 		line.end() );
+
+	// keep last vertex.
+	const int32_t dx= int32_t(last_vertex.x) - int32_t(line.back().x);
+	const int32_t dy= int32_t(last_vertex.y) - int32_t(line.back().y);
+	const int32_t square_dist= dx * dx + dy * dy;
+	if( square_dist != 0 && square_dist < square_half_width_int )
+	{
+		if( line.size() <= 1u )
+			line.push_back(last_vertex);
+		else
+			line.back()= last_vertex;
+	}
 }
 
 // Creates triangle strip mesh.
