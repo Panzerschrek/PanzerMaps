@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 namespace PanzerMaps
 {
 
@@ -96,8 +100,20 @@ void Log::PrinLine( const LogLevel log_level, const Args&... args )
 	Print( stream, args... );
 	const std::string str= stream.str();
 
+#ifdef __ANDROID__
+	auto android_log_level= ANDROID_LOG_INFO;
+	if( log_level == LogLevel::User || log_level == LogLevel::Info )
+		android_log_level= ANDROID_LOG_INFO;
+	else if( log_level == LogLevel::Warning )
+		android_log_level= ANDROID_LOG_WARN;
+	else if( log_level == LogLevel::FatalError )
+		android_log_level= ANDROID_LOG_FATAL;
+
+	__android_log_print( android_log_level, __FILE__, "%s", str.c_str() );
+#else
 	std::cout << str << std::endl;
 	log_file_ << str << std::endl;
+#endif
 }
 
 } // namespace PanzerMaps
