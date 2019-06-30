@@ -801,8 +801,20 @@ void MapDrawer::ProcessEvent( const SystemEvent& event )
 		break;
 
 	case SystemEvent::Type::Wheel:
-		scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.25f );
-		scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
+		{
+			const m_Vec2 pix_delta(
+				-float(viewport_size_.width ) * 0.5f + float(event.event.wheel.x),
+				+float(viewport_size_.height) * 0.5f - float(event.event.wheel.y) );
+
+			cam_pos_+= pix_delta * scale_;
+			scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.25f );
+			cam_pos_-= pix_delta * scale_;
+
+			scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
+			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
+			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
+		}
+
 		Log::User( "Scale is ", scale_ );
 		break;
 

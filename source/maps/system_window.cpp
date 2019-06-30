@@ -157,10 +157,17 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			break;
 
 		case SDL_MOUSEWHEEL:
+		{
 			out_events.emplace_back();
-			out_events.back().type= SystemEvent::Type::Wheel;
-				out_events.back().event.wheel.delta= event.wheel.y;
-			break;
+			SystemEvent& out_event= out_events.back();
+			out_event.type= SystemEvent::Type::Wheel;
+			out_event.event.wheel.delta= event.wheel.y;
+			int x= 0, y= 0;
+			SDL_GetMouseState( &x, &y );
+			out_event.event.wheel.x= static_cast<unsigned int>(x);
+			out_event.event.wheel.y= static_cast<unsigned int>(y);
+		}
+		break;
 
 		// TODO - fill other events here
 

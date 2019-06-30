@@ -37,6 +37,7 @@ struct SystemEvent
 	struct WheelEvent
 	{
 		int delta;
+		unsigned int x, y;
 	};
 
 	struct QuitEvent
