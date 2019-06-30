@@ -13,8 +13,13 @@ public:
 	~MapDrawer();
 
 	void Draw();
+	float GetScale() const;
+	void SetScale( float scale );
 
-	void ProcessEvent( const SystemEvent& event );
+	const m_Vec2& GetPosition() const;
+	void SetPosition( const m_Vec2& position );
+
+	const ViewportSize& GetViewportSize() const;
 
 private:
 	struct Chunk;
@@ -35,9 +40,7 @@ private:
 
 	size_t frame_number_= 0u;
 
-	bool mouse_pressed_= false;
 	float scale_; // Scale = map units in pixel
-
 	// Camera position in map space.
 	m_Vec2 cam_pos_;
 

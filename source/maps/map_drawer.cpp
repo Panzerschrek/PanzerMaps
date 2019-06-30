@@ -782,45 +782,30 @@ void MapDrawer::Draw()
 	++frame_number_;
 }
 
-void MapDrawer::ProcessEvent( const SystemEvent& event )
+float MapDrawer::GetScale() const
 {
-	switch( event.type )
-	{
-	case SystemEvent::Type::MouseKey:
-		if( event.event.mouse_key.mouse_button == SystemEvent::MouseKeyEvent::Button::Left )
-			mouse_pressed_= event.event.mouse_key.pressed;
-		break;
+	return scale_;
+}
 
-	case SystemEvent::Type::MouseMove:
-		if( mouse_pressed_ )
-		{
-			cam_pos_+= m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * scale_;
-			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
-			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
-		}
-		break;
+void MapDrawer::SetScale( const float scale )
+{
+	scale_= std::max( min_scale_, std::min( scale, max_scale_ ) );
+}
 
-	case SystemEvent::Type::Wheel:
-		{
-			const m_Vec2 pix_delta(
-				-float(viewport_size_.width ) * 0.5f + float(event.event.wheel.x),
-				+float(viewport_size_.height) * 0.5f - float(event.event.wheel.y) );
+const m_Vec2& MapDrawer::GetPosition() const
+{
+	return cam_pos_;
+}
 
-			cam_pos_+= pix_delta * scale_;
-			scale_*= std::exp2( -float( event.event.wheel.delta ) * 0.25f );
-			cam_pos_-= pix_delta * scale_;
+void MapDrawer::SetPosition( const m_Vec2& position )
+{
+	cam_pos_.x= std::max( min_cam_pos_.x, std::min( position.x, max_cam_pos_.x ) );
+	cam_pos_.y= std::max( min_cam_pos_.y, std::min( position.y, max_cam_pos_.y ) );
+}
 
-			scale_= std::max( min_scale_, std::min( scale_, max_scale_ ) );
-			cam_pos_.x= std::max( min_cam_pos_.x, std::min( cam_pos_.x, max_cam_pos_.x ) );
-			cam_pos_.y= std::max( min_cam_pos_.y, std::min( cam_pos_.y, max_cam_pos_.y ) );
-		}
-
-		Log::User( "Scale is ", scale_ );
-		break;
-
-	case SystemEvent::Type::Quit:
-		return;
-	}
+const ViewportSize& MapDrawer::GetViewportSize() const
+{
+	return viewport_size_;
 }
 
 const MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel() const

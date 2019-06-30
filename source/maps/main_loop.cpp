@@ -19,6 +19,7 @@ static std::string GetMapFile()
 MainLoop::MainLoop()
 	: system_window_()
 	, map_drawer_( system_window_, GetMapFile().c_str() )
+	, mouse_map_controller_( map_drawer_ )
 {
 }
 
@@ -41,7 +42,7 @@ bool MainLoop::Loop()
 		case SystemEvent::Type::Quit:
 			return false;
 		}
-		map_drawer_.ProcessEvent( event );
+		mouse_map_controller_.ProcessEvent( event );
 	}
 
 	system_window_.BeginFrame();
