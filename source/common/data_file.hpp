@@ -174,4 +174,35 @@ static_assert( sizeof(DataFile) == 32u, "wrong size" );
 
 } // namespace DataFile
 
+// TODO - setup it
+//#define PM_BIG_ENDIAN
+
+inline uint16_t DataFileReadNumber( const uint16_t x )
+{
+#ifdef PM_BIG_ENDIAN
+	return uint16_t( (x>>8u) | (x<<8u) );
+#else
+	return x;
+#endif
+}
+
+inline int16_t DataFileReadNumber( const int16_t x )
+{
+	return int16_t( DataFileReadNumber( uint16_t(x) ) );
+}
+
+inline uint32_t DataFileReadNumber( const uint32_t x )
+{
+#ifdef PM_BIG_ENDIAN
+	return (x>>24u) | ( (x<<8u) & 0x00FF0000u ) | ( (x>>8u) & 0x0000FF00u ) | (x<<24u);
+#else
+	return x;
+#endif
+}
+
+inline int32_t DataFileReadNumber( const int32_t x )
+{
+	return int32_t( DataFileReadNumber( uint32_t(x) ) );
+}
+
 } // namespace namespace PanzerMaps
