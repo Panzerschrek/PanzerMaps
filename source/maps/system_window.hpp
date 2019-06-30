@@ -11,6 +11,9 @@ struct SystemEvent
 	{
 		MouseKey,
 		MouseMove,
+		TouchPress,
+		TouchRelease,
+		TouchMove,
 		Wheel,
 		Quit,
 	};
@@ -40,6 +43,12 @@ struct SystemEvent
 		unsigned int x, y;
 	};
 
+	struct TouchEvent
+	{
+		float x, y;
+		int64_t id;
+	};
+
 	struct QuitEvent
 	{};
 
@@ -49,6 +58,7 @@ struct SystemEvent
 		MouseKeyEvent mouse_key;
 		MouseMoveEvent mouse_move;
 		WheelEvent wheel;
+		TouchEvent touch;
 		QuitEvent quit;
 	} event;
 };

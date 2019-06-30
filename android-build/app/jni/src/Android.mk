@@ -19,6 +19,7 @@ LOCAL_SRC_FILES := \
 	$(PM_SOURCES_ROOT)/maps/mouse_map_controller.cpp \
 	$(PM_SOURCES_ROOT)/maps/shaders.cpp \
 	$(PM_SOURCES_ROOT)/maps/system_window.cpp \
+	$(PM_SOURCES_ROOT)/maps/touch_map_controller.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/func_addresses.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/glsl_program.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/matrix.cpp \

@@ -20,6 +20,7 @@ MainLoop::MainLoop()
 	: system_window_()
 	, map_drawer_( system_window_, GetMapFile().c_str() )
 	, mouse_map_controller_( map_drawer_ )
+	, touch_map_controller_( map_drawer_ )
 {
 }
 
@@ -38,12 +39,22 @@ bool MainLoop::Loop()
 		case SystemEvent::Type::MouseKey:
 		case SystemEvent::Type::MouseMove:
 		case SystemEvent::Type::Wheel:
+		case SystemEvent::Type::TouchPress:
+		case SystemEvent::Type::TouchRelease:
+		case SystemEvent::Type::TouchMove:
 			break;
 		case SystemEvent::Type::Quit:
 			return false;
 		}
+
+		#ifdef __ANDROID__
+		touch_map_controller_.ProcessEvent( event );
+		#else
 		mouse_map_controller_.ProcessEvent( event );
+		#endif
 	}
+
+	touch_map_controller_.DoMove();
 
 	system_window_.BeginFrame();
 	map_drawer_.Draw();

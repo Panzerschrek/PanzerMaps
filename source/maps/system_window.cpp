@@ -169,7 +169,21 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 		}
 		break;
 
-		// TODO - fill other events here
+		case SDL_FINGERDOWN:
+		case SDL_FINGERUP:
+		case SDL_FINGERMOTION:
+		{
+			out_events.emplace_back();
+			SystemEvent& out_event= out_events.back();
+
+			if( event.type == SDL_FINGERDOWN   ) out_event.type= SystemEvent::Type::TouchPress  ;
+			if( event.type == SDL_FINGERUP     ) out_event.type= SystemEvent::Type::TouchRelease;
+			if( event.type == SDL_FINGERMOTION ) out_event.type= SystemEvent::Type::TouchMove   ;
+
+			out_event.event.touch.x= event.tfinger.x * float(viewport_size_.width );
+			out_event.event.touch.y= event.tfinger.y * float(viewport_size_.height);
+			out_event.event.touch.id= event.tfinger.fingerId;
+		}
 
 		default:
 			break;
