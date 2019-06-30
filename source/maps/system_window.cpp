@@ -39,7 +39,6 @@ static void APIENTRY GLDebugMessageCallback(
 #endif
 
 SystemWindow::SystemWindow()
-	: viewport_size_{ 1024u, 768u }
 {
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
 		Log::FatalError( "Can not initialize sdl video" );
@@ -70,6 +69,12 @@ SystemWindow::SystemWindow()
 		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
 		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, msaa_samples );
 	}
+
+	SDL_Rect display_rect;
+	if( SDL_GetDisplayUsableBounds( 0, &display_rect ) != 0 )
+		Log::FatalError( "Can not get display 0 bounds" );
+	viewport_size_.width= display_rect.w;
+	viewport_size_.height= display_rect.h;
 
 	window_=
 		SDL_CreateWindow(

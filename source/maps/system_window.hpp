@@ -80,7 +80,7 @@ public:
 	float GetPixelsInScreenMeter() const { return pixels_in_screen_meter_; }
 
 private:
-	const ViewportSize viewport_size_;
+	ViewportSize viewport_size_;
 	float pixels_in_screen_meter_;
 	SDL_Window* window_= nullptr;
 	SDL_GLContext gl_context_= nullptr;
