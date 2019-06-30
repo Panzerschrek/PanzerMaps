@@ -12,10 +12,11 @@ ln -sf $PM_SDL_DIR/android-project/gradlew gradlew
 ln -sf $PM_SDL_DIR/android-project/gradle.properties gradle.properties
 ln -sf $PM_SDL_DIR/android-project/settings.gradle settings.gradle
 cd app
-ln -sf $PM_SDL_DIR/android-project/app/src src
 ln -sf $PM_SDL_DIR/android-project/app/build.gradle build.gradle
 ln -sf $PM_SDL_DIR/android-project/app/proguard-rules.pro proguard-rules.pro
-cd jni
+cd src/main/
+ln -sf $PM_SDL_DIR/android-project/app/src/main/java java
+cd ../../jni
 ln -sf $PM_SDL_DIR SDL2
 
 cd ../..
