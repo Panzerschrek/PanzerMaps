@@ -7,6 +7,11 @@ namespace PanzerMaps
 namespace DataFileDescription
 {
 
+//
+// All numbers are little-endian (as x86).
+// All structs must have 4bytes alignment.
+//
+
 // Coordinates - relative to "world" of specific data file.
 using GlobalCoordType= uint32_t;
 
@@ -18,6 +23,7 @@ struct ChunkVertex
 	ChunkCoordType x;
 	ChunkCoordType y;
 };
+static_assert( sizeof(ChunkVertex) == 4u, "wrong size" );
 
 bool operator==(const ChunkVertex& l, const ChunkVertex& r );
 bool operator!=(const ChunkVertex& l, const ChunkVertex& r );
@@ -31,17 +37,21 @@ struct Chunk
 	struct PointObjectGroup
 	{
 		StyleIndex style_index;
+		uint8_t padding[3u];
 		uint16_t first_vertex;
 		uint16_t vertex_count;
 	};
+	static_assert( sizeof(PointObjectGroup) == 8u, "wrong size" );
 
 	struct LinearObjectGroup
 	{
 		StyleIndex style_index;
+		uint8_t padding[3u];
 		uint16_t first_vertex;
 		uint16_t vertex_count;
 		// vertex with x= 65535 is break primitive vertex.
 	};
+	static_assert( sizeof(LinearObjectGroup) == 8u, "wrong size" );
 
 	struct ArealObjectGroup
 	{
@@ -50,6 +60,7 @@ struct Chunk
 		// vertex with x= 65535 is break primitive vertex.
 		// "y" of this vertex is style index.
 	};
+	static_assert( sizeof(ArealObjectGroup) == 4u, "wrong size" );
 
 	GlobalCoordType coord_start_x;
 	GlobalCoordType coord_start_y;
@@ -71,37 +82,48 @@ struct Chunk
 	uint16_t areal_object_groups_count;
 	uint16_t vertex_count;
 };
+static_assert( sizeof(Chunk) == 48u, "wrong size" );
+
 
 using ColorRGBA= unsigned char[4];
 struct PointObjectStyle
 {
+	uint8_t padding[4u];
 };
+static_assert( sizeof(PointObjectStyle) == 4u, "wrong size" );
 
 struct LinearObjectStyle
 {
 	ColorRGBA color;
 	uint32_t width_mul_256; // Width of line, in units, multiplied by 256
 };
+static_assert( sizeof(LinearObjectStyle) == 8u, "wrong size" );
 
 struct ArealObjectStyle
 {
 	ColorRGBA color;
 };
+static_assert( sizeof(ArealObjectStyle) == 4u, "wrong size" );
 
 struct CommonStyle
 {
 	ColorRGBA background_color;
 };
+static_assert( sizeof(CommonStyle) == 4u, "wrong size" );
 
 struct PointStylesOrder
 {
 	Chunk::StyleIndex style_index;
+	uint8_t padding[3u];
 };
+static_assert( sizeof(PointStylesOrder) == 4u, "wrong size" );
 
 struct LinearStylesOrder
 {
 	Chunk::StyleIndex style_index;
+	uint8_t padding[3u];
 };
+static_assert( sizeof(LinearStylesOrder) == 4u, "wrong size" );
 
 struct ZoomLevel
 {
@@ -125,6 +147,7 @@ struct ZoomLevel
 	uint32_t linear_styles_order_offset;
 	uint32_t linear_styles_order_count;
 };
+static_assert( sizeof(ZoomLevel) == 14u * 4u, "wrong size" );
 
 struct DataFile
 {
@@ -147,6 +170,7 @@ struct DataFile
 
 	CommonStyle common_style;
 };
+static_assert( sizeof(DataFile) == 32u, "wrong size" );
 
 } // namespace DataFile
 
