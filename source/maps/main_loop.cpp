@@ -1,11 +1,24 @@
+#include <SDL_system.h>
+#include "../common/log.hpp"
 #include "main_loop.hpp"
 
 namespace PanzerMaps
 {
 
+static std::string GetMapFile()
+{
+	const std::string map_file_base= "map.pm";
+#ifdef __ANDROID__
+	Log::Info( "External storage state: ", SDL_AndroidGetExternalStorageState() );
+	return std::string(SDL_AndroidGetExternalStoragePath()) + "/" + map_file_base;
+#else
+	return map_file_base;
+#endif
+}
+
 MainLoop::MainLoop()
 	: system_window_()
-	, map_drawer_( system_window_ )
+	, map_drawer_( system_window_, GetMapFile().c_str() )
 {
 }
 

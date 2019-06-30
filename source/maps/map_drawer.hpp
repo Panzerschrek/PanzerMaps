@@ -9,7 +9,7 @@ namespace PanzerMaps
 class MapDrawer final
 {
 public:
-	explicit MapDrawer( const SystemWindow& system_window );
+	MapDrawer( const SystemWindow& system_window, const char* map_file );
 	~MapDrawer();
 
 	void Draw();

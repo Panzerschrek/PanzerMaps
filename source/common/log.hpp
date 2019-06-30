@@ -78,8 +78,12 @@ void Log::FatalError( const Args&... args )
 	Print( stream, args... );
 	const std::string str= stream.str();
 
+#ifdef __ANDROID__
+	__android_log_print( ANDROID_LOG_FATAL, __FILE__, ": %s", str.c_str() );
+#else
 	std::cerr << str << std::endl;
 	log_file_ << str << std::endl;
+#endif
 	ShowFatalMessageBox( str );
 
 	std::exit(-1);
@@ -109,7 +113,7 @@ void Log::PrinLine( const LogLevel log_level, const Args&... args )
 	else if( log_level == LogLevel::FatalError )
 		android_log_level= ANDROID_LOG_FATAL;
 
-	__android_log_print( android_log_level, __FILE__, "%s", str.c_str() );
+	__android_log_print( android_log_level, __FILE__, ": %s", str.c_str() );
 #else
 	std::cout << str << std::endl;
 	log_file_ << str << std::endl;

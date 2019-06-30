@@ -566,11 +566,11 @@ struct MapDrawer::ChunkToDraw
 	m_Mat4 matrix;
 };
 
-MapDrawer::MapDrawer( const SystemWindow& system_window )
+MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_file )
 	: viewport_size_(system_window.GetViewportSize())
 	, system_window_(system_window)
 {
-	const MemoryMappedFilePtr file= MemoryMappedFile::Create( "map.pm" );
+	const MemoryMappedFilePtr file= MemoryMappedFile::Create( map_file );
 	if( file == nullptr )
 	{
 		Log::FatalError( "Error, opening map file" );
