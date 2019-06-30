@@ -328,10 +328,10 @@ public:
 		(void)areal_styles;
 
 		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
-		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + DataFileReadNumber(in_chunk.vertices_offset) );
-		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + DataFileReadNumber(in_chunk.point_object_groups_offset) );
-		const auto linear_object_groups= reinterpret_cast<const DataFileDescription::Chunk::LinearObjectGroup*>( chunk_data + DataFileReadNumber(in_chunk.linear_object_groups_offset) );
-		const auto areal_object_groups= reinterpret_cast<const DataFileDescription::Chunk::ArealObjectGroup*>( chunk_data + DataFileReadNumber(in_chunk.areal_object_groups_offset) );
+		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
+		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + in_chunk.point_object_groups_offset );
+		const auto linear_object_groups= reinterpret_cast<const DataFileDescription::Chunk::LinearObjectGroup*>( chunk_data + in_chunk.linear_object_groups_offset );
+		const auto areal_object_groups= reinterpret_cast<const DataFileDescription::Chunk::ArealObjectGroup*>( chunk_data + in_chunk.areal_object_groups_offset );
 		std::vector<PointObjectVertex> point_objects_vertices;
 
 		std::vector<LinearObjectVertex> linear_objects_vertices;
@@ -343,15 +343,15 @@ public:
 		std::vector<ArealObjectVertex> areal_objects_vertices;
 		std::vector<uint16_t> areal_objects_indicies;
 
-		for( uint16_t i= 0u; i < DataFileReadNumber(in_chunk.point_object_groups_count); ++i )
+		for( uint16_t i= 0u; i < in_chunk.point_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::PointObjectGroup group= point_object_groups[i];
-			for( uint16_t v= DataFileReadNumber(group.first_vertex); v < DataFileReadNumber(group.first_vertex) + DataFileReadNumber(group.vertex_count); ++v )
+			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
 				const DataFileDescription::ChunkVertex& vertex= vertices[v];
 				PointObjectVertex out_vertex;
-				out_vertex.xy[0]= DataFileReadNumber(vertex.x);
-				out_vertex.xy[1]= DataFileReadNumber(vertex.y);
+				out_vertex.xy[0]= vertex.x;
+				out_vertex.xy[1]= vertex.y;
 				out_vertex.color_index= group.style_index;
 				point_objects_vertices.push_back( out_vertex );
 			}
@@ -360,22 +360,22 @@ public:
 		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
 		// Or draw it as "GL_TRIANGLE_STRIP".
 		std::vector<DataFileDescription::ChunkVertex> tmp_vertices;
-		for( uint16_t i= 0u; i < DataFileReadNumber(in_chunk.linear_object_groups_count); ++i )
+		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
 			LinearObjectsGroup out_group;
 			out_group.style_index= group.style_index;
 
-			if( DataFileReadNumber(linear_styles[group.style_index].width_mul_256) > 0 )
+			if( linear_styles[group.style_index].width_mul_256 > 0 )
 			{
 				out_group.first_index= linear_objects_as_triangles_indicies.size();
 
-				const float half_width= float(DataFileReadNumber(linear_styles[group.style_index].width_mul_256)) / ( 256.0f * 2.0f );
+				const float half_width= float(linear_styles[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
 				const float square_half_width= half_width * half_width;
-				for( uint16_t v= DataFileReadNumber(group.first_vertex); v < DataFileReadNumber(group.first_vertex) + DataFileReadNumber(group.vertex_count); ++v )
+				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
-					if( DataFileReadNumber(vertex.x) == 65535u )
+					if( vertex.x == 65535u )
 					{
 						SimplifyLine( tmp_vertices, square_half_width );
 						if( !tmp_vertices.empty() )
@@ -383,7 +383,7 @@ public:
 						tmp_vertices.clear();
 					}
 					else
-						tmp_vertices.push_back( DataFileDescription::ChunkVertex{ DataFileReadNumber(vertex.x), DataFileReadNumber(vertex.y) } );
+						tmp_vertices.push_back(vertex);
 				}
 				out_group.index_count= linear_objects_as_triangles_indicies.size() - out_group.first_index;
 				out_group.primitive_type= GL_TRIANGLE_STRIP;
@@ -392,16 +392,16 @@ public:
 			{
 				out_group.first_index= linear_objects_indicies.size();
 
-				for( uint16_t v= DataFileReadNumber(group.first_vertex); v < DataFileReadNumber(group.first_vertex) + DataFileReadNumber(group.vertex_count); ++v )
+				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
-					if( DataFileReadNumber(vertex.x) == 65535u )
+					if( vertex.x  == 65535u )
 						linear_objects_indicies.push_back( c_primitive_restart_index );
 					else
 					{
 						LinearObjectVertex out_vertex;
-						out_vertex.xy[0]= DataFileReadNumber(vertex.x);
-						out_vertex.xy[1]= DataFileReadNumber(vertex.y);
+						out_vertex.xy[0]= vertex.x;
+						out_vertex.xy[1]= vertex.y;
 						out_vertex.color_index= group.style_index;
 						linear_objects_indicies.push_back( static_cast<uint16_t>( linear_objects_vertices.size() ) );
 						linear_objects_vertices.push_back( out_vertex );
@@ -415,14 +415,14 @@ public:
 
 		// Areal objects must be convex polygons.
 		// Draw convex polygons, using "GL_TRIANGLE_FAN" primitive with primitive restart index.
-		for( uint16_t i= 0u; i < DataFileReadNumber(in_chunk.areal_object_groups_count); ++i )
+		for( uint16_t i= 0u; i < in_chunk.areal_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::ArealObjectGroup group= areal_object_groups[i];
 			size_t prev_polygon_start_vertex_index= 0u;
-			for( uint16_t v= DataFileReadNumber(group.first_vertex); v < DataFileReadNumber(group.first_vertex) + DataFileReadNumber(group.vertex_count); ++v )
+			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
 				const DataFileDescription::ChunkVertex& vertex= vertices[v];
-				if( DataFileReadNumber(vertex.x) == 65535u )
+				if( vertex.x == 65535u )
 				{
 					areal_objects_indicies.push_back( c_primitive_restart_index );
 					for( size_t i= prev_polygon_start_vertex_index; i < areal_objects_vertices.size(); ++i )
@@ -432,8 +432,8 @@ public:
 				else
 				{
 					ArealObjectVertex out_vertex;
-					out_vertex.xy[0]= DataFileReadNumber(vertex.x);
-					out_vertex.xy[1]= DataFileReadNumber(vertex.y);
+					out_vertex.xy[0]= vertex.x;
+					out_vertex.xy[1]= vertex.y;
 					areal_objects_indicies.push_back( static_cast<uint16_t>( areal_objects_vertices.size() ) );
 					areal_objects_vertices.push_back( out_vertex );
 				}
@@ -501,23 +501,23 @@ public:
 	ZoomLevel( const DataFileDescription::ZoomLevel& in_zoom_level, const unsigned char* const file_content )
 		: zoom_level_log2(in_zoom_level.zoom_level_log2)
 	{
-		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + DataFileReadNumber(in_zoom_level.linear_styles_offset) );
-		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + DataFileReadNumber(in_zoom_level.areal_styles_offset) );
+		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + in_zoom_level.linear_styles_offset );
+		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + in_zoom_level.areal_styles_offset );
 
-		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + DataFileReadNumber(in_zoom_level.chunks_description_offset) );
+		const auto chunks_description= reinterpret_cast<const DataFileDescription::DataFile::ChunkDescription*>( file_content + in_zoom_level.chunks_description_offset );
 
-		for( uint32_t chunk_index= 0u; chunk_index < DataFileReadNumber(in_zoom_level.chunk_count); ++chunk_index )
+		for( uint32_t chunk_index= 0u; chunk_index < in_zoom_level.chunk_count; ++chunk_index )
 		{
-			const size_t chunk_offset= DataFileReadNumber(chunks_description[chunk_index].offset);
+			const size_t chunk_offset= chunks_description[chunk_index].offset;
 			const unsigned char* const chunk_data= file_content + chunk_offset;
 			const DataFileDescription::Chunk& chunk= *reinterpret_cast<const DataFileDescription::Chunk*>(chunk_data);
 			chunks.emplace_back( chunk, linear_styles, areal_styles );
 		}
 
 		// Extract styles order
-		const auto in_linear_styles_order= reinterpret_cast<const DataFileDescription::LinearStylesOrder*>( file_content + DataFileReadNumber(in_zoom_level.linear_styles_order_offset) );
+		const auto in_linear_styles_order= reinterpret_cast<const DataFileDescription::LinearStylesOrder*>( file_content + in_zoom_level.linear_styles_order_offset );
 		linear_styles_order.reserve( in_zoom_level.linear_styles_order_count );
-		for( uint32_t i= 0u; i < DataFileReadNumber(in_zoom_level.linear_styles_order_count); ++i )
+		for( uint32_t i= 0u; i < in_zoom_level.linear_styles_order_count; ++i )
 			linear_styles_order.push_back( in_linear_styles_order[i].style_index );
 
 		// Create textures.
@@ -583,21 +583,21 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_f
 	}
 
 	const unsigned char* const file_content= static_cast<const unsigned char*>(file->Data());
-	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>(file_content);
+	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( file_content);
 
 	if( std::memcmp( data_file.header, DataFileDescription::DataFile::c_expected_header, sizeof(data_file.header) ) != 0 )
 	{
 		Log::FatalError( "File is not \"PanzerMaps\" file" );
 		return;
 	}
-	if( DataFileReadNumber(data_file.version) != DataFileDescription::DataFile::c_expected_version )
+	if( data_file.version != DataFileDescription::DataFile::c_expected_version )
 	{
-		Log::FatalError( "Unsupported map file version. Expected ", DataFileDescription::DataFile::c_expected_version, ", got ", DataFileReadNumber(data_file.version), "." );
+		Log::FatalError( "Unsupported map file version. Expected ", DataFileDescription::DataFile::c_expected_version, ", got ", data_file.version, "." );
 		return;
 	}
 
-	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + DataFileReadNumber(data_file.zoom_levels_offset) );
-	for( uint32_t zoom_level_index= 0u; zoom_level_index < DataFileReadNumber(data_file.zoom_level_count); ++zoom_level_index )
+	const auto zoom_levels= reinterpret_cast<const DataFileDescription::ZoomLevel*>( file_content + data_file.zoom_levels_offset );
+	for( uint32_t zoom_level_index= 0u; zoom_level_index < data_file.zoom_level_count; ++zoom_level_index )
 		zoom_levels_.emplace_back( zoom_levels[zoom_level_index], file_content );
 
 	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
