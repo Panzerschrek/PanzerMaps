@@ -101,7 +101,9 @@
         "Pedestrian":
         {
             "color" : "#A080A0",
-            "width_m" : 0.75
+            "color2" : "#A080A000",
+            "width_m" : 0.75,
+            "dash_size_m" : 6.0
         },
         "Waterway":
         {
@@ -112,7 +114,8 @@
         {
             "color" : "#808080",
             "color2" : "#F0F0F0",
-            "width_m" : 1.5
+            "width_m" : 1.5,
+            "dash_size_m" : 30.0
         },
         "RailwaySecondary":
         {
@@ -136,7 +139,10 @@
         },
         "Barrier":
         {
-            "color" : "#706050"
+            "color" : "#706050",
+            "color2" : "#70605000",
+            "width_m" : 0.5,
+            "dash_size_m" : 16.0
         }
     },
 
@@ -304,7 +310,7 @@
                 "RoadSignificance3Lanes10More": { "width_m" : 70.0 },
                 "Waterway" : { "width_m" : 5.0 },
                 "Tram" : { "width_m" : 4.0 },
-                "Railway" : { "width_m" : 6.0 }
+                "Railway" : { "width_m" : 6.0, "dash_size_m" : 60.0 }
             }
         },
 
@@ -359,7 +365,12 @@
                 "RoadSignificance3Lanes6":      { "width_m" :  84.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 112.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 140.0 },
-                "Railway" : { "width_m" : 16.0 }
+                "Railway" :
+                {
+                    "color" : "#808080",
+                    "color2" : "#808080", // Reset color, draw solid, not dashed.
+                    "width_m" : 16.0
+                }
             }
         },
 
@@ -403,7 +414,12 @@
                 "RoadSignificance3Lanes6":      { "width_m" : 420.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 420.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 420.0 },
-                "Railway" : { "width_m" : 96.0 }
+                "Railway" :
+                {
+                    "color" : "#808080",
+                    "color2" : "#808080", // Reset color, draw solid, not dashed.
+                    "width_m" : 96.0
+                }
             }
         }
     ]

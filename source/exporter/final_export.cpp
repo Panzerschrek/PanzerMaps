@@ -511,6 +511,7 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 				std::memcpy( out_style.color , style_it->second.color , sizeof(unsigned char) * 4u );
 				std::memcpy( out_style.color2, style_it->second.color2, sizeof(unsigned char) * 4u );
 				out_style.width_mul_256= uint32_t( style_it->second.width_m / zoom_level_data.meters_in_unit * 256.0f );
+				out_style.dash_size_mul_256= uint32_t( style_it->second.dash_size_m / zoom_level_data.meters_in_unit * 256.0f );
 			}
 
 			++get_zoom_level(zoom_level_index).linear_styles_count;

@@ -87,13 +87,13 @@ static void CreatePolygonalLine(
 	const size_t vertex_count,
 	const uint32_t color_index,
 	const float half_width,
+	const float tex_coord_scale,
 	std::vector<PolygonalLinearObjectVertex>& out_vertices,
 	std::vector<uint16_t>& out_indices )
 {
 	PM_ASSERT( vertex_count != 0u );
 
 	const float color_index_f= float(color_index);
-	const float tex_coord_scale= 0.015f; // TODO - setup this.
 
 	float tex_coord= 0.0f; // TODO - do not calculate tex_coord for lines with single color.
 	if( vertex_count == 1u )
@@ -389,6 +389,8 @@ public:
 
 				const float half_width= float(linear_styles[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
 				const float square_half_width= half_width * half_width;
+
+				const float tex_coord_scale= 256.0f / float(linear_styles[group.style_index].dash_size_mul_256);
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
@@ -396,7 +398,7 @@ public:
 					{
 						SimplifyLine( tmp_vertices, square_half_width );
 						if( !tmp_vertices.empty() )
-							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, tex_coord_scale, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
 						tmp_vertices.clear();
 					}
 					else

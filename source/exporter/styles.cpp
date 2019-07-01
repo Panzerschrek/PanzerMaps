@@ -85,6 +85,12 @@ static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json
 			if( width_m_json.IsNumber() )
 			out_style.width_m= std::max( 0.0f, width_m_json.AsFloat() );
 		}
+		if( linear_style_json.second.IsMember( "dash_size_m" ) )
+		{
+			const PanzerJson::Value& dash_size_m_json= linear_style_json.second["dash_size_m"];
+			if( dash_size_m_json.IsNumber() )
+			out_style.dash_size_m= std::max( 0.25f, dash_size_m_json.AsFloat() );
+		}
 	}
 }
 
