@@ -531,6 +531,9 @@ public:
 			chunks.emplace_back( chunk, linear_styles, areal_styles );
 		}
 
+		// Extract linear styles
+		this->linear_styles.insert( this->linear_styles.end(), linear_styles, linear_styles + in_zoom_level.linear_styles_count );
+
 		// Extract styles order
 		const auto in_linear_styles_order= reinterpret_cast<const DataFileDescription::LinearStylesOrder*>( file_content + in_zoom_level.linear_styles_order_offset );
 		linear_styles_order.reserve( in_zoom_level.linear_styles_order_count );
@@ -598,6 +601,7 @@ public:
 public:
 	const size_t zoom_level_log2;
 	std::vector<Chunk> chunks;
+	std::vector< DataFileDescription::LinearObjectStyle > linear_styles;
 	std::vector<uint8_t> linear_styles_order;
 
 	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > dashed_lines_textures;
@@ -712,6 +716,9 @@ void MapDrawer::Draw()
 	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
 	glClear( GL_COLOR_BUFFER_BIT );
 
+	// Setup OpenGL state.
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
 	const ZoomLevel& zoom_level= SelectZoomLevel();
 
 	// Calculate view matrix.
@@ -783,7 +790,6 @@ void MapDrawer::Draw()
 					chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
 					continue;
 
-
 				for( const Chunk::LinearObjectsGroup& group : chunk_to_draw.chunk.linear_objects_groups_ )
 				{
 					if( group.style_index == style_index && group.index_count > 0u )
@@ -795,6 +801,8 @@ void MapDrawer::Draw()
 							linear_textured_objets_shader_.Uniform( "tex", 0 );
 							linear_textured_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 							tex_it->second.Bind(0);
+
+							glEnable( GL_BLEND );
 						}
 						else
 						{
@@ -802,6 +810,9 @@ void MapDrawer::Draw()
 							linear_objets_shader_.Uniform( "tex", 0 );
 							linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 							zoom_level.linear_objects_texture.Bind(0);
+
+							if( zoom_level.linear_styles[style_index].color[3] != 255u )
+								glEnable( GL_BLEND );
 						}
 
 						if( group.primitive_type == GL_LINE_STRIP )
@@ -811,6 +822,8 @@ void MapDrawer::Draw()
 						glDrawElements( group.primitive_type, group.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
 						++draw_calls;
 						primitive_count+= group.index_count;
+
+						glDisable( GL_BLEND );
 					}
 				}
 			}
