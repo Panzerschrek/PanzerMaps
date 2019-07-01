@@ -47,11 +47,11 @@ R"(
 	uniform sampler2D tex;
 	uniform highp mat4 view_matrix;
 	in highp vec2 pos;
-	in highp float color_index;
+	in highp vec2 tex_coord;
 	out lowp vec4 f_color;
 	void main()
 	{
-		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
+		f_color= texelFetch( tex, ivec2( int(tex_coord.x), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
@@ -79,6 +79,32 @@ R"(
 	{
 		f_color= texelFetch( tex, ivec2( int(color_index), 0 ), 0 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
+	}
+)";
+
+const char linear_textured_vertex[]=
+GLSL_VERSION
+R"(
+	uniform highp mat4 view_matrix;
+	in highp vec2 pos;
+	in highp vec2 tex_coord;
+	out mediump vec2 f_tex_coord;
+	void main()
+	{
+		f_tex_coord= vec2( tex_coord.y, 0.5 );
+		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
+	}
+)";
+
+const char linear_textured_fragment[]=
+GLSL_VERSION
+R"(
+	uniform sampler2D tex;
+	in mediump vec2 f_tex_coord;
+	out lowp vec4 color;
+	void main()
+	{
+		color= texture( tex, f_tex_coord );
 	}
 )";
 
