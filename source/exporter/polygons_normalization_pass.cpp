@@ -28,12 +28,86 @@ static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const ve
 			PolygonVertexCross(
 				vertices[i],
 				vertices[ (i+1u) % vertex_count ],
-				test_vertex ) < 0 )
+				test_vertex ) <= 0 )
 			return false;
 	}
 	return true;
 }
 
+static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts( const std::vector<MercatorPoint>& vertices )
+{
+	for( size_t e0= 0u; e0 < vertices.size(); ++e0 )
+	for( size_t e1= 0u; e1 < vertices.size(); ++e1 )
+	{
+		if( e0 == e1 )
+			continue;
+		if( ( e0 + 1u ) % vertices.size() == e1 || ( e1 + 1u ) % vertices.size() == e0 )
+			continue;
+
+		const MercatorPoint& e0v0= vertices[e0];
+		const MercatorPoint& e0v1= vertices[ (e0+1u) % vertices.size() ];
+
+		const MercatorPoint& e1v0= vertices[e1];
+		const MercatorPoint& e1v1= vertices[ (e1+1u) % vertices.size() ];
+
+		const int32_t e0_dx= e0v1.x - e0v0.x;
+		const int32_t e0_dy= e0v1.y - e0v0.y;
+
+		const int32_t e1_dx= e1v1.x - e1v0.x;
+		const int32_t e1_dy= e1v1.y - e1v0.y;
+
+		const int64_t denom= int64_t(e1_dx) * int64_t(e0_dy) - int64_t(e0_dx) * int64_t(e1_dy);
+		if( denom == 0 )
+			continue;
+		const int64_t abs_denom= std::abs(denom);
+		const int64_t denom_sign= denom > 0 ? +1 : -1;
+
+		const int32_t dx0= e1v0.x - e0v0.x;
+		const int32_t dy0= e1v0.y - e0v0.y;
+		const int64_t s= ( -e0_dy * dx0 + e0_dx * dy0 ) * denom_sign;
+		const int64_t t= ( +e1_dx * dy0 - e1_dy * dx0 ) * denom_sign;
+
+		if( s >= 0 && s <= abs_denom && t >= 0 && t <= abs_denom )
+		{
+			const MercatorPoint inersection_point{
+				int32_t( e0v0.x + e0_dx * t / abs_denom ),
+				int32_t( e0v0.y + e0_dy * t / abs_denom ) };
+
+			std::vector<MercatorPoint> res0;
+			const size_t res0_vertex_count= ( vertices.size() + e1 - e0 ) % vertices.size();
+			PM_ASSERT( res0_vertex_count >= 2u );
+			for( size_t i= 0u; i < res0_vertex_count; ++i )
+				res0.push_back( vertices[ ( e0 + 1u + i ) % vertices.size() ] );
+			if( res0.front() != inersection_point && res0.back() != inersection_point )
+				res0.push_back( inersection_point );
+
+			std::vector<MercatorPoint> res1;
+			const size_t res1_vertex_count= ( vertices.size() + e0 - e1 ) % vertices.size();
+			PM_ASSERT( res1_vertex_count >= 2u );
+			for( size_t i= 0u; i < res1_vertex_count; ++i )
+				res1.push_back( vertices[ ( e1 + 1u + i ) % vertices.size() ] );
+			if( res1.front() != inersection_point && res1.back() != inersection_point )
+				res1.push_back( inersection_point );
+
+			std::vector< std::vector<MercatorPoint> > res_total;
+			if( res0.size() >= 3u )
+				res_total= SplitPolygonIntNoncrossingParts( res0 );
+
+			if( res1.size() >= 3u )
+			{
+				std::vector< std::vector<MercatorPoint> > res1_splitted= SplitPolygonIntNoncrossingParts( res1 );
+				for( std::vector<MercatorPoint>& split_result : res1_splitted )
+					res_total.push_back( std::move( split_result ) );
+			}
+
+			return res_total;
+		}
+	}
+
+	return { vertices };
+}
+
+// Input polygons must not be self-intersecting.
 // Result parts are clockwise.
 static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices )
 {
@@ -99,6 +173,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 		return std::vector< std::vector<MercatorPoint> >();
 
 		continue_triangulation:;
+		if( CalculatePolygonDoubleSignedArea( vertices.data(), vertices.size() ) < 0 )
+			std::reverse( vertices.begin(), vertices.end() );
 	}
 	finish_triangulation:
 	result.push_back( vertices );
@@ -131,18 +207,22 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 			continue;
 
 			have_adjusted_vertices:
-			size_t adjusted_start0= adjusted_v0, adjusted_end0= adjusted_v0;
-			size_t adjusted_start1= adjusted_v1, adjusted_end1= adjusted_v1;
+			size_t adjusted_start0= adjusted_v0 + p0_size_add, adjusted_end0= adjusted_v0 + p0_size_add;
+			size_t adjusted_start1= adjusted_v1 + p1_size_add, adjusted_end1= adjusted_v1 + p1_size_add;
 
 			while( poly0[ ( adjusted_start0 + p0_size_add - 1u ) % poly0.size() ] ==
-				   poly1[ ( adjusted_end1   + p1_size_add + 1u ) % poly1.size() ] )
+				   poly1[ ( adjusted_end1   + p1_size_add + 1u ) % poly1.size() ] &&
+				   adjusted_end0 - adjusted_start0 < poly0.size() &&
+				   adjusted_end1 - adjusted_start1 < poly1.size() )
 			{
 				--adjusted_start0;
 				++adjusted_end1;
 			}
 
 			while( poly0[ ( adjusted_end0   + p0_size_add + 1u ) % poly0.size() ] ==
-				   poly1[ ( adjusted_start1 + p1_size_add - 1u ) % poly1.size() ] )
+				   poly1[ ( adjusted_start1 + p1_size_add - 1u ) % poly1.size() ] &&
+				   adjusted_end0 - adjusted_start0 < poly0.size() &&
+				   adjusted_end1 - adjusted_start1 < poly1.size() )
 			{
 				++adjusted_end0;
 				--adjusted_start1;
@@ -150,6 +230,10 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 
 			if( adjusted_start0 == adjusted_end0 )
 				continue;// Have only one adjusted vertex.
+			if( ( adjusted_end0 - adjusted_start0 ) % poly0.size() == 0u )
+				continue;
+			if( ( adjusted_end1 - adjusted_start1 ) % poly1.size() == 0u )
+				continue;
 
 			const int64_t cross0=
 				PolygonVertexCross(
@@ -230,17 +314,23 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 		for( size_t v= in_object.first_vertex_index; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
 			polygon_vertices.push_back( in_data.vertices[v] );
 
-		for( const std::vector<MercatorPoint>& polygon_part : SplitPolygonIntoConvexParts( polygon_vertices ) )
+		const auto noncrossing_parts= SplitPolygonIntNoncrossingParts( polygon_vertices );
+		if( noncrossing_parts.size() > 1u )
+			Log::Info( "Split self-crossing polygon with ", in_object.vertex_count, " vertices into ", noncrossing_parts.size(), " parts" );
+		for( const std::vector<MercatorPoint>& noncrossing_polygon_part :noncrossing_parts )
 		{
-			PM_ASSERT( polygon_part.size() >= 3u );
+			for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part ) )
+			{
+				PM_ASSERT( convex_part.size() >= 3u );
 
-			BaseDataRepresentation::ArealObject out_object;
-			out_object.class_= in_object.class_;
-			out_object.first_vertex_index= result.vertices.size();
-			out_object.vertex_count= polygon_part.size();
-			for( const MercatorPoint& vertex : polygon_part )
-				result.vertices.push_back(vertex);
-			result.areal_objects.push_back(out_object);
+				BaseDataRepresentation::ArealObject out_object;
+				out_object.class_= in_object.class_;
+				out_object.first_vertex_index= result.vertices.size();
+				out_object.vertex_count= convex_part.size();
+				for( const MercatorPoint& vertex : convex_part )
+					result.vertices.push_back(vertex);
+				result.areal_objects.push_back(out_object);
+			}
 		}
 	}
 
