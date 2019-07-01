@@ -664,6 +664,7 @@ void MapDrawer::Draw()
 	const ZoomLevel& zoom_level= SelectZoomLevel();
 
 	// Calculate view matrix.
+	// TODO - maybe use m_Mat3?
 	m_Mat4 zoom_level_matrix, translate_matrix, scale_matrix, aspect_matrix, view_matrix;
 	zoom_level_matrix.Scale( float( 1u << zoom_level.zoom_level_log2 ) );
 	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
@@ -813,7 +814,7 @@ const MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel() const
 	// Assume, that nearest scale is equivalent for WebMercator zoom 18.
 
 	const float c_default_pixels_in_m= 3779.0f;
-	const float pixel_density_scaler= c_default_pixels_in_m / system_window_.GetPixelsInScreenMeter();
+	const float pixel_density_scaler= system_window_.GetPixelsInScreenMeter() / c_default_pixels_in_m;
 
 	for( size_t i= 1u; i < zoom_levels_.size(); ++i )
 		if( scale_ * 0.5f * pixel_density_scaler < float( 1u << zoom_levels_[i].zoom_level_log2 ) )
