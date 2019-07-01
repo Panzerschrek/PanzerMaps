@@ -73,6 +73,8 @@ SystemWindow::SystemWindow()
 	SDL_Rect display_rect;
 	if( SDL_GetDisplayUsableBounds( 0, &display_rect ) != 0 )
 		Log::FatalError( "Can not get display 0 bounds" );
+	Log::Info( "display usable bounds: ", display_rect.w, " ", display_rect.h );
+
 	viewport_size_.width= display_rect.w;
 	viewport_size_.height= display_rect.h;
 
@@ -85,6 +87,10 @@ SystemWindow::SystemWindow()
 
 	if( window_ == nullptr )
 		Log::FatalError( "Can not create window" );
+
+	// On Android drawable size is smaller, if window is not fullscreen, because status bar and navigation bar occupy some place.
+	SDL_GL_GetDrawableSize( window_, reinterpret_cast<int*>(&viewport_size_.width), reinterpret_cast<int*>(&viewport_size_.height) );
+	Log::Info( "Window drawable size: ", viewport_size_.width, " ", viewport_size_.height );
 
 	gl_context_= SDL_GL_CreateContext( window_ );
 	if( gl_context_ == nullptr )
