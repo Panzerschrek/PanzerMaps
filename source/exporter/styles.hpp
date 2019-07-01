@@ -19,6 +19,7 @@ public:
 	struct LinearObjectStyle
 	{
 		ColorRGBA color= {0};
+		ColorRGBA color2= {0};
 		float width_m= 0.0f;
 	};
 

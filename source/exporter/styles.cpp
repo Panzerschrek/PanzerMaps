@@ -72,7 +72,12 @@ static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json
 		Styles::LinearObjectStyle& out_style= linear_styles[ object_class ];
 
 		if( linear_style_json.second.IsMember( "color" ) )
+		{
 			ParseColor( linear_style_json.second["color"].AsString(), out_style.color );
+			std::memcpy( out_style.color2, out_style.color, sizeof(Styles::ColorRGBA) );
+		}
+		if( linear_style_json.second.IsMember( "color2" ) )
+			ParseColor( linear_style_json.second["color2"].AsString(), out_style.color2 );
 
 		if( linear_style_json.second.IsMember( "width_m" ) )
 		{

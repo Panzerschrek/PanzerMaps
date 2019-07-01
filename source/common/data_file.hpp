@@ -95,9 +95,10 @@ static_assert( sizeof(PointObjectStyle) == 4u, "wrong size" );
 struct LinearObjectStyle
 {
 	ColorRGBA color;
+	ColorRGBA color2;
 	uint32_t width_mul_256; // Width of line, in units, multiplied by 256
 };
-static_assert( sizeof(LinearObjectStyle) == 8u, "wrong size" );
+static_assert( sizeof(LinearObjectStyle) == 12u, "wrong size" );
 
 struct ArealObjectStyle
 {

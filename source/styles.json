@@ -111,6 +111,7 @@
         "Railway":
         {
             "color" : "#808080",
+            "color2" : "#F0F0F0",
             "width_m" : 1.5
         },
         "RailwaySecondary":
