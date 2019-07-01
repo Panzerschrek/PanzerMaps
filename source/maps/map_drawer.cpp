@@ -96,6 +96,7 @@ static void CreatePolygonalLine(
 	const float color_index_f= float(color_index);
 
 	float tex_coord= 0.0f; // TODO - do not calculate tex_coord for lines with single color.
+	const float cup_tex_coord_add= 0.5f * half_width * tex_coord_scale;
 	if( vertex_count == 1u )
 	{
 		// Line was too simplifyed, draw only caps.
@@ -108,53 +109,55 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.y,
 					vert.y - edge_shift.x },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x * c_cos_minus_45 - edge_shift.y * c_sin_minus_45,
 					vert.y + edge_shift.x * c_sin_minus_45 + edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x * c_cos_plus_45 + edge_shift.y * c_sin_plus_45,
 					vert.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		// Center.
-		tex_coord+= 0.5f * half_width * tex_coord_scale;
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x,
 					vert.y + edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x,
 					vert.y - edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		// Cup1
-		tex_coord+= 0.5f * half_width * tex_coord_scale;
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x * c_cos_plus_45 - edge_shift.y * c_sin_plus_45,
 					vert.y + edge_shift.x * c_sin_plus_45 + edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x * c_cos_minus_45 + edge_shift.y * c_sin_minus_45,
 					vert.y - edge_shift.x * c_sin_minus_45 - edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.y,
 					vert.y + edge_shift.x },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 
 		out_indices.push_back( c_primitive_restart_index );
 		return;
@@ -179,34 +182,35 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.y,
 					vert0.y - edge_shift.x },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.x * c_cos_minus_45 - edge_shift.y * c_sin_minus_45,
 					vert0.y + edge_shift.x * c_sin_minus_45 + edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x - edge_shift.x * c_cos_plus_45 + edge_shift.y * c_sin_plus_45,
 					vert0.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 
 		// Start of line.
-		tex_coord+= 0.5f * half_width * tex_coord_scale;
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.x,
 					vert0.y + edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x - edge_shift.x,
 					vert0.y - edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 
 		prev_edge_base_vec= edge_base_vec;
 		tex_coord+= edge_length * tex_coord_scale;
@@ -237,13 +241,13 @@ static void CreatePolygonalLine(
 				PolygonalLinearObjectVertex{ {
 						vert.x + vertex_shift.x,
 						vert.y + vertex_shift.y },
-					{ color_index_f, tex_coord }  } );
+					{ color_index_f, tex_coord } } );
 			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 			out_vertices.push_back(
 				PolygonalLinearObjectVertex{ {
 						vert.x - vertex_shift.x,
 						vert.y - vertex_shift.y },
-					{ color_index_f, tex_coord }  } );
+					{ color_index_f, tex_coord } } );
 		}
 		else
 		{
@@ -258,7 +262,7 @@ static void CreatePolygonalLine(
 				PolygonalLinearObjectVertex{ {
 						vert.x - vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len * sign ),
 						vert.y - vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len * sign ) },
-					{ color_index_f, tex_coord }  } );
+					{ color_index_f, tex_coord } } );
 
 			const m_Vec2 vertex_shift= prev_edge_base_vec * ( half_width * sign );
 			const float angle_step= angle / float(rounding_edges);
@@ -284,7 +288,7 @@ static void CreatePolygonalLine(
 					PolygonalLinearObjectVertex{ {
 							vert.x + vertex_shift.x * vert_angle_cos - vertex_shift.y * vert_angle_sin,
 							vert.y + vertex_shift.x * vert_angle_sin + vertex_shift.y * vert_angle_cos },
-						{ color_index_f, tex_coord }  } );
+						{ color_index_f, tex_coord } } );
 			}
 		}
 		prev_edge_base_vec= edge_base_vec;
@@ -301,33 +305,35 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x + edge_shift.x,
 					vert_last.y + edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.x,
 					vert_last.y - edge_shift.y },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 
 		// Cup.
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x + edge_shift.x * c_cos_plus_45 - edge_shift.y * c_sin_plus_45,
 					vert_last.y + edge_shift.x * c_sin_plus_45 + edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.x * c_cos_minus_45 + edge_shift.y * c_sin_minus_45,
 					vert_last.y - edge_shift.x * c_sin_minus_45 - edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
+		tex_coord+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.y,
 					vert_last.y + edge_shift.x },
-				{ color_index_f, tex_coord }  } );
+				{ color_index_f, tex_coord } } );
 	}
 	out_indices.push_back( c_primitive_restart_index );
 }
