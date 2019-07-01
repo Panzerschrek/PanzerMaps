@@ -1,5 +1,6 @@
 ﻿#include <algorithm>
 #include <cstring>
+#include <unordered_map>
 #include "../common/assert.hpp"
 #include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
@@ -92,8 +93,9 @@ static void CreatePolygonalLine(
 	PM_ASSERT( vertex_count != 0u );
 
 	const float color_index_f= float(color_index);
+	const float tex_coord_scale= 0.015f; // TODO - setup this.
 
-	const float tex_coord= 0.0f;
+	float tex_coord= 0.0f; // TODO - do not calculate tex_coord for lines with single color.
 	if( vertex_count == 1u )
 	{
 		// Line was too simplifyed, draw only caps.
@@ -120,6 +122,7 @@ static void CreatePolygonalLine(
 					vert.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
 				{ color_index_f, tex_coord }  } );
 		// Center.
+		tex_coord+= 0.5f * half_width * tex_coord_scale;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
@@ -133,6 +136,7 @@ static void CreatePolygonalLine(
 					vert.y - edge_shift.y },
 				{ color_index_f, tex_coord }  } );
 		// Cup1
+		tex_coord+= 0.5f * half_width * tex_coord_scale;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
@@ -162,8 +166,9 @@ static void CreatePolygonalLine(
 		const m_Vec2 vert0( float(in_vertices[0u].x), float(in_vertices[0u].y) );
 
 		const m_Vec2 edge_dir( float(in_vertices[1u].x) - vert0.x, float(in_vertices[1u].y) - vert0.y );
-		PM_ASSERT( edge_dir.Length() > 0.0f );
-		const float edge_inv_length= edge_dir.InvLength();
+		const float edge_length= edge_dir.Length();
+		PM_ASSERT( edge_length > 0.0f );
+		const float edge_inv_length= 1.0f / edge_length;
 		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
 
 		const m_Vec2 edge_shift= edge_base_vec * half_width;
@@ -189,6 +194,7 @@ static void CreatePolygonalLine(
 				{ color_index_f, tex_coord }  } );
 
 		// Start of line.
+		tex_coord+= 0.5f * half_width * tex_coord_scale;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
@@ -203,14 +209,16 @@ static void CreatePolygonalLine(
 				{ color_index_f, tex_coord }  } );
 
 		prev_edge_base_vec= edge_base_vec;
+		tex_coord+= edge_length * tex_coord_scale;
 	}
 
 	for( size_t i= 1u; i < vertex_count - 1u; ++i )
 	{
 		const m_Vec2 vert( float(in_vertices[i].x), float(in_vertices[i].y) );
 		const m_Vec2 edge_dir( float(in_vertices[i+1u].x) - vert.x, float(in_vertices[i+1u].y) - vert.y );
-		PM_ASSERT( edge_dir.Length() > 0.0f );
-		const float edge_inv_length= edge_dir.InvLength();
+		const float edge_length= edge_dir.Length();
+		PM_ASSERT( edge_length > 0.0f );
+		const float edge_inv_length= 1.0f / edge_length;
 		const m_Vec2 edge_base_vec( edge_dir.y * edge_inv_length, -edge_dir.x * edge_inv_length );
 
 		const m_Vec2 vertex_base_vec= ( prev_edge_base_vec + edge_base_vec ) * 0.5f;
@@ -280,6 +288,7 @@ static void CreatePolygonalLine(
 			}
 		}
 		prev_edge_base_vec= edge_base_vec;
+		tex_coord+= edge_length * tex_coord_scale;
 	}
 
 	{
@@ -549,6 +558,33 @@ public:
 			areal_objects_texture= r_Texture( r_Texture::PixelFormat::RGBA8, texture_with_colors_width, texture_with_colors_height, reinterpret_cast<const unsigned char*>( texture_data ) );
 			areal_objects_texture.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 		}
+
+		// Create textures for dashed lines.
+		{
+			const size_t tex_width= 128u;
+			const size_t tex_height= 8u;
+			DataFileDescription::ColorRGBA tex_data[ tex_width * tex_height ];
+
+			for( DataFileDescription::Chunk::StyleIndex style_index= 0u; style_index < in_zoom_level.linear_styles_count; ++ style_index )
+			{
+				const DataFileDescription::LinearObjectStyle& style= linear_styles[style_index];
+				if( std::memcmp( style.color, style.color2, sizeof(DataFileDescription::ColorRGBA) ) == 0 )
+					continue;
+
+				for( size_t y= 0u; y < tex_height; ++y )
+				{
+					for( size_t x= 0u; x < tex_width / 2u; ++x )
+						std::memcpy( tex_data[ x + y * tex_width ], style.color , sizeof(DataFileDescription::ColorRGBA) );
+					for( size_t x= tex_width / 2u; x < tex_width; ++x )
+						std::memcpy( tex_data[ x + y * tex_width ], style.color2, sizeof(DataFileDescription::ColorRGBA) );
+				}
+
+				r_Texture texture( r_Texture::PixelFormat::RGBA8, tex_width, tex_height, reinterpret_cast<const unsigned char*>(tex_data) );
+				texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+				texture.BuildMips();
+				dashed_lines_textures[style_index]= std::move(texture);
+			}
+		}
 	}
 
 	ZoomLevel()= delete;
@@ -563,6 +599,8 @@ public:
 	const size_t zoom_level_log2;
 	std::vector<Chunk> chunks;
 	std::vector<uint8_t> linear_styles_order;
+
+	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > dashed_lines_textures;
 
 	r_Texture linear_objects_texture;
 	r_Texture areal_objects_texture;
@@ -621,6 +659,11 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_f
 	linear_objets_shader_.SetAttribLocation( "pos", 0 );
 	linear_objets_shader_.SetAttribLocation( "tex_coord", 1 );
 	linear_objets_shader_.Create();
+
+	linear_textured_objets_shader_.ShaderSource( Shaders::linear_textured_fragment, Shaders::linear_textured_vertex );
+	linear_textured_objets_shader_.SetAttribLocation( "pos", 0 );
+	linear_textured_objets_shader_.SetAttribLocation( "tex_coord", 1 );
+	linear_textured_objets_shader_.Create();
 
 	areal_objects_shader_.ShaderSource( Shaders::areal_fragment, Shaders::areal_vertex );
 	areal_objects_shader_.SetAttribLocation( "pos", 0 );
@@ -729,11 +772,6 @@ void MapDrawer::Draw()
 		disable_primitive_restart();
 	}
 	{
-		linear_objets_shader_.Bind();
-		linear_objets_shader_.Uniform( "tex", 0 );
-
-		zoom_level.linear_objects_texture.Bind(0);
-
 		enable_primitive_restart();
 
 		// Draw linear objects ordered by style, because linear objects of neighboring chunks may overlap.
@@ -745,12 +783,27 @@ void MapDrawer::Draw()
 					chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize() == 0u )
 					continue;
 
-				linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
 
 				for( const Chunk::LinearObjectsGroup& group : chunk_to_draw.chunk.linear_objects_groups_ )
 				{
 					if( group.style_index == style_index && group.index_count > 0u )
 					{
+						const auto tex_it= zoom_level.dashed_lines_textures.find( group.style_index );
+						if( tex_it != zoom_level.dashed_lines_textures.end() )
+						{
+							linear_textured_objets_shader_.Bind();
+							linear_textured_objets_shader_.Uniform( "tex", 0 );
+							linear_textured_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+							tex_it->second.Bind(0);
+						}
+						else
+						{
+							linear_objets_shader_.Bind();
+							linear_objets_shader_.Uniform( "tex", 0 );
+							linear_objets_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
+							zoom_level.linear_objects_texture.Bind(0);
+						}
+
 						if( group.primitive_type == GL_LINE_STRIP )
 							chunk_to_draw.chunk.linear_objects_polygon_buffer_.Bind();
 						else
@@ -758,7 +811,6 @@ void MapDrawer::Draw()
 						glDrawElements( group.primitive_type, group.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
 						++draw_calls;
 						primitive_count+= group.index_count;
-
 					}
 				}
 			}

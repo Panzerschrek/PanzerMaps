@@ -34,6 +34,7 @@ private:
 	const SystemWindow& system_window_;
 	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
+	r_GLSLProgram linear_textured_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
 
 	std::vector<ZoomLevel> zoom_levels_;
