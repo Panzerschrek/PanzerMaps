@@ -140,6 +140,14 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			}
 			break;
 
+		case SDL_KEYDOWN:
+			if( event.key.keysym.sym == SDLK_AC_BACK ) // Android "back" key.
+			{
+				out_events.emplace_back();
+				out_events.back().type= SystemEvent::Type::Quit;
+			}
+			break;
+
 		case SDL_QUIT:
 			out_events.emplace_back();
 			out_events.back().type= SystemEvent::Type::Quit;
