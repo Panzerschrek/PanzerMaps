@@ -214,6 +214,26 @@ OSMParseResult ParseOSM( const char* file_name )
 				std::strcmp( highway, "steps" ) == 0 ) // TODO - make spearate class for stairs.
 				obj.class_= LinearObjectClass::Pedestrian;
 
+			if( std::strcmp( highway, "pedestrian" ) == 0 )
+			{
+				if( const char* const area= GetTagValue( way_element, "area" ) )
+				{
+					if( std::strcmp( area, "yes" ) == 0 )
+					{
+						OSMParseResult::ArealObject areal_obj;
+						areal_obj.class_= ArealObjectClass::PedestrianArea;
+						areal_obj.first_vertex_index= result.vertices.size();
+						ExtractVertices( way_element, nodes, result.vertices );
+						areal_obj.vertex_count= result.vertices.size() - areal_obj.first_vertex_index;
+						if( areal_obj.vertex_count > 0u )
+						{
+							result.areal_objects.push_back(areal_obj);
+							continue;
+						}
+					}
+				}
+			}
+
 			if( obj.class_ != LinearObjectClass::None )
 			{
 				obj.first_vertex_index= result.vertices.size();
@@ -310,7 +330,10 @@ OSMParseResult ParseOSM( const char* file_name )
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
+			{
 				result.areal_objects.push_back(obj);
+				continue;
+			}
 		}
 		else if( const char* const natural= GetTagValue( way_element, "natural" ) )
 		{
@@ -332,7 +355,10 @@ OSMParseResult ParseOSM( const char* file_name )
 				ExtractVertices( way_element, nodes, result.vertices );
 				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 				if( obj.vertex_count > 0u )
+				{
 					result.areal_objects.push_back(obj);
+					continue;
+				}
 			}
 		}
 		else if( const char* const landuse= GetTagValue( way_element, "landuse" ) )
@@ -344,19 +370,30 @@ OSMParseResult ParseOSM( const char* file_name )
 				obj.class_= ArealObjectClass::Cemetery;
 			else if( std::strcmp( landuse, "foreset" ) == 0 )
 				obj.class_= ArealObjectClass::Wood;
-			else if( std::strcmp( landuse, "wood" ) == 0 )
+			else if( std::strcmp( landuse, "wood" ) == 0 ||
+					 std::strcmp( landuse, "orchard" ) == 0 )
 				obj.class_= ArealObjectClass::Wood;
-			else if( std::strcmp( landuse, "grass" ) == 0 )
+			else if( std::strcmp( landuse, "grass" ) == 0 ||
+					 std::strcmp( landuse, "meadow" ) == 0 ||
+					 std::strcmp( landuse, "village_green" ) == 0 )
 				obj.class_= ArealObjectClass::Grassland;
 			else if( std::strcmp( landuse, "residential" ) == 0 )
 				obj.class_= ArealObjectClass::Residential;
 			else if( std::strcmp( landuse, "industrial" ) == 0 ||
-				std::strcmp( landuse, "garages" ) == 0 ||
-				std::strcmp( landuse, "railway" ) == 0 )
+					 std::strcmp( landuse, "garages" ) == 0 ||
+					 std::strcmp( landuse, "railway" ) == 0 ||
+					 std::strcmp( landuse, "construction" ) == 0 )
 				obj.class_= ArealObjectClass::Industrial;
 			else if( std::strcmp( landuse, "commercial" ) == 0 ||
-				std::strcmp( landuse, "retail" ) == 0 )
+					 std::strcmp( landuse, "retail" ) == 0 )
 				obj.class_= ArealObjectClass::Administrative;
+			else if( std::strcmp( landuse, "recreation_ground" ) == 0 ||
+					 std::strcmp( landuse, "garden" ) == 0 )
+				obj.class_= ArealObjectClass::Park;
+			else if( std::strcmp( landuse, "farmland" ) == 0 ||
+					 std::strcmp( landuse, "farmyard" ) == 0 ||
+					 std::strcmp( landuse, "greenhouse_horticulture" ) == 0 )
+				obj.class_= ArealObjectClass::Field;
 
 			if( obj.class_ != ArealObjectClass::None )
 			{
@@ -364,7 +401,10 @@ OSMParseResult ParseOSM( const char* file_name )
 				ExtractVertices( way_element, nodes, result.vertices );
 				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 				if( obj.vertex_count > 0u )
+				{
 					result.areal_objects.push_back(obj);
+					continue;
+				}
 			}
 		}
 		else if( const char* const amenity= GetTagValue( way_element, "amenity" ) )
@@ -372,14 +412,14 @@ OSMParseResult ParseOSM( const char* file_name )
 			OSMParseResult::ArealObject obj;
 			if( std::strcmp( amenity, "grave_yard" ) == 0 )
 				obj.class_= ArealObjectClass::Cemetery;
-			else if( std::strcmp( amenity, "school" ) == 0 ||
+			else if(std::strcmp( amenity, "school" ) == 0 ||
 				std::strcmp( amenity, "college" ) == 0  ||
 				std::strcmp( amenity, "kindergarten" ) == 0 ||
 				std::strcmp( amenity, "library" ) == 0 ||
 				std::strcmp( amenity, "university" ) == 0 )
 				obj.class_= ArealObjectClass::Administrative;
 			else if( std::strcmp( amenity, "clinic" ) == 0 ||
-				std::strcmp( amenity, "dentist" ) == 0  ||
+				std::strcmp( amenity, "dentist" ) == 0 ||
 				std::strcmp( amenity, "doctors" ) == 0 ||
 				std::strcmp( amenity, "hospital" ) == 0 ||
 				std::strcmp( amenity, "ursing_home" ) == 0 )
@@ -391,7 +431,30 @@ OSMParseResult ParseOSM( const char* file_name )
 				ExtractVertices( way_element, nodes, result.vertices );
 				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 				if( obj.vertex_count > 0u )
+				{
 					result.areal_objects.push_back(obj);
+					continue;
+				}
+			}
+		}
+		else if( const char* const leisure= GetTagValue( way_element, "leisure" ) )
+		{
+			OSMParseResult::ArealObject obj;
+			if( std::strcmp( leisure, "park" ) == 0 )
+				obj.class_= ArealObjectClass::Park;
+			else if( std::strcmp( leisure, "pitch" ) == 0 )
+				obj.class_= ArealObjectClass::SportArea;
+
+			if( obj.class_ != ArealObjectClass::None )
+			{
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( way_element, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+				{
+					result.areal_objects.push_back(obj);
+					continue;
+				}
 			}
 		}
 	}

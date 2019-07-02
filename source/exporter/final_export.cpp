@@ -471,13 +471,15 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 		};
 		result.resize( result.size() + sizeof(DataFile::ChunkDescription) * final_chunks_data.size() );
 
-		Log::Info( final_chunks_data.size(), " chunks" );
+		size_t chunks_data_size= 0u;
 		for( size_t i= 0u; i < final_chunks_data.size(); ++i )
 		{
+			chunks_data_size+= final_chunks_data[i].size();
 			get_chunks_description()[i].offset= static_cast<uint32_t>(result.size());
 			get_chunks_description()[i].size= static_cast<uint32_t>(final_chunks_data[i].size());
 			result.insert( result.end(), final_chunks_data[i].begin(), final_chunks_data[i].end() );
 		}
+		Log::Info( final_chunks_data.size(), " chunks, ", chunks_data_size, " bytes (", chunks_data_size / 1024u, "kb)" );
 
 		// Dump zoom level styles.
 

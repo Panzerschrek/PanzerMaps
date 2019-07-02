@@ -179,6 +179,22 @@
         "Building":
         {
             "color" : "#d9d0c9"
+        },
+        "Park":
+        {
+            "color" : "#c8facc"
+        },
+        "SportArea":
+        {
+            "color" : "#aae0cb"
+        },
+        "PedestrianArea":
+        {
+            "color" : "#dddde8"
+        },
+        "Field":
+        {
+            "color" : "#eef0d5"
         }
     },
 
@@ -198,7 +214,11 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
-                        "Wood"
+                        "Wood",
+                        "Park",
+                        "SportArea",
+                        "PedestrianArea",
+                        "Field"
                     ],
                     "allow_collinear_points_removing" : false
                 },
@@ -260,7 +280,10 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
-                        "Wood"
+                        "Wood",
+                        "Park",
+                        "SportArea",
+                        "Field"
                     ],
                     "allow_collinear_points_removing" : false
                 }
@@ -330,7 +353,10 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
-                        "Wood"
+                        "Wood",
+                        "Park",
+                        "SportArea",
+                        "Field"
                     ],
                     "allow_collinear_points_removing" : false
                 }
@@ -390,7 +416,9 @@
                         "Cemetery",
                         "Industrial",
                         "Residential",
-                        "Wood"
+                        "Wood",
+                        "Park",
+                        "Field"
                     ],
                     "allow_collinear_points_removing" : false
                 }
