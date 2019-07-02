@@ -26,6 +26,9 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	std::vector<VertexTranspormed> vertices;
 };
 
-CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& prepared_data, size_t additional_scale_log2 );
+CoordinatesTransformationPassResult TransformCoordinates(
+	const OSMParseResult& prepared_data,
+	size_t additional_scale_log2,
+	int32_t simplification_distance_units );
 
 } // namespace PanzerMaps

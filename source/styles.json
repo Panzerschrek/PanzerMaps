@@ -186,6 +186,7 @@
     [
         {
             "scale_to_prev_log2" : 1,
+            "simplification_distance_units" : 0,
             "areal_phases" :
             [
                 {
@@ -247,6 +248,7 @@
         },
         {
             "scale_to_prev_log2" : 2,
+            "simplification_distance_units" : 4,
             "areal_phases" :
             [
                 {
@@ -316,6 +318,7 @@
 
         {
             "scale_to_prev_log2" : 2,
+            "simplification_distance_units" : 4,
             "areal_phases" :
             [
                 {
@@ -376,6 +379,7 @@
 
         {
             "scale_to_prev_log2" : 3,
+            "simplification_distance_units" : 4,
             "areal_phases" :
             [
                 {

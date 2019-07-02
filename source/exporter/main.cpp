@@ -86,7 +86,7 @@ Usage:
 		if( &zoom_level != &styles.zoom_levels.front() )
 			zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
 
-		CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result, zoom_level_scale_log2 );
+		CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result, zoom_level_scale_log2, zoom_level.simplification_distance );
 
 		PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, zoom_level );
 		coordinates_transform_result= CoordinatesTransformationPassResult();

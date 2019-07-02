@@ -51,7 +51,7 @@ static const float c_sin_minus_45= -std::sqrt(0.5f);
 static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line, const float suqare_half_width )
 {
 	// TODO - fix equal points in source data.
-	PM_ASSERT( line.size() >= 2u );
+	PM_ASSERT( line.size() >= 1u );
 
 	const int32_t square_half_width_int= std::max( 1, int32_t(suqare_half_width) );
 	const auto last_vertex= line.back();

@@ -126,6 +126,11 @@ static Styles::ZoomLevel ParseZoomLevel(
 
 	zoom_level.scale_to_prev_log2= static_cast<size_t>( std::max( 1, std::min( zoom_level_json[ "scale_to_prev_log2" ].AsInt(), 4 ) ) );
 
+	if( zoom_level_json.IsMember( "simplification_distance_units" ) )
+	{
+		zoom_level.simplification_distance= std::max( 0, std::min( zoom_level_json["simplification_distance_units"].AsInt(), 16 ) );
+	}
+
 	ParsePointObjectStyles( zoom_level_json["point_styles"], zoom_level.point_object_styles );
 	ParseLinearObjectStyles( zoom_level_json["linear_styles"], zoom_level.linear_object_styles );
 	ParseArealObjectStyles( zoom_level_json["areal_styles"], zoom_level.areal_object_styles );

@@ -20,7 +20,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	const int32_t normal_x,
 	const int32_t normal_y )
 {
-	PM_ASSERT( polyline.size() >= 2u );
+	PM_ASSERT( polyline.size() >= 1u );
 	std::vector< std::vector<MercatorPoint> > polylines;
 
 	const auto vertex_signed_plane_distance=
@@ -76,11 +76,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 		prev_vertex_pos= cur_vertex_pos;
 	}
 
-	if( result_polyline.size() >= 2u )
-	{
-		PM_ASSERT( result_polyline.size() >= 2u );
+	if( result_polyline.size() >= 1u )
 		polylines.push_back( std::move( result_polyline ) );
-	}
 
 	return polylines;
 }
@@ -92,7 +89,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolyline(
 	const int32_t bb_max_x,
 	const int32_t bb_max_y )
 {
-	PM_ASSERT( polyline.size() >= 2u );
+	PM_ASSERT( polyline.size() >= 1u );
 	std::vector< std::vector<MercatorPoint> > polylines;
 
 	polylines.push_back( polyline );

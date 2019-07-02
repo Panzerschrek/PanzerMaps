@@ -19,7 +19,7 @@ struct BaseDataRepresentation
 	{
 		LinearObjectClass class_= LinearObjectClass::None;
 		size_t first_vertex_index;
-		size_t vertex_count;
+		size_t vertex_count; // 1 or more.
 	};
 
 	struct ArealObject

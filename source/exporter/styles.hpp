@@ -41,6 +41,7 @@ public:
 	struct ZoomLevel
 	{
 		size_t scale_to_prev_log2= 1u; // For first zoom level - initial scale.
+		int32_t simplification_distance= 1; // In units
 		std::vector<ArealObjectPhase> areal_object_phases;
 		std::vector<PointObjectClass> point_classes_ordered;
 		std::vector<LinearObjectClass> linear_classes_ordered;

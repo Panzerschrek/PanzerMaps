@@ -4,7 +4,10 @@
 namespace PanzerMaps
 {
 
-CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& prepared_data, const size_t additional_scale_log2 )
+CoordinatesTransformationPassResult TransformCoordinates(
+	const OSMParseResult& prepared_data,
+	const size_t additional_scale_log2,
+	const int32_t simplification_distance_units )
 {
 	CoordinatesTransformationPassResult result;
 
@@ -52,6 +55,15 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		return MercatorPoint{ ( point.x - result.start_point.x ) / result.coordinates_scale, ( point.y - result.start_point.y ) / result.coordinates_scale };
 	};
 
+	const int32_t simplification_suqare_distance= simplification_distance_units * simplification_distance_units;
+	const auto points_near=
+	[&]( const MercatorPoint& p0, const MercatorPoint& p1 ) -> bool
+	{
+		const int32_t dx= p1.x - p0.x;
+		const int32_t dy= p1.y - p0.y;
+		return dx * dx + dy * dy <= simplification_suqare_distance;
+	};
+
 	result.point_objects.reserve( prepared_data.point_objects.size() );
 	result.linear_objects.reserve( prepared_data.linear_objects.size() );
 	result.areal_objects.reserve( prepared_data.areal_objects.size() );
@@ -78,17 +90,16 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		{
 			const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
 				convert_point( src_vetices_converted[v] );
-			if( vertex_transformed != result.vertices.back() )
+			if( !points_near( vertex_transformed, result.vertices.back() ) )
 			{
 				result.vertices.push_back( vertex_transformed );
 				++out_object.vertex_count;
 			}
-		}
-
-		if( out_object.vertex_count < 2u )
-		{
-			result.vertices.pop_back(); // Line too small, do not transform it.
-			continue;
+			else if( vertex_transformed != result.vertices.back() && v == in_object.first_vertex_index + in_object.vertex_count - 1u )
+			{
+				result.vertices.push_back( vertex_transformed );
+				++out_object.vertex_count;
+			}
 		}
 
 		result.linear_objects.push_back( out_object );
@@ -107,7 +118,7 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		{
 			const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
 				convert_point( src_vetices_converted[v] );
-			if( vertex_transformed != result.vertices.back() )
+			if( !points_near( vertex_transformed, result.vertices.back() ) )
 			{
 				result.vertices.push_back( vertex_transformed );
 				++out_object.vertex_count;
@@ -115,7 +126,7 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 		}
 
 		if( out_object.vertex_count >= 3u &&
-			result.vertices[ out_object.first_vertex_index ] == result.vertices[ out_object.first_vertex_index + out_object.vertex_count - 1u ] )
+			points_near( result.vertices[ out_object.first_vertex_index ], result.vertices[ out_object.first_vertex_index + out_object.vertex_count - 1u ] ) )
 		{
 			result.vertices.pop_back(); // Remove duplicated start and end vertex.
 			--out_object.vertex_count;
@@ -132,6 +143,7 @@ CoordinatesTransformationPassResult TransformCoordinates( const OSMParseResult& 
 
 	Log::Info( "Coordinates transformation pass: " );
 	Log::Info( "Unit size: ", result.coordinates_scale );
+	Log::Info( "Simplification distance: ", result.coordinates_scale * simplification_distance_units );
 	Log::Info( result.point_objects.size(), " point objects" );
 	Log::Info( result.linear_objects.size(), " linear objects" );
 	Log::Info( result.areal_objects.size(), " areal objects" );
