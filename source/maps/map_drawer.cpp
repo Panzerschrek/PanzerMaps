@@ -493,7 +493,7 @@ public:
 	Chunk( Chunk&& )= default;
 
 	Chunk& operator=( const Chunk& )= delete;
-	Chunk& operator=( Chunk&& )= default;
+	Chunk& operator=( Chunk&& )= delete;
 
 public:
 	struct LinearObjectsGroup
@@ -827,7 +827,7 @@ void MapDrawer::Draw()
 							chunk_to_draw.chunk.linear_objects_polygon_buffer_.Bind();
 						else
 							chunk_to_draw.chunk.linear_objects_as_triangles_buffer_.Bind();
-						glDrawElements( group.primitive_type, group.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
+						glDrawElements( group.primitive_type, static_cast<int>(group.index_count), GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
 						++draw_calls;
 						primitive_count+= group.index_count;
 
