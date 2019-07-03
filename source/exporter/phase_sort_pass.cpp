@@ -68,7 +68,7 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 			for( size_t v= 0u; v < in_object.vertex_count; ++v )
 				result.vertices.push_back( in_data.vertices[ in_object.first_vertex_index + v ] );
 
-			areal_objects.push_back( out_object );
+			areal_objects.push_back( std::move(out_object) );
 		}
 
 		// Sort by area in descent order.
@@ -83,7 +83,8 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 					std::abs( CalculatePolygonDoubleSignedArea( result.vertices.data() + r.first_vertex_index, r.vertex_count ) );
 			} );
 
-		result.areal_objects.insert( result.areal_objects.end(), areal_objects.begin(), areal_objects.end() );
+		for( auto& areal_object : areal_objects )
+			result.areal_objects.push_back( std::move(areal_object) );
 	}
 
 	Log::Info( "Phase sort pass: " );

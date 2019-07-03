@@ -108,37 +108,43 @@ CoordinatesTransformationPassResult TransformCoordinates(
 	// Remove equal adjusted vertices of areal objects. Remove too small areal objects.
 	for( const BaseDataRepresentation::ArealObject& in_object : prepared_data.areal_objects )
 	{
-		BaseDataRepresentation::ArealObject out_object;
-		out_object.class_= in_object.class_;
-		out_object.first_vertex_index= result.vertices.size();
-		out_object.vertex_count= 1u;
-		result.vertices.push_back( convert_point( src_vetices_converted[ in_object.first_vertex_index ] ) );
-
-		for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
+		if( in_object.multipolygon != nullptr )
 		{
-			const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
-				convert_point( src_vetices_converted[v] );
-			if( !points_near( vertex_transformed, result.vertices.back() ) )
+		}
+		else
+		{
+			BaseDataRepresentation::ArealObject out_object;
+			out_object.class_= in_object.class_;
+			out_object.first_vertex_index= result.vertices.size();
+			out_object.vertex_count= 1u;
+			result.vertices.push_back( convert_point( src_vetices_converted[ in_object.first_vertex_index ] ) );
+
+			for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
 			{
-				result.vertices.push_back( vertex_transformed );
-				++out_object.vertex_count;
+				const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
+					convert_point( src_vetices_converted[v] );
+				if( !points_near( vertex_transformed, result.vertices.back() ) )
+				{
+					result.vertices.push_back( vertex_transformed );
+					++out_object.vertex_count;
+				}
 			}
-		}
 
-		if( out_object.vertex_count >= 3u &&
-			points_near( result.vertices[ out_object.first_vertex_index ], result.vertices[ out_object.first_vertex_index + out_object.vertex_count - 1u ] ) )
-		{
-			result.vertices.pop_back(); // Remove duplicated start and end vertex.
-			--out_object.vertex_count;
-		}
+			if( out_object.vertex_count >= 3u &&
+				points_near( result.vertices[ out_object.first_vertex_index ], result.vertices[ out_object.first_vertex_index + out_object.vertex_count - 1u ] ) )
+			{
+				result.vertices.pop_back(); // Remove duplicated start and end vertex.
+				--out_object.vertex_count;
+			}
 
-		if( out_object.vertex_count < 3u )
-		{
-			result.vertices.resize( result.vertices.size() - out_object.vertex_count ); // Polygon is too small.
-			continue;
-		}
+			if( out_object.vertex_count < 3u )
+			{
+				result.vertices.resize( result.vertices.size() - out_object.vertex_count ); // Polygon is too small.
+				continue;
+			}
 
-		result.areal_objects.push_back( out_object );
+			result.areal_objects.push_back( std::move(out_object) );
+		}
 	}
 
 	Log::Info( "Coordinates transformation pass: " );

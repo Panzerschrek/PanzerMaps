@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <tinyxml2.h>
+#include "../common/assert.hpp"
 #include "../common/log.hpp"
 #include "../common/memory_mapped_file.hpp"
 #include "primary_export.hpp"
@@ -350,6 +351,129 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element )
 	return result;
 }
 
+static std::vector< std::vector<GeoPoint> > CreateClosedWays(
+	std::vector< std::vector<GeoPoint> > ways )
+{
+	std::vector< std::vector<GeoPoint> > out_closed_ways;
+
+	// Search closed ways.
+	for( size_t i= 0u; i < ways.size();  )
+	{
+		PM_ASSERT( !ways[i].empty() );
+		if( ways[i].front() == ways[i].back() )
+		{
+			// Way already closed.
+			ways[i].pop_back();
+			out_closed_ways.push_back( std::move( ways[i] ) );
+			if( i +1u < ways.size() )
+				ways[i]= std::move(ways.back());
+			ways.pop_back();
+		}
+		else
+			++i;
+	}
+
+	while( true )
+	{
+		bool ways_combined= false;
+		for( size_t w0= 0u; w0 < ways.size(); ++w0 )
+		for( size_t w1= w0 + 1u; w1 < ways.size(); ++w1 )
+		{
+			std::vector<GeoPoint> combined_way;
+
+			if( ways[w0].front() == ways[w1].front() )
+			{
+				combined_way.reserve( ways[w0].size() + ways[w1].size() );
+				combined_way.insert( combined_way.end(), ways[w0].rbegin(), ways[w0].rend() );
+				combined_way.pop_back();
+				combined_way.insert( combined_way.end(), ways[w1].begin(), ways[w1].end() );
+
+			}
+			else if( ways[w0].front() == ways[w1].back() )
+			{
+				combined_way.reserve( ways[w0].size() + ways[w1].size() );
+				combined_way.insert( combined_way.end(), ways[w1].begin(), ways[w1].end() );
+				combined_way.pop_back();
+				combined_way.insert( combined_way.end(), ways[w0].begin(), ways[w0].end() );
+
+			}
+			else if( ways[w0].back() == ways[w1].front() )
+			{
+				combined_way.reserve( ways[w0].size() + ways[w1].size() );
+				combined_way.insert( combined_way.end(), ways[w0].begin(), ways[w0].end() );
+				combined_way.pop_back();
+				combined_way.insert( combined_way.end(), ways[w1].begin(), ways[w1].end() );
+
+			}
+			else if( ways[w0].back() == ways[w1].back() )
+			{
+				combined_way.reserve( ways[w0].size() + ways[w1].size() );
+				combined_way.insert( combined_way.end(), ways[w0].begin(), ways[w0].end() );
+				combined_way.pop_back();
+				combined_way.insert( combined_way.end(), ways[w1].rbegin(), ways[w1].rend() );
+			}
+
+			if( !combined_way.empty() )
+			{
+				ways_combined= true;
+				PM_ASSERT( combined_way.size() == ways[w0].size() + ways[w1].size() - 1u );
+				if( combined_way.front() == combined_way.back() )
+				{
+					combined_way.pop_back();
+					out_closed_ways.push_back( std::move(combined_way) );
+
+					if( w0 + 1u < ways.size() )
+						ways[w0]= std::move( ways.back() );
+					ways.pop_back();
+					if( w1 + 1u < ways.size() )
+						ways[w1]= std::move( ways.back() );
+					ways.pop_back();
+				}
+				else
+				{
+					ways[w0]= std::move(combined_way);
+					if( w1 + 1u < ways.size() )
+						ways[w1]= std::move( ways.back() );
+					ways.pop_back();
+				}
+				goto continue_ways_connecting;
+			}
+		}
+
+		continue_ways_connecting:
+		if( !ways_combined )
+			break;
+	}
+
+	if( !ways.empty() )
+		Log::Warning( "Can not close some ways" );
+	return out_closed_ways;
+}
+
+static void CreateMultipolygon(
+	OSMParseResult::Multipolygon& out_multipolygon,
+	std::vector<GeoPoint>& out_vertices,
+	const std::vector< std::vector<GeoPoint> >& outer_ways,
+	const std::vector< std::vector<GeoPoint> >& inner_ways )
+{
+	for( const std::vector<GeoPoint>& outer_way : CreateClosedWays( outer_ways ) )
+	{
+		out_multipolygon.outer_rings.emplace_back();
+		OSMParseResult::Multipolygon::Part& part= out_multipolygon.outer_rings.back();
+		part.first_vertex_index= out_vertices.size();
+		part.vertex_count= outer_way.size();
+		out_vertices.insert( out_vertices.end(), outer_way.begin(), outer_way.end() );
+	}
+	for( const std::vector<GeoPoint>& inner_way : CreateClosedWays( inner_ways ) )
+	{
+		out_multipolygon.inner_rings.emplace_back();
+		OSMParseResult::Multipolygon::Part& part= out_multipolygon.inner_rings.back();
+		part.first_vertex_index= out_vertices.size();
+		part.vertex_count= inner_way.size();
+		out_vertices.insert( out_vertices.end(), inner_way.begin(), inner_way.end() );
+	}
+}
+
 OSMParseResult ParseOSM( const char* file_name )
 {
 	OSMParseResult result;
@@ -396,7 +520,7 @@ OSMParseResult ParseOSM( const char* file_name )
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
-				result.areal_objects.push_back(obj);
+				result.areal_objects.push_back( std::move(obj) );
 		}
 	}
 
@@ -463,6 +587,8 @@ OSMParseResult ParseOSM( const char* file_name )
 		if( way_classes.areal_object_class == ArealObjectClass::None && way_classes.linear_object_class == LinearObjectClass::None )
 			continue;
 
+		std::vector< std::vector<GeoPoint> > outer_ways, inner_ways;
+
 		for( const tinyxml2::XMLElement* member_element= relation_element->FirstChildElement("member"); member_element != nullptr; member_element= member_element->NextSiblingElement( "member" ) )
 		{
 			const char* const member_type= member_element->Attribute( "type" );
@@ -489,22 +615,30 @@ OSMParseResult ParseOSM( const char* file_name )
 					result.linear_objects.push_back(obj);
 			}
 
-			// TODO - extract all multipolygon, with holes.
 			if( std::strcmp( role, "outer" ) == 0 )
 			{
-				if( way_classes.areal_object_class != ArealObjectClass::None )
-				{
-					OSMParseResult::ArealObject obj;
-					obj.class_= way_classes.areal_object_class;
-					obj.first_vertex_index= result.vertices.size();
-					ExtractVertices( it->second, nodes, result.vertices );
-					obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
-					if( obj.vertex_count > 0u &&
-						result.vertices[ obj.first_vertex_index ] == result.vertices[ obj.first_vertex_index + obj.vertex_count - 1u ] )
-						result.areal_objects.push_back(obj);
-				}
+				outer_ways.emplace_back();
+				ExtractVertices( it->second, nodes, outer_ways.back() );
+			}
+			if( std::strcmp( role, "inner" ) == 0 )
+			{
+				inner_ways.emplace_back();
+				ExtractVertices( it->second, nodes, inner_ways.back() );
 			}
 		} // for multipolygon members.
+
+		if( !outer_ways.empty() )
+		{
+			OSMParseResult::ArealObject obj;
+			obj.class_= way_classes.areal_object_class;
+			obj.first_vertex_index= obj.vertex_count= 0u;
+
+			obj.multipolygon.reset( new OSMParseResult::Multipolygon );
+			CreateMultipolygon( *obj.multipolygon, result.vertices, outer_ways, inner_ways );
+
+			if( !obj.multipolygon->outer_rings.empty() )
+				result.areal_objects.push_back( std::move(obj) );
+		}
 	} // for relations.
 
 	Log::Info( "Primary export: " );

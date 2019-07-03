@@ -383,7 +383,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 				out_object.vertex_count= convex_part.size();
 				for( const MercatorPoint& vertex : convex_part )
 					result.vertices.push_back(vertex);
-				result.areal_objects.push_back(out_object);
+				result.areal_objects.push_back( std::move(out_object) );
 			}
 		}
 	}

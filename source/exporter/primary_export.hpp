@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <vector>
 
 #include "../common/coordinates_conversion.hpp"
@@ -22,11 +23,25 @@ struct BaseDataRepresentation
 		size_t vertex_count; // 1 or more.
 	};
 
+	struct Multipolygon
+	{
+		struct Part
+		{
+			size_t first_vertex_index;
+			size_t vertex_count;
+		};
+
+		std::vector<Part> outer_rings;
+		std::vector<Part> inner_rings;
+	};
+
 	struct ArealObject
 	{
 		ArealObjectClass class_= ArealObjectClass::None;
 		size_t first_vertex_index;
 		size_t vertex_count;
+
+		std::unique_ptr<Multipolygon> multipolygon;
 	};
 
 	std::vector<PointObject> point_objects;
