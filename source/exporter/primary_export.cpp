@@ -442,7 +442,11 @@ static std::vector< std::vector<GeoPoint> > CreateClosedWays(
 	}
 
 	if( !ways.empty() )
+	{
 		Log::Warning( "Can not close some ways" );
+		for( auto& way : ways )
+			out_closed_ways.push_back( std::move(way) );
+	}
 	return out_closed_ways;
 }
 
