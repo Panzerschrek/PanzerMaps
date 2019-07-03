@@ -177,6 +177,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 		return cross < 0;
 	};
 
+	// TODO - optimize splitting, make faster, and produce less polygons.
+
 	std::vector<MercatorPoint> triangle;
 	while( vertices.size() > 3u )
 	{
@@ -192,6 +194,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 		for( size_t i= 0u; i < vertices.size(); ++i )
 		{
 			if( is_split_vertex(i) )
+				continue;
+			if( !( is_split_vertex( i + vertices.size() - 1u ) || is_split_vertex( i + 1u ) ) )
 				continue;
 			// Try create triangle with convex vertex.
 
