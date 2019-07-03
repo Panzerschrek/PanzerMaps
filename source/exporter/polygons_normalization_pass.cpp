@@ -366,24 +366,30 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 
 	for( const BaseDataRepresentation::ArealObject& in_object : in_data.areal_objects )
 	{
-		std::vector<MercatorPoint> polygon_vertices;
-		polygon_vertices.reserve( in_object.vertex_count );
-		for( size_t v= in_object.first_vertex_index; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
-			polygon_vertices.push_back( in_data.vertices[v] );
-
-		for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( polygon_vertices ) )
+		if( in_object.multipolygon != nullptr )
 		{
-			for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part ) )
-			{
-				PM_ASSERT( convex_part.size() >= 3u );
+		}
+		else
+		{
+			std::vector<MercatorPoint> polygon_vertices;
+			polygon_vertices.reserve( in_object.vertex_count );
+			for( size_t v= in_object.first_vertex_index; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
+				polygon_vertices.push_back( in_data.vertices[v] );
 
-				BaseDataRepresentation::ArealObject out_object;
-				out_object.class_= in_object.class_;
-				out_object.first_vertex_index= result.vertices.size();
-				out_object.vertex_count= convex_part.size();
-				for( const MercatorPoint& vertex : convex_part )
-					result.vertices.push_back(vertex);
-				result.areal_objects.push_back( std::move(out_object) );
+			for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( polygon_vertices ) )
+			{
+				for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part ) )
+				{
+					PM_ASSERT( convex_part.size() >= 3u );
+
+					BaseDataRepresentation::ArealObject out_object;
+					out_object.class_= in_object.class_;
+					out_object.first_vertex_index= result.vertices.size();
+					out_object.vertex_count= convex_part.size();
+					for( const MercatorPoint& vertex : convex_part )
+						result.vertices.push_back(vertex);
+					result.areal_objects.push_back( std::move(out_object) );
+				}
 			}
 		}
 	}
