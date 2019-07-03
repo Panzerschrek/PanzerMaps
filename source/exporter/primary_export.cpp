@@ -10,6 +10,14 @@ namespace PanzerMaps
 using OsmId= uint64_t; // Valid Ids starts with '1'.
 using NodesMap= std::unordered_map<OsmId, GeoPoint>;
 
+static OsmId ParseOsmId( const char* const id_str )
+{
+	OsmId id;
+	if( std::sscanf( id_str, "%lu", &id ) == 1 )
+		return id;
+	return 0;
+}
+
 static NodesMap ExtractNodes( const tinyxml2::XMLDocument& doc )
 {
 	NodesMap result;
@@ -22,14 +30,15 @@ static NodesMap ExtractNodes( const tinyxml2::XMLDocument& doc )
 		const char* const lat_str= element->Attribute( "lat" );
 		if( id_str != nullptr && lon_str != nullptr && lat_str != nullptr )
 		{
-			OsmId id;
-			double lon;
-			double lat;
+			if( const OsmId id= ParseOsmId( id_str ) )
+			{
+				double lon;
+				double lat;
 
-			if( std::sscanf( id_str, "%lu", &id ) == 1 &&
-				std::sscanf( lon_str, "%lf", &lon ) == 1 &&
-				std::sscanf( lat_str, "%lf", &lat ) == 1 )
-				result.insert( std::make_pair( id, GeoPoint{ lon, lat } ) );
+				if( std::sscanf( lon_str, "%lf", &lon ) == 1 &&
+					std::sscanf( lat_str, "%lf", &lat ) == 1 )
+					result.insert( std::make_pair( id, GeoPoint{ lon, lat } ) );
+			}
 		}
 
 		element= element->NextSiblingElement( "node" );
@@ -360,8 +369,14 @@ OSMParseResult ParseOSM( const char* file_name )
 
 	const NodesMap nodes= ExtractNodes(doc);
 
+	std::unordered_map< OsmId, const tinyxml2::XMLElement* > ways_map;
+
 	for( const tinyxml2::XMLElement* way_element= doc.RootElement()->FirstChildElement( "way" ); way_element != nullptr; way_element= way_element->NextSiblingElement( "way" ) )
 	{
+		if( const char* const id_str= way_element->Attribute("id") )
+			if( const OsmId id= ParseOsmId( id_str ) )
+				ways_map[id]= way_element;
+
 		const WayClassifyResult way_classes= ClassifyWay( *way_element );
 		if( way_classes.linear_object_class != LinearObjectClass::None )
 		{
@@ -436,6 +451,61 @@ OSMParseResult ParseOSM( const char* file_name )
 			}
 		}
 	}
+
+	// Extract multipolygons.
+	for( const tinyxml2::XMLElement* relation_element= doc.RootElement()->FirstChildElement( "relation" ); relation_element != nullptr; relation_element= relation_element->NextSiblingElement( "relation" ) )
+	{
+		const char* const type= GetTagValue( *relation_element, "type" );
+		if( type == nullptr || std::strcmp( type, "multipolygon" ) != 0 )
+			continue;
+
+		const WayClassifyResult way_classes= ClassifyWay( *relation_element );
+		if( way_classes.areal_object_class == ArealObjectClass::None && way_classes.linear_object_class == LinearObjectClass::None )
+			continue;
+
+		for( const tinyxml2::XMLElement* member_element= relation_element->FirstChildElement("member"); member_element != nullptr; member_element= member_element->NextSiblingElement( "member" ) )
+		{
+			const char* const member_type= member_element->Attribute( "type" );
+			if( member_type == nullptr || std::strcmp( member_type, "way" ) != 0 )
+				continue;
+
+			const char* const ref= member_element->Attribute( "ref" );
+			const char* const role= member_element->Attribute( "role" );
+			if( ref == nullptr || role == nullptr )
+				continue;
+
+			const auto it= ways_map.find( ParseOsmId( ref ) );
+			if( it == ways_map.end() )
+				continue;
+
+			if( way_classes.linear_object_class != LinearObjectClass::None )
+			{
+				OSMParseResult::LinearObject obj;
+				obj.class_= way_classes.linear_object_class;
+				obj.first_vertex_index= result.vertices.size();
+				ExtractVertices( it->second, nodes, result.vertices );
+				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				if( obj.vertex_count > 0u )
+					result.linear_objects.push_back(obj);
+			}
+
+			// TODO - extract all multipolygon, with holes.
+			if( std::strcmp( role, "outer" ) == 0 )
+			{
+				if( way_classes.areal_object_class != ArealObjectClass::None )
+				{
+					OSMParseResult::ArealObject obj;
+					obj.class_= way_classes.areal_object_class;
+					obj.first_vertex_index= result.vertices.size();
+					ExtractVertices( it->second, nodes, result.vertices );
+					obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+					if( obj.vertex_count > 0u &&
+						result.vertices[ obj.first_vertex_index ] == result.vertices[ obj.first_vertex_index + obj.vertex_count - 1u ] )
+						result.areal_objects.push_back(obj);
+				}
+			}
+		} // for multipolygon members.
+	} // for relations.
 
 	Log::Info( "Primary export: " );
 	Log::Info( result.point_objects.size(), " point objects" );
