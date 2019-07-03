@@ -251,16 +251,6 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element )
 				result.linear_object_class= LinearObjectClass::Tram;
 		}
 	}
-	else if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
-	{
-		if( std::strcmp( barrier, "cable_barrier" ) == 0 ||
-			std::strcmp( barrier, "city_wall" ) == 0 ||
-			std::strcmp( barrier, "fence" ) == 0 ||
-			std::strcmp( barrier, "hedge" ) == 0 ||
-			std::strcmp( barrier, "wall" ) == 0 ||
-			std::strcmp( barrier, "hampshire_gate" ) == 0 )
-			result.linear_object_class= LinearObjectClass::Barrier;
-	}
 	else if( const char* const building= GetTagValue( way_element, "building" ) )
 	{
 		(void)building;
@@ -335,6 +325,17 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element )
 			result.areal_object_class= ArealObjectClass::Park;
 		else if( std::strcmp( leisure, "pitch" ) == 0 )
 			result.areal_object_class= ArealObjectClass::SportArea;
+	}
+
+	if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
+	{
+		if( std::strcmp( barrier, "cable_barrier" ) == 0 ||
+			std::strcmp( barrier, "city_wall" ) == 0 ||
+			std::strcmp( barrier, "fence" ) == 0 ||
+			std::strcmp( barrier, "hedge" ) == 0 ||
+			std::strcmp( barrier, "wall" ) == 0 ||
+			std::strcmp( barrier, "hampshire_gate" ) == 0 )
+			result.linear_object_class= LinearObjectClass::Barrier;
 	}
 
 	return result;
