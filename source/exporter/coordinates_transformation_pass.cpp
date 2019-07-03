@@ -150,7 +150,7 @@ CoordinatesTransformationPassResult TransformCoordinates(
 				if( out_part.vertex_count > 0u )
 					out_multipolygon.inner_rings.push_back(out_part);
 			}
-			for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->inner_rings )
+			for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
 			{
 				BaseDataRepresentation::Multipolygon::Part out_part;
 				transform_polygon( outer_ring.first_vertex_index, outer_ring.vertex_count, out_part.first_vertex_index, out_part.vertex_count );

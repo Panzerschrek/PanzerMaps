@@ -153,7 +153,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 
 // Input polygons must not be self-intersecting.
 // Result parts are clockwise.
-static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices )
+static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices, bool enable_triangles_merge= true )
 {
 	PM_ASSERT( vertices.size() >= 3u );
 	std::vector< std::vector<MercatorPoint> > result;
@@ -238,14 +238,19 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 
 	// After triangulation, merge ajusted polygons, is result polygon will be convex.
 	// TODO - optimize it, make something, like O(n*log(n)), rather then O(n^3).
-	while(true)
+	while(enable_triangles_merge)
 	{
 		for( size_t p0= 0u; p0 < result.size(); ++p0 )
 		for( size_t p1= 0u; p1 < result.size(); ++p1 )
 		{
 			if( p0 == p1 ) continue;
+
 			const std::vector<MercatorPoint>& poly0= result[p0];
 			const std::vector<MercatorPoint>& poly1= result[p1];
+
+			if( poly0.size() > 6u && poly1.size() > 6u && poly0.size() * poly1.size() > 256u )
+				continue; // Skip two big polygons mering, because calculations for such polygons are too slow.
+
 			const size_t p0_size_add= poly0.size() * 4u;
 			const size_t p1_size_add= poly1.size() * 4u;
 
@@ -368,6 +373,30 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 	{
 		if( in_object.multipolygon != nullptr )
 		{
+			// TODO - triangulate outer rings, triangulate inner rings, cut outer triangles by inner triangles, combine result triangles.
+			for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
+			{
+				std::vector<MercatorPoint> ring_vertices;
+				ring_vertices.reserve( outer_ring.vertex_count );
+				for( size_t v= outer_ring.first_vertex_index; v < outer_ring.first_vertex_index + outer_ring.vertex_count; ++v )
+					ring_vertices.push_back( in_data.vertices[v] );
+
+				for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( ring_vertices ) )
+				{
+					for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part, noncrossing_polygon_part.size() < 512u ) )
+					{
+						PM_ASSERT( convex_part.size() >= 3u );
+
+						BaseDataRepresentation::ArealObject out_object;
+						out_object.class_= in_object.class_;
+						out_object.first_vertex_index= result.vertices.size();
+						out_object.vertex_count= convex_part.size();
+						for( const MercatorPoint& vertex : convex_part )
+							result.vertices.push_back(vertex);
+						result.areal_objects.push_back( std::move(out_object) );
+					}
+				}
+			}
 		}
 		else
 		{
