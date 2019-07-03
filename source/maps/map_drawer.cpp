@@ -704,6 +704,32 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_f
 	min_scale_= 1.0f;
 	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
+
+	// Calculate GPU statistics.
+	// TODO - lazily upload data to GPU.
+	size_t total_gpu_data_size= 0u;
+	for( const ZoomLevel& zoom_level : zoom_levels_ )
+	{
+		size_t zoom_level_gpu_data_size= 0u;
+		for( const Chunk& chunk : zoom_level.chunks )
+		{
+			zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetVertexDataSize();
+			zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetIndexDataSize();
+
+			zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetVertexDataSize();
+			zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetIndexDataSize();
+
+			zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize();
+			zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetIndexDataSize();
+
+			zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetVertexDataSize();
+			zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetIndexDataSize();
+		}
+		Log::Info( "Zoom level ", &zoom_level - zoom_levels_.data(), " GPU data size: ", zoom_level_gpu_data_size / 1024u, "kb" );
+		total_gpu_data_size+= zoom_level_gpu_data_size;
+	}
+	Log::Info( "Total GPU data size: ", total_gpu_data_size / 1024u, "kb = ", total_gpu_data_size / 1024u / 1024, "mb" );
+
 }
 
 MapDrawer::~MapDrawer()
