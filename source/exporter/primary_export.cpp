@@ -122,7 +122,7 @@ struct WayClassifyResult
 	ArealObjectClass areal_object_class= ArealObjectClass::None;
 };
 
-WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element )
+WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bool is_multipolygon )
 {
 	WayClassifyResult result;
 
@@ -210,18 +210,12 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element )
 			std::strcmp( highway, "footway" ) == 0 ||
 			std::strcmp( highway, "path" ) == 0 ||
 			std::strcmp( highway, "steps" ) == 0 ) // TODO - make spearate class for stairs.
-			result.linear_object_class= LinearObjectClass::Pedestrian;
-
-		if( std::strcmp( highway, "pedestrian" ) == 0 )
 		{
-			if( const char* const area= GetTagValue( way_element, "area" ) )
-			{
-				if( std::strcmp( area, "yes" ) == 0 )
-				{
-					result.areal_object_class= ArealObjectClass::PedestrianArea;
-					result.linear_object_class= LinearObjectClass::None;
-				}
-			}
+			const char* const area= GetTagValue( way_element, "area" );
+			if( is_multipolygon || ( area != nullptr && std::strcmp( area, "yes" ) == 0 ) )
+				result.areal_object_class= ArealObjectClass::PedestrianArea;
+			else
+				result.linear_object_class= LinearObjectClass::Pedestrian;
 		}
 	}
 	else if( const char* const waterway= GetTagValue( way_element, "waterway" ) )
@@ -501,7 +495,7 @@ OSMParseResult ParseOSM( const char* file_name )
 			if( const OsmId id= ParseOsmId( id_str ) )
 				ways_map[id]= way_element;
 
-		const WayClassifyResult way_classes= ClassifyWay( *way_element );
+		const WayClassifyResult way_classes= ClassifyWay( *way_element, false );
 		if( way_classes.linear_object_class != LinearObjectClass::None )
 		{
 			OSMParseResult::LinearObject obj;
@@ -583,7 +577,7 @@ OSMParseResult ParseOSM( const char* file_name )
 		if( type == nullptr || std::strcmp( type, "multipolygon" ) != 0 )
 			continue;
 
-		const WayClassifyResult way_classes= ClassifyWay( *relation_element );
+		const WayClassifyResult way_classes= ClassifyWay( *relation_element, true );
 		if( way_classes.areal_object_class == ArealObjectClass::None && way_classes.linear_object_class == LinearObjectClass::None )
 			continue;
 
@@ -627,7 +621,7 @@ OSMParseResult ParseOSM( const char* file_name )
 			}
 		} // for multipolygon members.
 
-		if( !outer_ways.empty() )
+		if( !outer_ways.empty() && way_classes.areal_object_class != ArealObjectClass::None )
 		{
 			OSMParseResult::ArealObject obj;
 			obj.class_= way_classes.areal_object_class;
