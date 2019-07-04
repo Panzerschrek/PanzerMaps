@@ -222,7 +222,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	{
 		if( std::strcmp( waterway, "stream" ) == 0 )
 			result.linear_object_class= LinearObjectClass::Waterway;
-		if( std::strcmp( waterway, "riverbank" ) == 0 )
+		if( std::strcmp( waterway, "riverbank" ) == 0 ||
+			std::strcmp( waterway, "canal" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Water;
 	}
 	else if( const char* const railway= GetTagValue( way_element, "railway" ) )
@@ -281,7 +282,7 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			result.areal_object_class= ArealObjectClass::Water;
 		else if( std::strcmp( landuse, "cemetery" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Cemetery;
-		else if( std::strcmp( landuse, "foreset" ) == 0 )
+		else if( std::strcmp( landuse, "forest" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Wood;
 		else if( std::strcmp( landuse, "wood" ) == 0 ||
 				 std::strcmp( landuse, "orchard" ) == 0 )
@@ -331,6 +332,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			result.areal_object_class= ArealObjectClass::Park;
 		else if( std::strcmp( leisure, "pitch" ) == 0 )
 			result.areal_object_class= ArealObjectClass::SportArea;
+		else if( std::strcmp( leisure, "stadium" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Park; // Stadium area is like park.
 	}
 
 	if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
