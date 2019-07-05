@@ -3,6 +3,16 @@
 namespace PanzerMaps
 {
 
+bool operator==( const GeoPoint& l, const GeoPoint& r )
+{
+	return l.x == r.x && l.y == r.y;
+}
+
+bool operator!=( const GeoPoint& l, const GeoPoint& r )
+{
+	return !( l == r );
+}
+
 bool operator==( const MercatorPoint& l, const MercatorPoint& r )
 {
 	return l.x == r.x && l.y == r.y;

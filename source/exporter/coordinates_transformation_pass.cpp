@@ -108,38 +108,75 @@ CoordinatesTransformationPassResult TransformCoordinates(
 	// Remove equal adjusted vertices of areal objects. Remove too small areal objects.
 	for( const BaseDataRepresentation::ArealObject& in_object : prepared_data.areal_objects )
 	{
-		BaseDataRepresentation::ArealObject out_object;
-		out_object.class_= in_object.class_;
-		out_object.first_vertex_index= result.vertices.size();
-		out_object.vertex_count= 1u;
-		result.vertices.push_back( convert_point( src_vetices_converted[ in_object.first_vertex_index ] ) );
-
-		for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
+		const auto transform_polygon=
+		[&]( const size_t in_first_vertex, const size_t in_vertex_count, size_t& out_first_vertex, size_t& out_vertex_count )
 		{
-			const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
-				convert_point( src_vetices_converted[v] );
-			if( !points_near( vertex_transformed, result.vertices.back() ) )
+			out_first_vertex= result.vertices.size();
+			out_vertex_count= 1u;
+
+			result.vertices.push_back( convert_point( src_vetices_converted[ in_first_vertex] ) );
+
+			for( size_t v= in_first_vertex + 1u; v < in_first_vertex + in_vertex_count; ++v )
 			{
-				result.vertices.push_back( vertex_transformed );
-				++out_object.vertex_count;
+				const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
+					convert_point( src_vetices_converted[v] );
+				if( !points_near( vertex_transformed, result.vertices.back() ) )
+				{
+					result.vertices.push_back( vertex_transformed );
+					++out_vertex_count;
+				}
+			}
+
+			if( out_vertex_count >= 3u &&
+				points_near( result.vertices[ out_first_vertex ], result.vertices[ out_first_vertex + out_vertex_count - 1u ] ) )
+			{
+				result.vertices.pop_back(); // Remove duplicated start and end vertex.
+				--out_vertex_count;
+			}
+			if( out_vertex_count < 3u )
+			{
+				result.vertices.resize( result.vertices.size() - out_vertex_count ); // Polygon is too small.
+				out_vertex_count= 0u;
+			}
+		};
+
+		if( in_object.multipolygon != nullptr )
+		{
+			BaseDataRepresentation::Multipolygon out_multipolygon;
+			for( const BaseDataRepresentation::Multipolygon::Part& inner_ring : in_object.multipolygon->inner_rings )
+			{
+				BaseDataRepresentation::Multipolygon::Part out_part;
+				transform_polygon( inner_ring.first_vertex_index, inner_ring.vertex_count, out_part.first_vertex_index, out_part.vertex_count );
+				if( out_part.vertex_count > 0u )
+					out_multipolygon.inner_rings.push_back(out_part);
+			}
+			for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
+			{
+				BaseDataRepresentation::Multipolygon::Part out_part;
+				transform_polygon( outer_ring.first_vertex_index, outer_ring.vertex_count, out_part.first_vertex_index, out_part.vertex_count );
+				if( out_part.vertex_count > 0u )
+					out_multipolygon.outer_rings.push_back(out_part);
+			}
+
+			if( !out_multipolygon.outer_rings.empty() )
+			{
+				BaseDataRepresentation::ArealObject out_object;
+				out_object.class_= in_object.class_;
+				out_object.first_vertex_index= out_object.vertex_count= 0u;
+				out_object.multipolygon.reset( new BaseDataRepresentation::Multipolygon( std::move(out_multipolygon) ) );
+				result.areal_objects.push_back( std::move(out_object) );
 			}
 		}
-
-		if( out_object.vertex_count >= 3u &&
-			points_near( result.vertices[ out_object.first_vertex_index ], result.vertices[ out_object.first_vertex_index + out_object.vertex_count - 1u ] ) )
+		else
 		{
-			result.vertices.pop_back(); // Remove duplicated start and end vertex.
-			--out_object.vertex_count;
-		}
+			BaseDataRepresentation::ArealObject out_object;
+			out_object.class_= in_object.class_;
 
-		if( out_object.vertex_count < 3u )
-		{
-			result.vertices.resize( result.vertices.size() - out_object.vertex_count ); // Polygon is too small.
-			continue;
+			transform_polygon( in_object.first_vertex_index, in_object.vertex_count, out_object.first_vertex_index, out_object.vertex_count );
+			if( out_object.vertex_count > 0u )
+				result.areal_objects.push_back( std::move(out_object) );
 		}
-
-		result.areal_objects.push_back( out_object );
-	}
+	} // for areal objects
 
 	Log::Info( "Coordinates transformation pass: " );
 	Log::Info( "Unit size: ", result.coordinates_scale );

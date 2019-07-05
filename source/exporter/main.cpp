@@ -92,7 +92,7 @@ Usage:
 		coordinates_transform_result= CoordinatesTransformationPassResult();
 
 		PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );
-		ou_data_by_zoom_level.push_back( normalize_polygons_result );
+		ou_data_by_zoom_level.push_back( std::move(normalize_polygons_result) );
 
 		Log::Info( "" );
 		Log::Info( "-- ZOOM LEVEL END ---" );
