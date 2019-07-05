@@ -23,21 +23,19 @@ R"(
 	{
 		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
-		gl_PointSize= 12.0;
+		gl_PointSize= 32.0;
 	}
 )";
 
 const char point_fragment[]=
 GLSL_VERSION
 R"(
+	uniform sampler2D tex;
 	in lowp vec4 f_color;
 	out lowp vec4 color;
 	void main()
 	{
-		mediump vec2 r= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
-		if( dot( r, r ) > 1.0 )
-			discard;
-		color= f_color * step( 0.0, r.x * r.y );
+		color= texture( tex, gl_PointCoord );
 	}
 )";
 

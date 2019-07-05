@@ -47,6 +47,8 @@ ImageRGBA LoadImage( const char* const image_file_name )
 
 	std::fclose( fp );
 
+	result.size[0]= width ;
+	result.size[1]= height;
 	return result;
 }
 

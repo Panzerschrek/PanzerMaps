@@ -92,9 +92,12 @@ static_assert( sizeof(Chunk) == 52u, "wrong size" );
 using ColorRGBA= unsigned char[4];
 struct PointObjectStyle
 {
-	uint8_t padding[4u];
+	static constexpr const uint32_t c_icon_size= 16u;
+
+	ColorRGBA icon[ c_icon_size * c_icon_size ];
+	// TODO - support larger icons
 };
-static_assert( sizeof(PointObjectStyle) == 4u, "wrong size" );
+static_assert( sizeof(PointObjectStyle) == 4u * 16u * 16u, "wrong size" );
 
 struct LinearObjectStyle
 {

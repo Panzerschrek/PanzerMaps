@@ -569,6 +569,7 @@ public:
 	ZoomLevel( const DataFileDescription::ZoomLevel& in_zoom_level, const unsigned char* const file_content )
 		: zoom_level_log2(in_zoom_level.zoom_level_log2)
 	{
+		const auto point_styles= reinterpret_cast<const DataFileDescription::PointObjectStyle*>( file_content + in_zoom_level.point_styles_offset );
 		const auto linear_styles= reinterpret_cast<const DataFileDescription::LinearObjectStyle*>( file_content + in_zoom_level.linear_styles_offset );
 		const auto areal_styles= reinterpret_cast<const DataFileDescription::ArealObjectStyle*>( file_content + in_zoom_level.areal_styles_offset );
 
@@ -639,6 +640,18 @@ public:
 				dashed_lines_textures[style_index]= std::move(texture);
 			}
 		}
+
+		// Create textures for point objects
+		{
+			point_objects_texture=
+				r_Texture(
+					r_Texture::PixelFormat::RGBA8,
+					DataFileDescription::PointObjectStyle::c_icon_size,
+					DataFileDescription::PointObjectStyle::c_icon_size,
+					reinterpret_cast<const unsigned char*>(point_styles[1].icon) );
+			point_objects_texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+			point_objects_texture.BuildMips();
+		}
 	}
 
 	ZoomLevel()= delete;
@@ -657,6 +670,7 @@ public:
 
 	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > dashed_lines_textures;
 
+	r_Texture point_objects_texture;
 	r_Texture linear_objects_texture;
 	r_Texture areal_objects_texture;
 };
@@ -891,10 +905,14 @@ void MapDrawer::Draw()
 	}
 	{
 		point_objets_shader_.Bind();
+		point_objets_shader_.Uniform( "tex", 0 );
+
+		zoom_level.point_objects_texture.Bind();
 
 		#ifndef PM_OPENGL_ES
 		glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
 		#endif
+		glEnable( GL_BLEND );
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
 			if( chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() == 0u )
@@ -905,6 +923,7 @@ void MapDrawer::Draw()
 			++draw_calls;
 			primitive_count+= chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() / sizeof(PointObjectVertex);
 		}
+		glDisable( GL_BLEND );
 		#ifndef PM_OPENGL_ES
 		glDisable( GL_PROGRAM_POINT_SIZE );
 		#endif

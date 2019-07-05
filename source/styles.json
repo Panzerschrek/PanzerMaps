@@ -4,6 +4,10 @@
 
     "point_styles":
     {
+        "StationPlatform" :
+        {
+            "image" : "source/bus_stop.png"
+        }
     },
 
     "linear_styles":
