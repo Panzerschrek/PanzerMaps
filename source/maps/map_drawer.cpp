@@ -643,14 +643,38 @@ public:
 
 		// Create textures for point objects
 		{
-			point_objects_texture=
+			const size_t c_border_size= 4u;
+
+			const size_t atlas_palce_height= DataFileDescription::PointObjectStyle::c_icon_size + c_border_size;
+			const size_t atlas_height= atlas_palce_height * in_zoom_level.point_styles_count;
+			std::vector<unsigned char> texture_data;
+			texture_data.resize( DataFileDescription::PointObjectStyle::c_icon_size * atlas_height * 4u );
+
+			for( uint16_t style_index= 0u; style_index < in_zoom_level.point_styles_count; ++style_index )
+			{
+				unsigned char* const dst_data= texture_data.data() + 4u * ( style_index * DataFileDescription::PointObjectStyle::c_icon_size * atlas_palce_height );
+				std::memcpy(
+					dst_data,
+					point_styles[style_index].icon,
+					sizeof(DataFileDescription::ColorRGBA) * DataFileDescription::PointObjectStyle::c_icon_size * DataFileDescription::PointObjectStyle::c_icon_size );
+
+				std::memset(
+					dst_data + 4u * DataFileDescription::PointObjectStyle::c_icon_size * DataFileDescription::PointObjectStyle::c_icon_size,
+					0,
+					sizeof(DataFileDescription::ColorRGBA) * DataFileDescription::PointObjectStyle::c_icon_size * c_border_size );
+			}
+			point_objects_icons_atlas=
 				r_Texture(
 					r_Texture::PixelFormat::RGBA8,
 					DataFileDescription::PointObjectStyle::c_icon_size,
-					DataFileDescription::PointObjectStyle::c_icon_size,
-					reinterpret_cast<const unsigned char*>(point_styles[1].icon) );
-			point_objects_texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
-			point_objects_texture.BuildMips();
+					static_cast<unsigned int>(atlas_height),
+					texture_data.data() );
+			point_objects_icons_atlas.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
+			point_objects_icons_atlas.BuildMips();
+
+			point_object_icon_tc_step= 1.0f / float(in_zoom_level.point_styles_count);
+			point_object_icon_tc_scale= float(DataFileDescription::PointObjectStyle::c_icon_size) / float(atlas_height);
+			point_object_icon_size= float(DataFileDescription::PointObjectStyle::c_icon_size);
 		}
 	}
 
@@ -670,7 +694,10 @@ public:
 
 	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > dashed_lines_textures;
 
-	r_Texture point_objects_texture;
+	// Textures in atlas palced from bottom to top.
+	r_Texture point_objects_icons_atlas;
+	float point_object_icon_tc_step, point_object_icon_tc_scale, point_object_icon_size;
+
 	r_Texture linear_objects_texture;
 	r_Texture areal_objects_texture;
 };
@@ -906,8 +933,11 @@ void MapDrawer::Draw()
 	{
 		point_objets_shader_.Bind();
 		point_objets_shader_.Uniform( "tex", 0 );
+		point_objets_shader_.Uniform( "point_size", zoom_level.point_object_icon_size );
+		point_objets_shader_.Uniform( "icon_tc_step", zoom_level.point_object_icon_tc_step );
+		point_objets_shader_.Uniform( "icon_tc_scale", zoom_level.point_object_icon_tc_scale );
 
-		zoom_level.point_objects_texture.Bind();
+		zoom_level.point_objects_icons_atlas.Bind();
 
 		#ifndef PM_OPENGL_ES
 		glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
