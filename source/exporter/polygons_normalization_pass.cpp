@@ -618,23 +618,26 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 						inner_rings_splitted.push_back( std::move(ring_part) );
 				}
 
-				const auto hole_split_parts= CutHoles( outer_rings_splitted, inner_rings_splitted );
-				for( const std::vector<MercatorPoint>& hole_split_part : hole_split_parts )
-				{
-					for( const std::vector<MercatorPoint>& noncrossing_part : SplitPolygonIntNoncrossingParts( hole_split_part ) )
-					for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_part, noncrossing_part.size() < 512u ) )
-					{
-						// TODO - combine poygons of different hole split result.
-						PM_ASSERT( convex_part.size() >= 3u );
+				std::vector< std::vector<MercatorPoint> > all_convex_parts;
+				for( const std::vector<MercatorPoint>& hole_split_part : CutHoles( outer_rings_splitted, inner_rings_splitted ) )
+				for( const std::vector<MercatorPoint>& noncrossing_part : SplitPolygonIntNoncrossingParts( hole_split_part ) )
+				for( std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_part, noncrossing_part.size() < 512u ) )
+					all_convex_parts.push_back(std::move(convex_part));
 
-						BaseDataRepresentation::ArealObject out_object;
-						out_object.class_= in_object.class_;
-						out_object.first_vertex_index= result.vertices.size();
-						out_object.vertex_count= convex_part.size();
-						for( const MercatorPoint& vertex : convex_part )
-							result.vertices.push_back(vertex);
-						result.areal_objects.push_back( std::move(out_object) );
-					}
+				if( all_convex_parts.size() < 128u )
+					CombineAdjustedConvexPolygons( all_convex_parts );
+
+				for( const std::vector<MercatorPoint>& convex_part : all_convex_parts )
+				{
+					PM_ASSERT( convex_part.size() >= 3u );
+
+					BaseDataRepresentation::ArealObject out_object;
+					out_object.class_= in_object.class_;
+					out_object.first_vertex_index= result.vertices.size();
+					out_object.vertex_count= convex_part.size();
+					for( const MercatorPoint& vertex : convex_part )
+						result.vertices.push_back(vertex);
+					result.areal_objects.push_back( std::move(out_object) );
 				}
 			}
 			else // if( in_object.multipolygon->inner_rings.empty() )
