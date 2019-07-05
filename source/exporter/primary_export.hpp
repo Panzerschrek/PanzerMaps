@@ -8,6 +8,9 @@
 namespace PanzerMaps
 {
 
+const size_t g_zero_z_level= 5u;
+const size_t g_max_z_level= 10u;
+
 struct BaseDataRepresentation
 {
 	struct PointObject
@@ -21,6 +24,7 @@ struct BaseDataRepresentation
 		LinearObjectClass class_= LinearObjectClass::None;
 		size_t first_vertex_index;
 		size_t vertex_count; // 1 or more.
+		size_t z_level= g_zero_z_level;
 	};
 
 	struct Multipolygon

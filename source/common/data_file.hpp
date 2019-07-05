@@ -46,7 +46,8 @@ struct Chunk
 	struct LinearObjectGroup
 	{
 		StyleIndex style_index;
-		uint8_t padding[3u];
+		uint8_t padding[1u];
+		uint16_t z_level;
 		uint16_t first_vertex;
 		uint16_t vertex_count;
 		// vertex with x= 65535 is break primitive vertex.
@@ -71,6 +72,9 @@ struct Chunk
 	GlobalCoordType max_x;
 	GlobalCoordType max_y;
 
+	uint16_t min_z_level;
+	uint16_t max_z_level;
+
 	// Data sections.
 	uint32_t point_object_groups_offset;
 	uint32_t linear_object_groups_offset;
@@ -82,7 +86,7 @@ struct Chunk
 	uint16_t areal_object_groups_count;
 	uint16_t vertex_count;
 };
-static_assert( sizeof(Chunk) == 48u, "wrong size" );
+static_assert( sizeof(Chunk) == 52u, "wrong size" );
 
 
 using ColorRGBA= unsigned char[4];

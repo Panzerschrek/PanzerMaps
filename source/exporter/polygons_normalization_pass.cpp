@@ -577,6 +577,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 	{
 		BaseDataRepresentation::LinearObject out_object;
 		out_object.class_= in_object.class_;
+		out_object.z_level= in_object.z_level;
 		out_object.first_vertex_index= result.vertices.size();
 		out_object.vertex_count= in_object.vertex_count;
 
