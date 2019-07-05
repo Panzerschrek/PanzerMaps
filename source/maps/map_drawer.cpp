@@ -642,6 +642,7 @@ public:
 		}
 
 		// Create textures for point objects
+		if( in_zoom_level.point_styles_count > 0u )
 		{
 			const size_t c_border_size= 4u;
 
@@ -930,6 +931,7 @@ void MapDrawer::Draw()
 		}
 		disable_primitive_restart();
 	}
+	if( !zoom_level.point_objects_icons_atlas.IsEmpty() )
 	{
 		point_objets_shader_.Bind();
 		point_objets_shader_.Uniform( "tex", 0 );

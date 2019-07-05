@@ -500,7 +500,9 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 		get_zoom_level(zoom_level_index).areal_styles_count= 0u;
 
 		get_zoom_level(zoom_level_index).point_styles_offset= static_cast<uint32_t>( result.size() );
-		for( PointObjectClass object_class= PointObjectClass::None; object_class < PointObjectClass::Last; object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
+		for( PointObjectClass object_class= PointObjectClass::None;
+			 object_class < PointObjectClass::Last && !zoom_level_styles.point_classes_ordered.empty();
+			 object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
 		{
 			result.resize( result.size() + sizeof(PointObjectStyle) );
 			PointObjectStyle& out_style= *reinterpret_cast<PointObjectStyle*>( result.data() + result.size() - sizeof(PointObjectStyle) );
