@@ -2,9 +2,9 @@ Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
 * Risovanije mostov
-* Stili dlä tocecnyh objektov
 * Vydelenije neobhodimyh klassov objektov
 * Vygruzka i klassifikaçija vseh neobhodimyh objektov
+* Ikonki vysokogo razrešenija dlä tocecnyh objektov
 * Optimizaçija narezki poligonov
 * Uproscenije linij
 * Objedinenije smežnyh linij odnogo klassa
