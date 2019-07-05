@@ -136,6 +136,7 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	if( const char* const highway= GetTagValue( way_element, "highway" ) )
 	{
 		const size_t lane_count= GetLaneCount( way_element );
+
 		if( std::strcmp( highway, "living_street" ) == 0 ||
 			std::strcmp( highway, "residential" ) == 0 )
 		{
@@ -223,6 +224,26 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				result.areal_object_class= ArealObjectClass::PedestrianArea;
 			else
 				result.linear_object_class= LinearObjectClass::Pedestrian;
+		}
+
+		if( result.z_level < g_zero_z_level )
+		{
+			if( result.linear_object_class == LinearObjectClass::Pedestrian )
+				result.linear_object_class= LinearObjectClass::PedestrianUnderground;
+			else if( result.linear_object_class == LinearObjectClass::RoadSignificance0 )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes1;
+			else if( lane_count == 0u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes2;
+			else if( lane_count <= 1u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes1;
+			else if( lane_count <= 2u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes2;
+			else if( lane_count <= 4u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes4;
+			else if( lane_count <= 6u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes6;
+			else
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes8More;
 		}
 	}
 	else if( const char* const waterway= GetTagValue( way_element, "waterway" ) )

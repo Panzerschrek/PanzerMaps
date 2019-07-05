@@ -15,6 +15,32 @@
             "width_m" : 3.5
         },
 
+        "RoadUndergroundLanes1":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 3.5
+        },
+        "RoadUndergroundLanes2":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 7.0
+        },
+        "RoadUndergroundLanes4":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 14.0
+        },
+        "RoadUndergroundLanes6":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 21.0
+        },
+        "RoadUndergroundLanes8More":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 28.0
+        },
+
         "RoadSignificance1Lanes1":
         {
             "color" : "#ffffff",
@@ -101,6 +127,13 @@
         "Pedestrian":
         {
             "color" : "#A080A0",
+            "color2" : "#A080A000",
+            "width_m" : 0.75,
+            "dash_size_m" : 6.0
+        },
+        "PedestrianUnderground":
+        {
+            "color" : "#A080A080",
             "color2" : "#A080A000",
             "width_m" : 0.75,
             "dash_size_m" : 6.0
@@ -241,6 +274,11 @@
             [
                 "Waterway",
                 "RoadSignificance0",
+                "RoadUndergroundLanes1",
+                "RoadUndergroundLanes2",
+                "RoadUndergroundLanes4",
+                "RoadUndergroundLanes6",
+                "RoadUndergroundLanes8More",
                 "RoadSignificance1Lanes1",
                 "RoadSignificance1Lanes2",
                 "RoadSignificance1Lanes4",
@@ -262,6 +300,7 @@
                 "RailwaySecondary",
                 "Railway",
                 "Pedestrian",
+                "PedestrianUnderground",
                 "Monorail",
                 "Barrier"
             ]
@@ -294,6 +333,11 @@
             "linear_classes_ordered":
             [
                 "Waterway",
+                "RoadUndergroundLanes1",
+                "RoadUndergroundLanes2",
+                "RoadUndergroundLanes4",
+                "RoadUndergroundLanes6",
+                "RoadUndergroundLanes8More",
                 "RoadSignificance1Lanes1",
                 "RoadSignificance1Lanes2",
                 "RoadSignificance1Lanes4",
@@ -317,6 +361,11 @@
             // Override width for linear objects.
             "linear_styles":
             {
+                "RoadUndergroundLanes1":        { "width_m" :  7.0 },
+                "RoadUndergroundLanes2":        { "width_m" : 14.0 },
+                "RoadUndergroundLanes4":        { "width_m" : 28.0 },
+                "RoadUndergroundLanes6":        { "width_m" : 42.0 },
+                "RoadUndergroundLanes8More":    { "width_m" : 56.0 },
                 "RoadSignificance1Lanes1":      { "width_m" :  7.0 },
                 "RoadSignificance1Lanes2":      { "width_m" : 14.0 },
                 "RoadSignificance1Lanes4":      { "width_m" : 28.0 },
