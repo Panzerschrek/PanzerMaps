@@ -221,8 +221,7 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	{
 		if( std::strcmp( waterway, "stream" ) == 0 )
 			result.linear_object_class= LinearObjectClass::Waterway;
-		if( std::strcmp( waterway, "riverbank" ) == 0 ||
-			std::strcmp( waterway, "canal" ) == 0 )
+		if( std::strcmp( waterway, "riverbank" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Water;
 	}
 	else if( const char* const railway= GetTagValue( way_element, "railway" ) )
