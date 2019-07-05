@@ -10,6 +10,8 @@ add_compile_options( -Wall -Wextra -Wconversion )
 
 find_package( SDL2 REQUIRED )
 
+set( BUILD_SHARED_LIBS OFF ) # tinyxml2 builds as dynamic library, build as static instead.
+
 add_subdirectory( tinyxml2 )
 add_subdirectory( PanzerJson )
 
