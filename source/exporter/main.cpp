@@ -1,6 +1,6 @@
 #include <cstring>
-#include "final_export.hpp"
 #include "../common/log.hpp"
+#include "final_export.hpp"
 
 int main( int argc, const char* const argv[] )
 {
