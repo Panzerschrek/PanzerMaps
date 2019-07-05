@@ -8,12 +8,12 @@ namespace PanzerMaps
 
 
 // Currently, supports only PNG rgb and rgba.
-ImageRGBA LoadImage( const char* const image_file_name )
+ImageRGBA LoadImage( const std::string& image_file_name )
 {
 	ImageRGBA result;
 
 	// TODO -use memory mapping.
-	FILE* const fp= std::fopen( image_file_name, "rb" );
+	FILE* const fp= std::fopen( image_file_name.c_str(), "rb" );
 	if( fp == nullptr )
 	{
 		Log::Warning( "Can not open file \"", image_file_name, "\"" );

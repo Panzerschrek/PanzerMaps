@@ -42,7 +42,7 @@ static void ParseColor( const char* color_str, Styles::ColorRGBA& out_color )
 	}
 }
 
-static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, Styles::PointObjectStyles& point_styles )
+static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, Styles::PointObjectStyles& point_styles, const std::string& styles_dir )
 {
 	for( const auto& point_style_json : point_styles_json.object_elements() )
 	{
@@ -57,7 +57,7 @@ static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, 
 
 		const char* const image_file_name= point_style_json.second["image"].AsString();
 		if( image_file_name != nullptr && image_file_name[0] != '0' )
-			out_style.image= LoadImage( image_file_name );
+			out_style.image= LoadImage( styles_dir + "/" + image_file_name );
 	}
 }
 
@@ -120,7 +120,8 @@ static Styles::ZoomLevel ParseZoomLevel(
 	const PanzerJson::Value& zoom_level_json,
 	const Styles::PointObjectStyles& default_point_styles,
 	const Styles::LinearObjectStyles& default_linear_styles,
-	const Styles::ArealObjectStyles& default_areal_styles )
+	const Styles::ArealObjectStyles& default_areal_styles,
+	const std::string& styles_dir )
 {
 	Styles::ZoomLevel zoom_level;
 	zoom_level.point_object_styles= default_point_styles;
@@ -134,7 +135,7 @@ static Styles::ZoomLevel ParseZoomLevel(
 		zoom_level.simplification_distance= std::max( 0, std::min( zoom_level_json["simplification_distance_units"].AsInt(), 16 ) );
 	}
 
-	ParsePointObjectStyles( zoom_level_json["point_styles"], zoom_level.point_object_styles );
+	ParsePointObjectStyles( zoom_level_json["point_styles"], zoom_level.point_object_styles, styles_dir );
 	ParseLinearObjectStyles( zoom_level_json["linear_styles"], zoom_level.linear_object_styles );
 	ParseArealObjectStyles( zoom_level_json["areal_styles"], zoom_level.areal_object_styles );
 
@@ -189,11 +190,11 @@ static Styles::ZoomLevel ParseZoomLevel(
 	return zoom_level;
 }
 
-Styles LoadStyles( const char* const file_name )
+Styles LoadStyles( const std::string& styles_dir )
 {
 	Styles result;
 
-	const MemoryMappedFilePtr file= MemoryMappedFile::Create( file_name );
+	const MemoryMappedFilePtr file= MemoryMappedFile::Create( ( styles_dir + "/styles.json" ).c_str() );
 	if( file == nullptr )
 		return result;
 
@@ -217,12 +218,12 @@ Styles LoadStyles( const char* const file_name )
 	Styles::LinearObjectStyles linear_object_styles;
 	Styles::ArealObjectStyles areal_object_styles;
 
-	ParsePointObjectStyles( json_parse_result->root["point_styles"], point_object_styles );
+	ParsePointObjectStyles( json_parse_result->root["point_styles"], point_object_styles, styles_dir );
 	ParseLinearObjectStyles( json_parse_result->root["linear_styles"], linear_object_styles );
 	ParseArealObjectStyles( json_parse_result->root["areal_styles"], areal_object_styles );
 
 	for( const PanzerJson::Value& zoom_json : json_parse_result->root["zoom_levels" ] )
-		result.zoom_levels.push_back( ParseZoomLevel( zoom_json, point_object_styles, linear_object_styles, areal_object_styles ) );
+		result.zoom_levels.push_back( ParseZoomLevel( zoom_json, point_object_styles, linear_object_styles, areal_object_styles, styles_dir ) );
 
 	if( result.zoom_levels.empty() )
 		Log::FatalError( "No zoom levels in styles. Required at least one zoom level" );

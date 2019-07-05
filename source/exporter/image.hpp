@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 
 namespace PanzerMaps
@@ -11,6 +12,6 @@ struct ImageRGBA
 };
 
 // Currently, supports only 32bit rgba PNG.
-ImageRGBA LoadImage( const char* const image_file_name );
+ImageRGBA LoadImage( const std::string& image_file_name );
 
 } // namespace PanzerMaps

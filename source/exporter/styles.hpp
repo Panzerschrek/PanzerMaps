@@ -58,6 +58,6 @@ public:
 	std::vector<ZoomLevel> zoom_levels;
 };
 
-Styles LoadStyles( const char* const file_name );
+Styles LoadStyles( const std::string& styles_dir );
 
 } // namespace PanzerMaps

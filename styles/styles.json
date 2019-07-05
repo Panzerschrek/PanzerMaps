@@ -6,7 +6,11 @@
     {
         "StationPlatform" :
         {
-            "image" : "source/bus_stop.png"
+            "image" : "bus_stop.png"
+        },
+        "SubwayEntrance" :
+        {
+            "image" : "subway_entrance.png"
         }
     },
 
