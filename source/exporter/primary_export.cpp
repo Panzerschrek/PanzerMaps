@@ -120,11 +120,18 @@ struct WayClassifyResult
 	// Both may be non-None.
 	LinearObjectClass linear_object_class= LinearObjectClass::None;
 	ArealObjectClass areal_object_class= ArealObjectClass::None;
+	size_t z_level= g_zero_z_level;
 };
 
 WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bool is_multipolygon )
 {
 	WayClassifyResult result;
+
+	if( const char* const layer= GetTagValue( way_element, "layer" ) )
+	{
+		const int layer_value= std::atoi(layer);
+		result.z_level= size_t( std::max( 0, std::min( layer_value + int(g_zero_z_level), int(g_max_z_level) ) ) );
+	}
 
 	if( const char* const highway= GetTagValue( way_element, "highway" ) )
 	{
@@ -504,21 +511,22 @@ OSMParseResult ParseOSM( const char* file_name )
 			if( const OsmId id= ParseOsmId( id_str ) )
 				ways_map[id]= way_element;
 
-		const WayClassifyResult way_classes= ClassifyWay( *way_element, false );
-		if( way_classes.linear_object_class != LinearObjectClass::None )
+		const WayClassifyResult classify_result= ClassifyWay( *way_element, false );
+		if( classify_result.linear_object_class != LinearObjectClass::None )
 		{
 			OSMParseResult::LinearObject obj;
-			obj.class_= way_classes.linear_object_class;
+			obj.class_= classify_result.linear_object_class;
 			obj.first_vertex_index= result.vertices.size();
+			obj.z_level= classify_result.z_level;
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
 				result.linear_objects.push_back(obj);
 		}
-		if( way_classes.areal_object_class != ArealObjectClass::None )
+		if( classify_result.areal_object_class != ArealObjectClass::None )
 		{
 			OSMParseResult::ArealObject obj;
-			obj.class_= way_classes.areal_object_class;
+			obj.class_= classify_result.areal_object_class;
 			obj.first_vertex_index= result.vertices.size();
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
@@ -586,8 +594,8 @@ OSMParseResult ParseOSM( const char* file_name )
 		if( type == nullptr || std::strcmp( type, "multipolygon" ) != 0 )
 			continue;
 
-		const WayClassifyResult way_classes= ClassifyWay( *relation_element, true );
-		if( way_classes.areal_object_class == ArealObjectClass::None && way_classes.linear_object_class == LinearObjectClass::None )
+		const WayClassifyResult classify_result= ClassifyWay( *relation_element, true );
+		if( classify_result.areal_object_class == ArealObjectClass::None && classify_result.linear_object_class == LinearObjectClass::None )
 			continue;
 
 		std::vector< std::vector<GeoPoint> > outer_ways, inner_ways;
@@ -607,10 +615,10 @@ OSMParseResult ParseOSM( const char* file_name )
 			if( it == ways_map.end() )
 				continue;
 
-			if( way_classes.linear_object_class != LinearObjectClass::None )
+			if( classify_result.linear_object_class != LinearObjectClass::None )
 			{
 				OSMParseResult::LinearObject obj;
-				obj.class_= way_classes.linear_object_class;
+				obj.class_= classify_result.linear_object_class;
 				obj.first_vertex_index= result.vertices.size();
 				ExtractVertices( it->second, nodes, result.vertices );
 				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
@@ -630,10 +638,10 @@ OSMParseResult ParseOSM( const char* file_name )
 			}
 		} // for multipolygon members.
 
-		if( !outer_ways.empty() && way_classes.areal_object_class != ArealObjectClass::None )
+		if( !outer_ways.empty() && classify_result.areal_object_class != ArealObjectClass::None )
 		{
 			OSMParseResult::ArealObject obj;
-			obj.class_= way_classes.areal_object_class;
+			obj.class_= classify_result.areal_object_class;
 			obj.first_vertex_index= obj.vertex_count= 0u;
 
 			obj.multipolygon.reset( new OSMParseResult::Multipolygon );
