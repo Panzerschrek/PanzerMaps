@@ -495,6 +495,34 @@ public:
 		areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
 	}
 
+	void ClearGPUData()
+	{
+		if( !gpu_data_prepared_ )
+			return;
+
+		gpu_data_prepared_= false;
+		point_objects_polygon_buffer_= r_PolygonBuffer();
+		linear_objects_polygon_buffer_= r_PolygonBuffer();
+		linear_objects_as_triangles_buffer_= r_PolygonBuffer();
+		areal_objects_polygon_buffer_= r_PolygonBuffer();
+	}
+
+	size_t GetGPUDataSize() const
+	{
+		size_t data_size= 0u;
+
+		data_size+= point_objects_polygon_buffer_.GetVertexDataSize();
+		data_size+= point_objects_polygon_buffer_.GetIndexDataSize();
+		data_size+= linear_objects_polygon_buffer_.GetVertexDataSize();
+		data_size+= linear_objects_polygon_buffer_.GetIndexDataSize();
+		data_size+= linear_objects_as_triangles_buffer_.GetVertexDataSize();
+		data_size+= linear_objects_as_triangles_buffer_.GetIndexDataSize();
+		data_size+= areal_objects_polygon_buffer_.GetVertexDataSize();
+		data_size+= areal_objects_polygon_buffer_.GetIndexDataSize();
+
+		return data_size;
+	}
+
 	Chunk( const Chunk& )= delete;
 	Chunk( Chunk&& )= default;
 
@@ -874,6 +902,9 @@ void MapDrawer::Draw()
 		#endif
 	}
 
+	if( ( frame_number_ & 15u ) == 0u )
+		ClearGPUData();
+
 	if( ( frame_number_ & 63u ) == 0u )
 		Log::User( "Visible chunks: ", visible_chunks.size(), " draw calls: ", draw_calls, " index count: ", primitive_count );
 
@@ -885,19 +916,7 @@ void MapDrawer::Draw()
 		{
 			size_t zoom_level_gpu_data_size= 0u;
 			for( const Chunk& chunk : zoom_level.chunks )
-			{
-				zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetVertexDataSize();
-				zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetIndexDataSize();
-
-				zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetVertexDataSize();
-				zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetIndexDataSize();
-
-				zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize();
-				zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetIndexDataSize();
-
-				zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetVertexDataSize();
-				zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetIndexDataSize();
-			}
+				zoom_level_gpu_data_size+= chunk.GetGPUDataSize();
 			Log::Info( "Zoom level ", &zoom_level - zoom_levels_.data(), " GPU data size: ", zoom_level_gpu_data_size / 1024u, "kb" );
 			total_gpu_data_size+= zoom_level_gpu_data_size;
 		}
@@ -945,6 +964,68 @@ MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()
 			return zoom_levels_[i-1u];
 
 	return zoom_levels_.back();
+}
+
+void MapDrawer::ClearGPUData()
+{
+	size_t total_gpu_data_size= 0u;
+	for( const ZoomLevel& zoom_level : zoom_levels_ )
+	{
+		size_t zoom_level_gpu_data_size= 0u;
+		for( const Chunk& chunk : zoom_level.chunks )
+			zoom_level_gpu_data_size+= chunk.GetGPUDataSize();
+		total_gpu_data_size+= zoom_level_gpu_data_size;
+	}
+
+#ifdef __ANDROID__
+	const size_t c_gpu_memory_limit=  64u * 1024u * 1024u;
+#else
+	const size_t c_gpu_memory_limit= 128u * 1024u * 1024u;
+#endif
+
+	if( total_gpu_data_size <= c_gpu_memory_limit )
+		return;
+
+	size_t current_zoom_level_log2= SelectZoomLevel().zoom_level_log2;
+
+	// Try clear GPU data of some chunks.
+	// Chunks, with greater distance to camera removed firstly.
+	// Chunks of zoom levels, different, from current, removed firstly.
+	struct QueueChunk
+	{
+		Chunk* chunk;
+		int32_t weight;
+	};
+	std::vector< QueueChunk > chunks_queue;
+
+	for( ZoomLevel& zoom_level : zoom_levels_ )
+	for( Chunk& chunk : zoom_level.chunks )
+	{
+		const int32_t center_x= ( ( chunk.bb_min_x_ + chunk.bb_max_x_ ) >> 1 ) << zoom_level.zoom_level_log2;
+		const int32_t center_y= ( ( chunk.bb_min_y_ + chunk.bb_max_y_ ) >> 1 ) << zoom_level.zoom_level_log2;
+		const int64_t dx= center_x - int32_t(cam_pos_.x);
+		const int64_t dy= center_y - int32_t(cam_pos_.y);
+		const int32_t distance= int32_t( std::sqrt( double( dx * dx + dy * dy ) ) ) >> zoom_level.zoom_level_log2;
+		const int32_t weight=
+		65535 * std::abs( int32_t(zoom_level.zoom_level_log2) - int32_t(current_zoom_level_log2) ) +
+			1 * distance;
+		PM_ASSERT( weight >= 0 );
+
+		chunks_queue.emplace_back( QueueChunk{ &chunk, weight } );
+	}
+
+	// Sort by weight in descent order.
+	std::sort(
+		chunks_queue.begin(), chunks_queue.end(),
+		[](const QueueChunk& l, const QueueChunk& r) { return l.weight > r.weight; });
+
+	for( const QueueChunk& queue_chunk : chunks_queue )
+	{
+		total_gpu_data_size-= queue_chunk.chunk->GetGPUDataSize();
+		queue_chunk.chunk->ClearGPUData();
+		if( total_gpu_data_size <= c_gpu_memory_limit * 3u / 4u )
+			break;
+	}
 }
 
 } // namespace PanzerMaps

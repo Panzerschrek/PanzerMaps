@@ -29,6 +29,7 @@ private:
 
 private:
 	ZoomLevel& SelectZoomLevel();
+	void ClearGPUData();
 
 private:
 	const ViewportSize viewport_size_;
