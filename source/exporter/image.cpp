@@ -1,54 +1,45 @@
-#include <cstdio>
+#include <cstring>
 #include <png.h>
 #include "../common/log.hpp"
+#include "../common/memory_mapped_file.hpp"
 #include "image.hpp"
 
 namespace PanzerMaps
 {
-
 
 // Currently, supports only PNG rgb and rgba.
 ImageRGBA LoadImage( const std::string& image_file_name )
 {
 	ImageRGBA result;
 
-	// TODO -use memory mapping.
-	FILE* const fp= std::fopen( image_file_name.c_str(), "rb" );
-	if( fp == nullptr )
+	MemoryMappedFilePtr file= MemoryMappedFile::Create( image_file_name.c_str() );
+	if( file == nullptr )
+		return result;
+
+	png_image img;
+	std::memset( &img, 0, sizeof(img) );
+	img.version= PNG_IMAGE_VERSION;
+
+	png_image_begin_read_from_memory( &img, file->Data(), file->Size() );
+	if( PNG_IMAGE_FAILED(img) )
 	{
-		Log::Warning( "Can not open file \"", image_file_name, "\"" );
+		Log::Warning( "Error, opening png file \"", image_file_name, "\": ", img.message );
+		png_image_free( &img );
+		return result;
+	}
+	if( img.format != PNG_FORMAT_RGBA )
+	{
+		Log::Warning( "Unsupported image format, supported only rgba PNG images" );
+		png_image_free( &img );
 		return result;
 	}
 
-	png_structp png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+	result.data.resize( 4u * img.width * img.height, 0u );
+	result.size[0]= img.width ;
+	result.size[1]= img.height;
 
-	png_infop png_info= png_create_info_struct(png_ptr);
+	png_image_finish_read( &img, nullptr, result.data.data(), img.width * 4u, nullptr );
 
-	png_init_io(png_ptr, fp );
-
-	png_read_info(png_ptr, png_info);
-
-	const png_uint_32 width = png_get_image_width ( png_ptr, png_info );
-	const png_uint_32 height= png_get_image_height( png_ptr, png_info );
-	const png_byte color_type= png_get_color_type( png_ptr, png_info );
-	const png_byte bit_depth= png_get_bit_depth( png_ptr, png_info );
-
-	if( !( color_type == PNG_COLOR_TYPE_RGB_ALPHA ) && bit_depth != 8 )
-	{
-		std::fclose( fp );
-		return result;
-	}
-
-	result.data.resize( 4u * width * height, 0u );
-	for( png_uint_32 y=0u; y < height; ++y )
-		png_read_row( png_ptr, result.data.data() + y * width * 4u, nullptr );
-
-	png_destroy_read_struct( &png_ptr, &png_info, NULL);
-
-	std::fclose( fp );
-
-	result.size[0]= width ;
-	result.size[1]= height;
 	return result;
 }
 
