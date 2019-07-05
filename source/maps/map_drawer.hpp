@@ -1,4 +1,5 @@
 #pragma once
+#include "../common/memory_mapped_file.hpp"
 #include "../panzer_ogl_lib/glsl_program.hpp"
 #include "../panzer_ogl_lib/polygon_buffer.hpp"
 #include "system_window.hpp"
@@ -27,11 +28,12 @@ private:
 	struct ChunkToDraw;
 
 private:
-	const ZoomLevel& SelectZoomLevel() const;
+	ZoomLevel& SelectZoomLevel();
 
 private:
 	const ViewportSize viewport_size_;
 	const SystemWindow& system_window_;
+	const MemoryMappedFilePtr data_file_;
 	r_GLSLProgram point_objets_shader_;
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram linear_textured_objets_shader_;

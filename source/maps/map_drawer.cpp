@@ -5,7 +5,6 @@
 #include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
-#include "../common/memory_mapped_file.hpp"
 #include "../panzer_ogl_lib/texture.hpp"
 #include "shaders.hpp"
 #include "map_drawer.hpp"
@@ -345,16 +344,23 @@ public:
 		const DataFileDescription::Chunk& in_chunk,
 		const DataFileDescription::LinearObjectStyle* const linear_styles,
 		const DataFileDescription::ArealObjectStyle* const areal_styles )
-		: coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
+		: src_chunk_(in_chunk), linear_styles_(linear_styles), areal_styles_(areal_styles)
+		, coord_start_x_(in_chunk.coord_start_x), coord_start_y_(in_chunk.coord_start_y)
 		, bb_min_x_(in_chunk.min_x), bb_min_y_(in_chunk.min_y), bb_max_x_(in_chunk.max_x), bb_max_y_(in_chunk.max_y)
 	{
-		(void)areal_styles;
+	}
 
-		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&in_chunk);
-		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + in_chunk.vertices_offset );
-		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + in_chunk.point_object_groups_offset );
-		const auto linear_object_groups= reinterpret_cast<const DataFileDescription::Chunk::LinearObjectGroup*>( chunk_data + in_chunk.linear_object_groups_offset );
-		const auto areal_object_groups= reinterpret_cast<const DataFileDescription::Chunk::ArealObjectGroup*>( chunk_data + in_chunk.areal_object_groups_offset );
+	void PrepareGPUData()
+	{
+		if( gpu_data_prepared_ )
+			return;
+		gpu_data_prepared_= true;
+
+		const unsigned char* const chunk_data= reinterpret_cast<const unsigned char*>(&src_chunk_);
+		const auto vertices= reinterpret_cast<const DataFileDescription::ChunkVertex*>( chunk_data + src_chunk_.vertices_offset );
+		const auto point_object_groups= reinterpret_cast<const DataFileDescription::Chunk::PointObjectGroup*>( chunk_data + src_chunk_.point_object_groups_offset );
+		const auto linear_object_groups= reinterpret_cast<const DataFileDescription::Chunk::LinearObjectGroup*>( chunk_data + src_chunk_.linear_object_groups_offset );
+		const auto areal_object_groups= reinterpret_cast<const DataFileDescription::Chunk::ArealObjectGroup*>( chunk_data + src_chunk_.areal_object_groups_offset );
 		std::vector<PointObjectVertex> point_objects_vertices;
 
 		std::vector<LinearObjectVertex> linear_objects_vertices;
@@ -366,7 +372,7 @@ public:
 		std::vector<ArealObjectVertex> areal_objects_vertices;
 		std::vector<uint16_t> areal_objects_indicies;
 
-		for( uint16_t i= 0u; i < in_chunk.point_object_groups_count; ++i )
+		for( uint16_t i= 0u; i < src_chunk_.point_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::PointObjectGroup group= point_object_groups[i];
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
@@ -383,20 +389,20 @@ public:
 		// Draw polylines, using "GL_LINE_STRIP" primitive with primitive restart index.
 		// Or draw it as "GL_TRIANGLE_STRIP".
 		std::vector<DataFileDescription::ChunkVertex> tmp_vertices;
-		for( uint16_t i= 0u; i < in_chunk.linear_object_groups_count; ++i )
+		for( uint16_t i= 0u; i < src_chunk_.linear_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
 			LinearObjectsGroup out_group;
 			out_group.style_index= group.style_index;
 
-			if( linear_styles[group.style_index].width_mul_256 > 0 )
+			if( linear_styles_[group.style_index].width_mul_256 > 0 )
 			{
 				out_group.first_index= linear_objects_as_triangles_indicies.size();
 
-				const float half_width= float(linear_styles[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
+				const float half_width= float(linear_styles_[group.style_index].width_mul_256) / ( 256.0f * 2.0f );
 				const float square_half_width= half_width * half_width;
 
-				const float tex_coord_scale= 256.0f / float(linear_styles[group.style_index].dash_size_mul_256);
+				const float tex_coord_scale= 256.0f / float(linear_styles_[group.style_index].dash_size_mul_256);
 				for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 				{
 					const DataFileDescription::ChunkVertex& vertex= vertices[v];
@@ -440,7 +446,7 @@ public:
 
 		// Areal objects must be convex polygons.
 		// Draw convex polygons, using "GL_TRIANGLE_FAN" primitive with primitive restart index.
-		for( uint16_t i= 0u; i < in_chunk.areal_object_groups_count; ++i )
+		for( uint16_t i= 0u; i < src_chunk_.areal_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::ArealObjectGroup group= areal_object_groups[i];
 			size_t prev_polygon_start_vertex_index= 0u;
@@ -505,6 +511,12 @@ public:
 	};
 
 public:
+	// References to memory mapped data file.
+	// Memory mapped file must live longer, than "struct Chunk".
+	const DataFileDescription::Chunk& src_chunk_;
+	const DataFileDescription::LinearObjectStyle* const linear_styles_;
+	const DataFileDescription::ArealObjectStyle* const areal_styles_;
+
 	const int32_t coord_start_x_;
 	const int32_t coord_start_y_;
 	const int32_t bb_min_x_;
@@ -512,6 +524,7 @@ public:
 	const int32_t bb_max_x_;
 	const int32_t bb_max_y_;
 
+	bool gpu_data_prepared_= false;
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_as_triangles_buffer_;
@@ -627,20 +640,20 @@ struct MapDrawer::ChunkToDraw
 MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_file )
 	: viewport_size_(system_window.GetViewportSize())
 	, system_window_(system_window)
+	, data_file_( MemoryMappedFile::Create( map_file ) )
 {
-	const MemoryMappedFilePtr file= MemoryMappedFile::Create( map_file );
-	if( file == nullptr )
+	if( data_file_ == nullptr )
 	{
 		Log::FatalError( "Error, opening map file" );
 		return;
 	}
-	if( file->Size() < sizeof(DataFileDescription::DataFile) )
+	if( data_file_->Size() < sizeof(DataFileDescription::DataFile) )
 	{
 		Log::FatalError( "Map file is too small" );
 		return;
 	}
 
-	const unsigned char* const file_content= static_cast<const unsigned char*>(file->Data());
+	const unsigned char* const file_content= static_cast<const unsigned char*>(data_file_->Data());
 	const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( file_content);
 
 	if( std::memcmp( data_file.header, DataFileDescription::DataFile::c_expected_header, sizeof(data_file.header) ) != 0 )
@@ -704,32 +717,6 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_f
 	min_scale_= 1.0f;
 	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
-
-	// Calculate GPU statistics.
-	// TODO - lazily upload data to GPU.
-	size_t total_gpu_data_size= 0u;
-	for( const ZoomLevel& zoom_level : zoom_levels_ )
-	{
-		size_t zoom_level_gpu_data_size= 0u;
-		for( const Chunk& chunk : zoom_level.chunks )
-		{
-			zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetVertexDataSize();
-			zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetIndexDataSize();
-
-			zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetVertexDataSize();
-			zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetIndexDataSize();
-
-			zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize();
-			zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetIndexDataSize();
-
-			zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetVertexDataSize();
-			zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetIndexDataSize();
-		}
-		Log::Info( "Zoom level ", &zoom_level - zoom_levels_.data(), " GPU data size: ", zoom_level_gpu_data_size / 1024u, "kb" );
-		total_gpu_data_size+= zoom_level_gpu_data_size;
-	}
-	Log::Info( "Total GPU data size: ", total_gpu_data_size / 1024u, "kb = ", total_gpu_data_size / 1024u / 1024, "mb" );
-
 }
 
 MapDrawer::~MapDrawer()
@@ -753,7 +740,7 @@ void MapDrawer::Draw()
 	// Setup OpenGL state.
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-	const ZoomLevel& zoom_level= SelectZoomLevel();
+	ZoomLevel& zoom_level= SelectZoomLevel();
 
 	// Calculate view matrix.
 	// TODO - maybe use m_Mat3?
@@ -777,11 +764,13 @@ void MapDrawer::Draw()
 
 	// Setup chunks list, calculate matrices.
 	std::vector<ChunkToDraw> visible_chunks;
-	for( const Chunk& chunk : zoom_level.chunks )
+	for( Chunk& chunk : zoom_level.chunks )
 	{
 		if( chunk.bb_min_x_ >= bb_max_x || chunk.bb_min_y_ >= bb_max_y ||
 			chunk.bb_max_x_ <= bb_min_x || chunk.bb_max_y_ <= bb_min_y )
 			continue;
+
+		chunk.PrepareGPUData();
 
 		m_Mat4 coords_shift_matrix, chunk_view_matrix;
 		coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
@@ -887,6 +876,34 @@ void MapDrawer::Draw()
 
 	if( ( frame_number_ & 63u ) == 0u )
 		Log::User( "Visible chunks: ", visible_chunks.size(), " draw calls: ", draw_calls, " index count: ", primitive_count );
+
+	if( ( frame_number_ & 255u ) == 0u )
+	{
+		// Calculate GPU statistics.
+		size_t total_gpu_data_size= 0u;
+		for( const ZoomLevel& zoom_level : zoom_levels_ )
+		{
+			size_t zoom_level_gpu_data_size= 0u;
+			for( const Chunk& chunk : zoom_level.chunks )
+			{
+				zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetVertexDataSize();
+				zoom_level_gpu_data_size+= chunk.point_objects_polygon_buffer_.GetIndexDataSize();
+
+				zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetVertexDataSize();
+				zoom_level_gpu_data_size+= chunk.linear_objects_polygon_buffer_.GetIndexDataSize();
+
+				zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetVertexDataSize();
+				zoom_level_gpu_data_size+= chunk.linear_objects_as_triangles_buffer_.GetIndexDataSize();
+
+				zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetVertexDataSize();
+				zoom_level_gpu_data_size+= chunk.areal_objects_polygon_buffer_.GetIndexDataSize();
+			}
+			Log::Info( "Zoom level ", &zoom_level - zoom_levels_.data(), " GPU data size: ", zoom_level_gpu_data_size / 1024u, "kb" );
+			total_gpu_data_size+= zoom_level_gpu_data_size;
+		}
+		Log::Info( "Total GPU data size: ", total_gpu_data_size / 1024u, "kb = ", total_gpu_data_size / 1024u / 1024, "mb" );
+	}
+
 	++frame_number_;
 }
 
@@ -916,7 +933,7 @@ const ViewportSize& MapDrawer::GetViewportSize() const
 	return viewport_size_;
 }
 
-const MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel() const
+MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()
 {
 	// Assume, that nearest scale is equivalent for WebMercator zoom 18.
 
