@@ -2,7 +2,6 @@ Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
 * Razbijenime po vysote (dlä mostov)
-* Vygruzka multipoligonov
 * Stili dlä tocecnyh objektov
 * Vydelenije neobhodimyh klassov objektov
 * Vygruzka i klassifikaçija vseh neobhodimyh objektov
@@ -12,11 +11,8 @@ Eksport i podgotovka dannyh:
 * Optimizaçija vremeni raboty i potrebläjemoj pamäti eksportöra
 
 Priloženije
-* Risovanije linejnyh objektov s teksturoj (reljsy, tropinki, zebry)
 * Risovanije ploscadnyh objektov s teksturoj (lesa, bolota)
 * Risovanije tocecnyh objektov ikonkami
-* Lenivaja zagruzka tajlov, vygruzka iz videopamäti nenužnyh tajlov
-* Sborka pod "Android"
 * Masštabnaja linejka
 * Otobraženije geopoziçii
 * Zagruzka neskoljkih vygruzok
