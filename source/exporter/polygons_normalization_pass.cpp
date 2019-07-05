@@ -85,7 +85,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 		if( e0 == e1 ||
 			( e0 + 1u ) % vertices.size() == e1 ||
 			( e1 + 1u ) % vertices.size() == e0 ||
-			( e0 + 1u ) % vertices.size() == ( e1 + 1u)  % vertices.size() )
+			( e0 + 1u ) % vertices.size() == (e1 + 1u)  % vertices.size() )
 			continue;
 
 		const MercatorPoint& e0v0= vertices[e0];

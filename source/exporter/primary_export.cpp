@@ -69,8 +69,7 @@ static void ExtractVertices( const tinyxml2::XMLElement* const way_element, cons
 	{
 		if( const char* const ref_attrib= nd_element->Attribute( "ref" ) )
 		{
-			OsmId id;
-			if( std::sscanf( ref_attrib, "%lu", &id ) == 1 )
+			if( const OsmId id= ParseOsmId( ref_attrib ) )
 			{
 				const auto node_it= nodes.find(id);
 				if( node_it != nodes.end() )

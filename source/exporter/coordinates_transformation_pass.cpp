@@ -114,12 +114,11 @@ CoordinatesTransformationPassResult TransformCoordinates(
 			out_first_vertex= result.vertices.size();
 			out_vertex_count= 1u;
 
-			result.vertices.push_back( convert_point( src_vetices_converted[ in_first_vertex] ) );
+			result.vertices.push_back( convert_point( src_vetices_converted[in_first_vertex] ) );
 
 			for( size_t v= in_first_vertex + 1u; v < in_first_vertex + in_vertex_count; ++v )
 			{
-				const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
-					convert_point( src_vetices_converted[v] );
+				const auto vertex_transformed= convert_point( src_vetices_converted[v] );
 				if( !points_near( vertex_transformed, result.vertices.back() ) )
 				{
 					result.vertices.push_back( vertex_transformed );
