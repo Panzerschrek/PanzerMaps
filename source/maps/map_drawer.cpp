@@ -394,6 +394,7 @@ public:
 			const DataFileDescription::Chunk::LinearObjectGroup group= linear_object_groups[i];
 			LinearObjectsGroup out_group;
 			out_group.style_index= group.style_index;
+			out_group.z_level= uint8_t( group.z_level );
 
 			if( linear_styles_[group.style_index].width_mul_256 > 0 )
 			{
@@ -536,6 +537,7 @@ public:
 		size_t index_count;
 		GLenum primitive_type;
 		uint8_t style_index;
+		uint8_t z_level;
 	};
 
 public:
@@ -792,6 +794,7 @@ void MapDrawer::Draw()
 
 	// Setup chunks list, calculate matrices.
 	std::vector<ChunkToDraw> visible_chunks;
+	uint16_t min_z_level= 100u, max_z_level= 0u;
 	for( Chunk& chunk : zoom_level.chunks )
 	{
 		if( chunk.bb_min_x_ >= bb_max_x || chunk.bb_min_y_ >= bb_max_y ||
@@ -805,6 +808,9 @@ void MapDrawer::Draw()
 		chunk_view_matrix= coords_shift_matrix * view_matrix;
 
 		visible_chunks.push_back( ChunkToDraw{ chunk, chunk_view_matrix } );
+
+		min_z_level= std::min( min_z_level, chunk.src_chunk_.min_z_level );
+		max_z_level= std::max( max_z_level, chunk.src_chunk_.max_z_level );
 	}
 
 	// Draw chunks.
@@ -832,7 +838,9 @@ void MapDrawer::Draw()
 	{
 		enable_primitive_restart();
 
-		// Draw linear objects ordered by style, because linear objects of neighboring chunks may overlap.
+		// Draw linear objects ordered by z_level, inside z_level ordered by style.
+		// Draw linear objects ordered by style and z_level but not by chunk, because linear objects of neighboring chunks may overlap.
+		for( uint16_t z_level= min_z_level; z_level <= max_z_level; ++z_level )
 		for( const uint8_t style_index : zoom_level.linear_styles_order )
 		{
 			for( const ChunkToDraw& chunk_to_draw : visible_chunks )
@@ -843,7 +851,7 @@ void MapDrawer::Draw()
 
 				for( const Chunk::LinearObjectsGroup& group : chunk_to_draw.chunk.linear_objects_groups_ )
 				{
-					if( group.style_index == style_index && group.index_count > 0u )
+					if( group.style_index == style_index && group.z_level == z_level && group.index_count > 0u )
 					{
 						const auto tex_it= zoom_level.dashed_lines_textures.find( group.style_index );
 						if( tex_it != zoom_level.dashed_lines_textures.end() )

@@ -33,8 +33,11 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 		}
 	}
 
+	std::unordered_map< LinearObjectClass, size_t > linear_classes_order;
 	for( const LinearObjectClass& object_class : zoom_level.linear_classes_ordered )
 	{
+		linear_classes_order[ object_class ]= &object_class - zoom_level.linear_classes_ordered.data();
+
 		for( const BaseDataRepresentation::LinearObject& in_object : in_data.linear_objects )
 		{
 			if( in_object.class_ != object_class )
@@ -52,6 +55,17 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 			result.linear_objects.push_back( out_object );
 		}
 	}
+
+	// Sort lines by z_level.
+	std::sort(
+		result.linear_objects.begin(),
+		result.linear_objects.end(),
+		[&]( const BaseDataRepresentation::LinearObject& l, const BaseDataRepresentation::LinearObject& r )
+		{
+			if( l.z_level != r.z_level )
+				return l.z_level < r.z_level;
+			return linear_classes_order[l.class_] < linear_classes_order[r.class_];
+		} );
 
 	for( const Styles::ArealObjectPhase& phase : zoom_level.areal_object_phases )
 	{

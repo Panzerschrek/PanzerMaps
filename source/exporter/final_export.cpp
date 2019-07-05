@@ -233,6 +233,9 @@ static ChunksData DumpDataChunk(
 	get_chunk().max_x= chunk_offset_x + chunk_size;
 	get_chunk().max_y= chunk_offset_y + chunk_size;
 
+	get_chunk().min_z_level= 100u;
+	get_chunk().max_z_level=  0u;
+
 	std::vector<ChunkVertex> vertices;
 	size_t linear_vertex_count= 0u;
 	const ChunkVertex break_primitive_vertex{ std::numeric_limits<ChunkCoordType>::max(), 0 };
@@ -284,10 +287,11 @@ static ChunksData DumpDataChunk(
 		get_chunk().linear_object_groups_offset= static_cast<uint32_t>(result.size());
 
 		LinearObjectClass prev_class= LinearObjectClass::None;
+		size_t prev_z_level= ~0u;
 		Chunk::LinearObjectGroup group;
 		for( const OSMParseResult::LinearObject& object : prepared_data.linear_objects )
 		{
-			if( object.class_ != prev_class )
+			if( object.class_ != prev_class || object.z_level != prev_z_level )
 			{
 				if( prev_class != LinearObjectClass::None )
 				{
@@ -301,8 +305,13 @@ static ChunksData DumpDataChunk(
 
 				group.first_vertex= static_cast<uint16_t>( vertices.size() );
 				group.style_index= static_cast<Chunk::StyleIndex>( object.class_ );
+				group.z_level= static_cast<uint16_t>(object.z_level);
+
+				get_chunk().min_z_level= std::min( get_chunk().min_z_level, group.z_level );
+				get_chunk().max_z_level= std::max( get_chunk().max_z_level, group.z_level );
 
 				prev_class= object.class_;
+				prev_z_level= object.z_level;
 			}
 
 			std::vector<MercatorPoint> polyline_vertices;
@@ -388,6 +397,9 @@ static ChunksData DumpDataChunk(
 		}
 		return result;
 	}
+
+	if( get_chunk().min_z_level > get_chunk().max_z_level )
+		get_chunk().min_z_level= get_chunk().max_z_level;
 
 	get_chunk().vertices_offset= static_cast<uint32_t>( result.size() );
 	get_chunk().vertex_count= static_cast<uint16_t>( vertices.size() );
