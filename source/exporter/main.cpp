@@ -1,6 +1,6 @@
 #include <cstring>
-#include "final_export.hpp"
 #include "../common/log.hpp"
+#include "final_export.hpp"
 
 int main( int argc, const char* const argv[] )
 {
@@ -8,13 +8,13 @@ int main( int argc, const char* const argv[] )
 
 	std::vector<std::string> input_files;
 	std::string output_file;
-	std::string style_file= "source/styles.json";
+	std::string styles_dir= "styles";
 
 	static const char help_message[]=
 	R"(
 PanzerMaps Exporter. Input file format - .osm
 Usage:
-	Exporter -i [input_file] -o [output_file] --style [style_file])";
+	Exporter -i [input_file] -o [output_file] --styles [styles_dir])";
 
 	if( argc <= 1 )
 	{
@@ -32,10 +32,10 @@ Usage:
 			output_file= argv[ i + 1 ];
 			i+= 2;
 		}
-		else if( std::strcmp( argv[i], "--style" ) == 0 )
+		else if( std::strcmp( argv[i], "--styles" ) == 0 )
 		{
 			EXPECT_ARG_VALUE
-			style_file= argv[ i + 1 ];
+			styles_dir= argv[ i + 1 ];
 			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "-h" ) == 0 || std::strcmp( argv[i], "--help" ) == 0 )
@@ -71,7 +71,7 @@ Usage:
 		return -1;
 	}
 
-	const Styles styles= LoadStyles( style_file.c_str() );
+	const Styles styles= LoadStyles( styles_dir );
 	const OSMParseResult osm_parse_result= ParseOSM( input_files.front().c_str() );
 
 	std::vector<PolygonsNormalizationPassResult> ou_data_by_zoom_level;

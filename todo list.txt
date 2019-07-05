@@ -1,11 +1,12 @@
 Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
-* Razbijenime po vysote (dlä mostov)
+* Risovanije mostov
 * Stili dlä tocecnyh objektov
 * Vydelenije neobhodimyh klassov objektov
 * Vygruzka i klassifikaçija vseh neobhodimyh objektov
 * Optimizaçija narezki poligonov
+* Uproscenije linij
 * Objedinenije smežnyh linij odnogo klassa
 * Vygruzka dannyh dlä platform s drugim porädkom bajt
 * Optimizaçija vremeni raboty i potrebläjemoj pamäti eksportöra

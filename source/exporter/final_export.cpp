@@ -499,8 +499,33 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 		get_zoom_level(zoom_level_index).linear_styles_count= 0u;
 		get_zoom_level(zoom_level_index).areal_styles_count= 0u;
 
-		for( PointObjectClass object_class= PointObjectClass::None; object_class < PointObjectClass::Last; object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
+		get_zoom_level(zoom_level_index).point_styles_offset= static_cast<uint32_t>( result.size() );
+		for( PointObjectClass object_class= PointObjectClass::None;
+			 object_class < PointObjectClass::Last && !zoom_level_styles.point_classes_ordered.empty();
+			 object_class= static_cast<PointObjectClass>( size_t(object_class) + 1u ) )
 		{
+			result.resize( result.size() + sizeof(PointObjectStyle) );
+			PointObjectStyle& out_style= *reinterpret_cast<PointObjectStyle*>( result.data() + result.size() - sizeof(PointObjectStyle) );
+
+			std::memset( out_style.icon, 0, sizeof(out_style.icon) );
+
+			const auto style_it= zoom_level_styles.point_object_styles.find( object_class );
+			if( style_it != zoom_level_styles.point_object_styles.end() )
+			{
+				const ImageRGBA& image= style_it->second.image;
+				const int start_x= std::max( 0, int(PointObjectStyle::c_icon_size / 2u) - int(image.size[0] / 2u) );
+				const int start_y= std::max( 0, int(PointObjectStyle::c_icon_size / 2u) - int(image.size[1] / 2u) );
+				const int end_x= std::min( int(PointObjectStyle::c_icon_size), start_x + int(image.size[0]) );
+				const int end_y= std::min( int(PointObjectStyle::c_icon_size), start_y + int(image.size[1]) );
+				for( int y= start_y; y < end_y; ++y )
+				for( int x= start_x; x < end_x; ++x )
+				{
+					const unsigned char* const src= image.data.data() + 4 * ( (x - start_x) + (y - start_y) * int(image.size[0]) );
+					ColorRGBA* const dst= out_style.icon + x + y * int(PointObjectStyle::c_icon_size);
+					std::memcpy( dst, src, sizeof(ColorRGBA) );
+				}
+			}
+			++get_zoom_level(zoom_level_index).point_styles_count;
 		}
 
 		get_zoom_level(zoom_level_index).linear_styles_offset= static_cast<uint32_t>( result.size() );

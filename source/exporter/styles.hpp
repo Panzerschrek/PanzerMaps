@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "image.hpp"
 #include "object_classes.hpp"
 
 namespace PanzerMaps
@@ -14,6 +15,7 @@ public:
 
 	struct PointObjectStyle
 	{
+		ImageRGBA image;
 	};
 
 	struct LinearObjectStyle
@@ -56,6 +58,6 @@ public:
 	std::vector<ZoomLevel> zoom_levels;
 };
 
-Styles LoadStyles( const char* const file_name );
+Styles LoadStyles( const std::string& styles_dir );
 
 } // namespace PanzerMaps

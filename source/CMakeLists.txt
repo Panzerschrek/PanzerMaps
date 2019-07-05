@@ -9,6 +9,7 @@ endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
 find_package( SDL2 REQUIRED )
+find_package( PNG REQUIRED )
 
 set( BUILD_SHARED_LIBS OFF ) # tinyxml2 builds as dynamic library, build as static instead.
 
@@ -19,8 +20,11 @@ file( GLOB EXPORTER_SOURCES "exporter/*.hpp" "exporter/*.cpp" "common/*.hpp" "co
 
 add_executable( Exporter ${EXPORTER_SOURCES} )
 target_include_directories( Exporter PRIVATE PanzerJson/include )
+target_include_directories( Exporter PRIVATE ${PNG_INCLUDE_DIRS} )
+target_compile_definitions( Exporter PRIVATE ${PNG_DEFINITIONS} )
 target_link_libraries( Exporter PRIVATE tinyxml2 )
 target_link_libraries( Exporter PRIVATE PanzerJsonLib )
+target_link_libraries( Exporter PRIVATE ${PNG_LIBRARIES} )
 
 file( GLOB MAPS_SOURCES
 	"maps/*.hpp"

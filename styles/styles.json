@@ -4,6 +4,14 @@
 
     "point_styles":
     {
+        "StationPlatform" :
+        {
+            "image" : "bus_stop.png"
+        },
+        "SubwayEntrance" :
+        {
+            "image" : "subway_entrance.png"
+        }
     },
 
     "linear_styles":

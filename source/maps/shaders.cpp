@@ -16,28 +16,29 @@ const char point_vertex[]=
 GLSL_VERSION
 R"(
 	uniform highp mat4 view_matrix;
+	uniform mediump float point_size;
 	in highp vec2 pos;
 	in highp float color_index;
-	out lowp vec4 f_color;
+	out highp float f_color_index;
 	void main()
 	{
-		f_color= vec4( mod( color_index, 2.0 ), mod( color_index, 4.0 ) / 3.0, mod( color_index, 8.0 ) / 7.0, 0.5 );
+		f_color_index= color_index;
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
-		gl_PointSize= 12.0;
+		gl_PointSize= point_size;
 	}
 )";
 
 const char point_fragment[]=
 GLSL_VERSION
 R"(
-	in lowp vec4 f_color;
+	uniform sampler2D tex;
+	uniform mediump float icon_tc_step;
+	uniform mediump float icon_tc_scale;
+	in highp float f_color_index;
 	out lowp vec4 color;
 	void main()
 	{
-		mediump vec2 r= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
-		if( dot( r, r ) > 1.0 )
-			discard;
-		color= f_color * step( 0.0, r.x * r.y );
+		color= texture( tex, vec2( gl_PointCoord.x, f_color_index * icon_tc_step + gl_PointCoord.y * icon_tc_scale ) );
 	}
 )";
 
