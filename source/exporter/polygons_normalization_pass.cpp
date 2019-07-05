@@ -360,14 +360,13 @@ static bool VertexIsInsidePolygon( const std::vector<MercatorPoint>& polygon, co
 
 	for( size_t i= 0u; i < polygon.size(); ++i )
 	{
-		if( polygon[i].y == vertex.y && polygon[i].x >=vertex.x )
-			intersections+= 2u;
-
 		const MercatorPoint& edge_v0= polygon[i];
 		const MercatorPoint& edge_v1= polygon[ (i+1u) % polygon.size() ];
 
-		if( (edge_v0.y >= vertex.y && edge_v1.y >= vertex.y ) ||
-			(edge_v0.y <= vertex.y && edge_v1.y <= vertex.y ) )
+		if( (edge_v0.y > vertex.y && edge_v1.y > vertex.y ) || // skip edges abowe test line
+			(edge_v0.y < vertex.y && edge_v1.y < vertex.y ) || // Skip edges below test line
+			edge_v0.y == edge_v1.y || // skip edges on test line
+			std::max( edge_v0.y, edge_v1.y ) == vertex.y ) // Skip edges, where test line touches upper vertex. We count only edges, where test line touches lower vertex.
 			continue;
 
 		const int64_t abs_dy0= std::abs( edge_v0.y - vertex.y );
@@ -390,7 +389,8 @@ static bool PolygonIsInsidePolygon( const std::vector<MercatorPoint>& a, const s
 		if( VertexIsInsidePolygon( b, vertex ) )
 			++vertices_inside;
 
-	return vertices_inside == a.size() || vertices_inside >= a.size() / 2u;
+	// Half of vertices are inside.
+	return 2u * vertices_inside >= a.size();
 }
 
 static std::vector< std::vector<MercatorPoint> > CutHoles(
