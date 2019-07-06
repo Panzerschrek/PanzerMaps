@@ -181,19 +181,21 @@
         },
         "Railway":
         {
-            "color" : "#808080",
-            "color2" : "#F0F0F0",
+            "color" : "#FFFFFF",
+            "color2" : "#707070",
             "width_m" : 1.5,
             "dash_size_m" : 30.0
         },
         "RailwaySecondary":
         {
-            "color" : "#B0B0B0",
-            "width_m" : 1.5
+            "color" : "#FFFFFF",
+            "color2" : "#AAAAAAAA",
+            "width_m" : 1.5,
+            "dash_size_m" : 30.0
         },
         "Tram":
         {
-            "color" : "#101010",
+            "color" : "#6E6E6E",
             "width_m" : 1.5
         },
         "TramSecondary":
@@ -488,8 +490,8 @@
                 "RoadSignificance3Lanes10More": { "width_m" : 140.0 },
                 "Railway" :
                 {
-                    "color" : "#808080",
-                    "color2" : "#808080", // Reset color, draw solid, not dashed.
+                    "color" : "#707070",
+                    "color2" : "#707070", // Reset color, draw solid, not dashed.
                     "width_m" : 16.0
                 }
             }
@@ -540,8 +542,8 @@
                 "RoadSignificance3Lanes10More": { "width_m" : 420.0 },
                 "Railway" :
                 {
-                    "color" : "#808080",
-                    "color2" : "#808080", // Reset color, draw solid, not dashed.
+                    "color" : "#707070",
+                    "color2" : "#707070", // Reset color, draw solid, not dashed.
                     "width_m" : 96.0
                 }
             }
