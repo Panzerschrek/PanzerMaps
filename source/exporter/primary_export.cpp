@@ -227,9 +227,13 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	}
 	else if( const char* const waterway= GetTagValue( way_element, "waterway" ) )
 	{
-		if( std::strcmp( waterway, "stream" ) == 0 )
+		// Create linear object for any "waterway"="river".
+		// Large rivers also have areal objects, like "waterway"="riverbank" or "natural"="water", so, linear object will be drawn atop of areal.
+
+		if( std::strcmp( waterway, "stream" ) == 0 ||
+			std::strcmp( waterway, "river" ) == 0 )
 			result.linear_object_class= LinearObjectClass::Waterway;
-		if( std::strcmp( waterway, "riverbank" ) == 0 )
+		else if( std::strcmp( waterway, "riverbank" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Water;
 	}
 	else if( const char* const railway= GetTagValue( way_element, "railway" ) )
