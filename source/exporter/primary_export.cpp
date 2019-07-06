@@ -226,6 +226,13 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	}
 	else if( const char* const railway= GetTagValue( way_element, "railway" ) )
 	{
+		bool is_secondary= false;
+		if( const char* const service= GetTagValue( way_element, "service" ) )
+			is_secondary=
+				std::strcmp( service, "yard" ) == 0 ||
+				std::strcmp( service, "siding" ) == 0 ||
+				std::strcmp( service, "spur" ) == 0;
+
 		if( std::strcmp( railway, "rail" ) == 0 )
 		{
 			if( const char* const usage= GetTagValue( way_element, "usage" ) )
@@ -236,25 +243,12 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 					result.linear_object_class= LinearObjectClass::RailwaySecondary;
 			}
 			else
-				result.linear_object_class= LinearObjectClass::RailwaySecondary;
+				result.linear_object_class= is_secondary ? LinearObjectClass::RailwaySecondary : LinearObjectClass::Railway;
 		}
 		else if( std::strcmp( railway, "monorail" ) == 0 )
 			result.linear_object_class= LinearObjectClass::Monorail;
 		else if( std::strcmp( railway, "tram" ) == 0 )
-		{
-			if( const char* const service= GetTagValue( way_element, "service" ) )
-			{
-				if(
-					std::strcmp( service, "yard" ) == 0 ||
-					std::strcmp( service, "siding" ) == 0 ||
-					std::strcmp( service, "spur" ) == 0 )
-					result.linear_object_class= LinearObjectClass::TramSecondary;
-				else
-					result.linear_object_class= LinearObjectClass::Tram;
-			}
-			else
-				result.linear_object_class= LinearObjectClass::Tram;
-		}
+			result.linear_object_class= is_secondary ? LinearObjectClass::TramSecondary : LinearObjectClass::Tram;
 	}
 	else if( const char* const building= GetTagValue( way_element, "building" ) )
 	{
