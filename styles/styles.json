@@ -39,6 +39,18 @@
         "MemorialStatue" :
         {
             "image" : "statue.png"
+        },
+        "MountainTop" :
+        {
+            "image" : "mountain_top.png"
+        },
+        "Stone" :
+        {
+            "image" : "stone.png"
+        },
+        "Waterfall" :
+        {
+            "image" : "waterfall.png"
         }
     },
 
@@ -332,7 +344,10 @@
                 "Mosque",
                 "PowerTower",
                 "Memorial",
-                "MemorialStatue"
+                "MemorialStatue",
+                "MountainTop",
+                "Stone",
+                "Waterfall"
             ],
 
             "linear_classes_ordered":
@@ -397,7 +412,11 @@
                 }
             ],
 
-            "point_classes_ordered": [],
+            "point_classes_ordered":
+            [
+                "MountainTop",
+                "Waterfall"
+            ],
 
             "linear_classes_ordered":
             [

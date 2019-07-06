@@ -556,6 +556,8 @@ OSMParseResult ParseOSM( const char* file_name )
 				const char* const memorial= GetTagValue( *node_element, "memorial" );
 				if( memorial != nullptr && std::strcmp( memorial, "statue" ) == 0 )
 					obj.class_= PointObjectClass::MemorialStatue;
+				else if( memorial != nullptr && std::strcmp( memorial, "stone" ) == 0 )
+					obj.class_= PointObjectClass::Stone;
 				else
 					obj.class_= PointObjectClass::Memorial;
 			}
@@ -564,6 +566,19 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			if( std::strcmp( power, "tower" ) == 0 )
 				obj.class_= PointObjectClass::PowerTower;
+		}
+		else if( const char* const natural= GetTagValue( *node_element, "natural" ) )
+		{
+			if( std::strcmp( natural, "peak" ) == 0 ||
+				std::strcmp( natural, "volkano" ) == 0 )
+				obj.class_= PointObjectClass::MountainTop;
+			else if( std::strcmp( natural, "stone" ) == 0 )
+				obj.class_= PointObjectClass::Stone;
+		}
+		else if( const char* const waterway= GetTagValue( *node_element, "waterway" ) )
+		{
+			if( std::strcmp( waterway, "waterfall" ) == 0 )
+				obj.class_= PointObjectClass::Waterfall;
 		}
 
 		if( obj.class_ != PointObjectClass::None )
