@@ -44,120 +44,140 @@
 
     "linear_styles":
     {
-        // 1 lane width - 3.5m
+        // 1 lane width - 3.5m, but we make lane width less - only 3m
         "RoadSignificance0":
         {
             "color" : "#ffffff",
-            "width_m" : 3.5
+            "width_m" : 3
         },
 
         "RoadUndergroundLanes1":
         {
             "color" : "#ffffff80",
-            "width_m" : 3.5
+            "width_m" : 3
         },
         "RoadUndergroundLanes2":
         {
             "color" : "#ffffff80",
-            "width_m" : 7.0
+            "width_m" : 6.0
+        },
+        "RoadUndergroundLanes3":
+        {
+            "color" : "#ffffff80",
+            "width_m" : 9.0
         },
         "RoadUndergroundLanes4":
         {
             "color" : "#ffffff80",
-            "width_m" : 14.0
+            "width_m" : 12.0
         },
         "RoadUndergroundLanes6":
         {
             "color" : "#ffffff80",
-            "width_m" : 21.0
+            "width_m" : 18.0
         },
         "RoadUndergroundLanes8More":
         {
             "color" : "#ffffff80",
-            "width_m" : 28.0
+            "width_m" : 24.0
         },
 
         "RoadSignificance1Lanes1":
         {
             "color" : "#ffffff",
-            "width_m" : 3.5
+            "width_m" : 3
         },
         "RoadSignificance1Lanes2":
         {
             "color" : "#ffffff",
-            "width_m" : 7.0
+            "width_m" : 6
+        },
+        "RoadSignificance1Lanes3":
+        {
+            "color" : "#ffffff",
+            "width_m" : 9
         },
         "RoadSignificance1Lanes4":
         {
             "color" : "#ffffff",
-            "width_m" : 14.0
+            "width_m" : 12.0
         },
         "RoadSignificance1Lanes6":
         {
             "color" : "#ffffff",
-            "width_m" : 21.0
+            "width_m" : 18.0
         },
         "RoadSignificance1Lanes8More":
         {
             "color" : "#ffffff",
-            "width_m" : 28.0
+            "width_m" : 24.0
         },
 
         "RoadSignificance2Lanes1":
         {
             "color" : "#fcd6a4",
-            "width_m" : 3.5
+            "width_m" : 3
         },
         "RoadSignificance2Lanes2":
         {
             "color" : "#fcd6a4",
-            "width_m" : 7.0
+            "width_m" : 6.0
+        },
+        "RoadSignificance2Lanes3":
+        {
+            "color" : "#fcd6a4",
+            "width_m" : 9.0
         },
         "RoadSignificance2Lanes4":
         {
             "color" : "#fcd6a4",
-            "width_m" : 14.0
+            "width_m" : 12.0
         },
         "RoadSignificance2Lanes6":
         {
             "color" : "#fcd6a4",
-            "width_m" : 21.0
+            "width_m" : 18.0
         },
         "RoadSignificance2Lanes8More":
         {
             "color" : "#fcd6a4",
-            "width_m" : 28.0
+            "width_m" : 24.0
         },
 
         "RoadSignificance3Lanes1":
         {
             "color" : "#f5977a",
-            "width_m" : 3.5
+            "width_m" : 3
         },
         "RoadSignificance3Lanes2":
         {
             "color" : "#f5977a",
-            "width_m" : 7.0
+            "width_m" : 6.0
+        },
+        "RoadSignificance3Lanes3":
+        {
+            "color" : "#f5977a",
+            "width_m" : 9.0
         },
         "RoadSignificance3Lanes4":
         {
             "color" : "#f5977a",
-            "width_m" : 14.0
+            "width_m" : 12.0
         },
         "RoadSignificance3Lanes6":
         {
             "color" : "#f5977a",
-            "width_m" : 21.0
+            "width_m" : 18.0
         },
         "RoadSignificance3Lanes8":
         {
             "color" : "#f5977a",
-            "width_m" : 28.0
+            "width_m" : 24.0
         },
         "RoadSignificance3Lanes10More":
         {
             "color" : "#f5977a",
-            "width_m" : 35.0
+            "width_m" : 30.0
         },
 
         "Pedestrian":
@@ -321,21 +341,25 @@
                 "RoadSignificance0",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
+                "RoadUndergroundLanes3",
                 "RoadUndergroundLanes4",
                 "RoadUndergroundLanes6",
                 "RoadUndergroundLanes8More",
                 "RoadSignificance1Lanes1",
                 "RoadSignificance1Lanes2",
+                "RoadSignificance1Lanes3",
                 "RoadSignificance1Lanes4",
                 "RoadSignificance1Lanes6",
                 "RoadSignificance1Lanes8More",
                 "RoadSignificance2Lanes1",
                 "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes3",
                 "RoadSignificance2Lanes4",
                 "RoadSignificance2Lanes6",
                 "RoadSignificance2Lanes8More",
                 "RoadSignificance3Lanes1",
                 "RoadSignificance3Lanes2",
+                "RoadSignificance3Lanes3",
                 "RoadSignificance3Lanes4",
                 "RoadSignificance3Lanes6",
                 "RoadSignificance3Lanes8",
@@ -380,21 +404,25 @@
                 "Waterway",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
+                "RoadUndergroundLanes3",
                 "RoadUndergroundLanes4",
                 "RoadUndergroundLanes6",
                 "RoadUndergroundLanes8More",
                 "RoadSignificance1Lanes1",
                 "RoadSignificance1Lanes2",
+                "RoadSignificance1Lanes3",
                 "RoadSignificance1Lanes4",
                 "RoadSignificance1Lanes6",
                 "RoadSignificance1Lanes8More",
                 "RoadSignificance2Lanes1",
                 "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes3",
                 "RoadSignificance2Lanes4",
                 "RoadSignificance2Lanes6",
                 "RoadSignificance2Lanes8More",
                 "RoadSignificance3Lanes1",
                 "RoadSignificance3Lanes2",
+                "RoadSignificance3Lanes3",
                 "RoadSignificance3Lanes4",
                 "RoadSignificance3Lanes6",
                 "RoadSignificance3Lanes8",
@@ -406,27 +434,31 @@
             // Override width for linear objects.
             "linear_styles":
             {
-                "RoadUndergroundLanes1":        { "width_m" :  7.0 },
-                "RoadUndergroundLanes2":        { "width_m" : 14.0 },
-                "RoadUndergroundLanes4":        { "width_m" : 28.0 },
-                "RoadUndergroundLanes6":        { "width_m" : 42.0 },
-                "RoadUndergroundLanes8More":    { "width_m" : 56.0 },
-                "RoadSignificance1Lanes1":      { "width_m" :  7.0 },
-                "RoadSignificance1Lanes2":      { "width_m" : 14.0 },
-                "RoadSignificance1Lanes4":      { "width_m" : 28.0 },
-                "RoadSignificance1Lanes6":      { "width_m" : 42.0 },
-                "RoadSignificance1Lanes8More":  { "width_m" : 56.0 },
-                "RoadSignificance2Lanes1":      { "width_m" :  7.0 },
-                "RoadSignificance2Lanes2":      { "width_m" : 14.0 },
-                "RoadSignificance2Lanes4":      { "width_m" : 28.0 },
-                "RoadSignificance2Lanes6":      { "width_m" : 42.0 },
-                "RoadSignificance2Lanes8More":  { "width_m" : 56.0 },
-                "RoadSignificance3Lanes1":      { "width_m" :  7.0 },
-                "RoadSignificance3Lanes2":      { "width_m" : 14.0 },
-                "RoadSignificance3Lanes4":      { "width_m" : 28.0 },
-                "RoadSignificance3Lanes6":      { "width_m" : 42.0 },
-                "RoadSignificance3Lanes8":      { "width_m" : 56.0 },
-                "RoadSignificance3Lanes10More": { "width_m" : 70.0 },
+                "RoadUndergroundLanes1":        { "width_m" :  6.0 },
+                "RoadUndergroundLanes2":        { "width_m" : 12.0 },
+                "RoadUndergroundLanes3":        { "width_m" : 18.0 },
+                "RoadUndergroundLanes4":        { "width_m" : 24.0 },
+                "RoadUndergroundLanes6":        { "width_m" : 36.0 },
+                "RoadUndergroundLanes8More":    { "width_m" : 48.0 },
+                "RoadSignificance1Lanes1":      { "width_m" :  6.0 },
+                "RoadSignificance1Lanes2":      { "width_m" : 12.0 },
+                "RoadSignificance1Lanes3":      { "width_m" : 18.0 },
+                "RoadSignificance1Lanes4":      { "width_m" : 24.0 },
+                "RoadSignificance1Lanes6":      { "width_m" : 36.0 },
+                "RoadSignificance1Lanes8More":  { "width_m" : 48.0 },
+                "RoadSignificance2Lanes1":      { "width_m" :  6.0 },
+                "RoadSignificance2Lanes2":      { "width_m" : 12.0 },
+                "RoadSignificance2Lanes3":      { "width_m" : 18.0 },
+                "RoadSignificance2Lanes4":      { "width_m" : 24.0 },
+                "RoadSignificance2Lanes6":      { "width_m" : 36.0 },
+                "RoadSignificance2Lanes8More":  { "width_m" : 48.0 },
+                "RoadSignificance3Lanes1":      { "width_m" :  6.0 },
+                "RoadSignificance3Lanes2":      { "width_m" : 12.0 },
+                "RoadSignificance3Lanes3":      { "width_m" : 18.0 },
+                "RoadSignificance3Lanes4":      { "width_m" : 24.0 },
+                "RoadSignificance3Lanes6":      { "width_m" : 36.0 },
+                "RoadSignificance3Lanes8":      { "width_m" : 48.0 },
+                "RoadSignificance3Lanes10More": { "width_m" : 60.0 },
                 "Waterway" : { "width_m" : 5.0 },
                 "Tram" : { "width_m" : 4.0 },
                 "Railway" : { "width_m" : 6.0, "dash_size_m" : 60.0 }
@@ -462,11 +494,13 @@
             [
                 "RoadSignificance2Lanes1",
                 "RoadSignificance2Lanes2",
+                "RoadSignificance2Lanes3",
                 "RoadSignificance2Lanes4",
                 "RoadSignificance2Lanes6",
                 "RoadSignificance2Lanes8More",
                 "RoadSignificance3Lanes1",
                 "RoadSignificance3Lanes2",
+                "RoadSignificance3Lanes3",
                 "RoadSignificance3Lanes4",
                 "RoadSignificance3Lanes6",
                 "RoadSignificance3Lanes8",
@@ -477,22 +511,24 @@
             // Override width for linear objects.
             "linear_styles":
             {
-                "RoadSignificance2Lanes1":      { "width_m" :  14.0 },
-                "RoadSignificance2Lanes2":      { "width_m" :  28.0 },
-                "RoadSignificance2Lanes4":      { "width_m" :  42.0 },
-                "RoadSignificance2Lanes6":      { "width_m" :  84.0 },
-                "RoadSignificance2Lanes8More":  { "width_m" : 112.0 },
-                "RoadSignificance3Lanes1":      { "width_m" :  14.0 },
-                "RoadSignificance3Lanes2":      { "width_m" :  28.0 },
-                "RoadSignificance3Lanes4":      { "width_m" :  56.0 },
-                "RoadSignificance3Lanes6":      { "width_m" :  84.0 },
-                "RoadSignificance3Lanes8":      { "width_m" : 112.0 },
-                "RoadSignificance3Lanes10More": { "width_m" : 140.0 },
+                "RoadSignificance2Lanes1":      { "width_m" : 30.0 },
+                "RoadSignificance2Lanes2":      { "width_m" : 30.0 },
+                "RoadSignificance2Lanes3":      { "width_m" : 30.0 },
+                "RoadSignificance2Lanes4":      { "width_m" : 30.0 },
+                "RoadSignificance2Lanes6":      { "width_m" : 30.0 },
+                "RoadSignificance2Lanes8More":  { "width_m" : 30.0 },
+                "RoadSignificance3Lanes1":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes2":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes3":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes4":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes6":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes8":      { "width_m" : 40.0 },
+                "RoadSignificance3Lanes10More": { "width_m" : 40.0 },
                 "Railway" :
                 {
                     "color" : "#707070",
                     "color2" : "#707070", // Reset color, draw solid, not dashed.
-                    "width_m" : 16.0
+                    "width_m" : 20.0
                 }
             }
         },
@@ -524,6 +560,7 @@
             [
                 "RoadSignificance3Lanes1",
                 "RoadSignificance3Lanes2",
+                "RoadSignificance3Lanes3",
                 "RoadSignificance3Lanes4",
                 "RoadSignificance3Lanes6",
                 "RoadSignificance3Lanes8",
@@ -534,17 +571,18 @@
             // Override width for linear objects.
             "linear_styles":
             {
-                "RoadSignificance3Lanes1":      { "width_m" : 168.0 },
-                "RoadSignificance3Lanes2":      { "width_m" : 168.0 },
-                "RoadSignificance3Lanes4":      { "width_m" : 168.0 },
-                "RoadSignificance3Lanes6":      { "width_m" : 420.0 },
-                "RoadSignificance3Lanes8":      { "width_m" : 420.0 },
-                "RoadSignificance3Lanes10More": { "width_m" : 420.0 },
+                "RoadSignificance3Lanes1":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes2":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes3":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes4":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes6":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes8":      { "width_m" : 200.0 },
+                "RoadSignificance3Lanes10More": { "width_m" : 200.0 },
                 "Railway" :
                 {
                     "color" : "#707070",
                     "color2" : "#707070", // Reset color, draw solid, not dashed.
-                    "width_m" : 96.0
+                    "width_m" : 100.0
                 }
             }
         }

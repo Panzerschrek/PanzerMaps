@@ -137,6 +137,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				result.linear_object_class= LinearObjectClass::RoadSignificance1Lanes1;
 			else if( lane_count <= 2u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance1Lanes2;
+			else if( lane_count <= 3u )
+				result.linear_object_class= LinearObjectClass::RoadSignificance1Lanes3;
 			else if( lane_count <= 4u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance1Lanes4;
 			else if( lane_count <= 6u )
@@ -154,6 +156,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				result.linear_object_class= LinearObjectClass::RoadSignificance2Lanes1;
 			else if( lane_count <= 2u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance2Lanes2;
+			else if( lane_count <= 3u )
+				result.linear_object_class= LinearObjectClass::RoadSignificance2Lanes3;
 			else if( lane_count <= 4u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance2Lanes4;
 			else if( lane_count <= 6u )
@@ -175,6 +179,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				result.linear_object_class= LinearObjectClass::RoadSignificance3Lanes1;
 			else if( lane_count <= 2u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance3Lanes2;
+			else if( lane_count <= 3u )
+				result.linear_object_class= LinearObjectClass::RoadSignificance3Lanes3;
 			else if( lane_count <= 4u )
 				result.linear_object_class= LinearObjectClass::RoadSignificance3Lanes4;
 			else if( lane_count <= 6u )
@@ -209,6 +215,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes1;
 			else if( lane_count <= 2u )
 				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes2;
+			else if( lane_count <= 3u )
+				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes3;
 			else if( lane_count <= 4u )
 				result.linear_object_class= LinearObjectClass::RoadUndergroundLanes4;
 			else if( lane_count <= 6u )
