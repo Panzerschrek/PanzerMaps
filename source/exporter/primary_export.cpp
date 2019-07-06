@@ -116,7 +116,8 @@ static size_t GetLaneCount( const tinyxml2::XMLElement& way_element )
 
 struct WayClassifyResult
 {
-	// Both may be non-None.
+	// All may be non-None.
+	PointObjectClass point_object_class= PointObjectClass::None;
 	LinearObjectClass linear_object_class= LinearObjectClass::None;
 	ArealObjectClass areal_object_class= ArealObjectClass::None;
 	size_t z_level= g_zero_z_level;
@@ -286,8 +287,16 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	}
 	else if( const char* const building= GetTagValue( way_element, "building" ) )
 	{
-		(void)building;
 		result.areal_object_class= ArealObjectClass::Building;
+
+		// Create "church" and "mosque" only for specialized religious buildings.
+		// Do not create such point objects for religious places in regular buildings.
+		if( std::strcmp( building, "church" ) == 0 ||
+			std::strcmp( building, "chapel" ) == 0 ||
+			std::strcmp( building, "cathedral" ) == 0  )
+			result.point_object_class= PointObjectClass::Church;
+		else if( std::strcmp( building, "mosque" ) == 0 )
+			result.point_object_class= PointObjectClass::Mosque;
 	}
 	else if( const char* const natural= GetTagValue( way_element, "natural" ) )
 	{
@@ -524,6 +533,7 @@ OSMParseResult ParseOSM( const char* file_name )
 
 	std::unordered_map< OsmId, const tinyxml2::XMLElement* > ways_map;
 
+	std::vector<GeoPoint> tmp_points;
 	for( const tinyxml2::XMLElement* way_element= doc.RootElement()->FirstChildElement( "way" ); way_element != nullptr; way_element= way_element->NextSiblingElement( "way" ) )
 	{
 		if( const char* const id_str= way_element->Attribute("id") )
@@ -531,6 +541,30 @@ OSMParseResult ParseOSM( const char* file_name )
 				ways_map[id]= way_element;
 
 		const WayClassifyResult classify_result= ClassifyWay( *way_element, false );
+		if( classify_result.point_object_class != PointObjectClass::None )
+		{
+			tmp_points.clear();
+			ExtractVertices( way_element, nodes, tmp_points );
+			if( !tmp_points.empty() )
+			{
+				// TODO - calculate centroid of polygon.
+				GeoPoint geo_point{ 0.0, 0.0 };
+				for( const GeoPoint& way_point : tmp_points )
+				{
+					geo_point.x+= way_point.x;
+					geo_point.y+= way_point.y;
+				}
+				geo_point.x/= double(tmp_points.size());
+				geo_point.y/= double(tmp_points.size());
+
+				OSMParseResult::PointObject obj;
+				obj.class_= classify_result.point_object_class;
+				obj.vertex_index= result.vertices.size();
+				result.vertices.push_back( geo_point );
+				result.point_objects.push_back(obj);
+			}
+
+		}
 		if( classify_result.linear_object_class != LinearObjectClass::None )
 		{
 			OSMParseResult::LinearObject obj;
@@ -565,11 +599,26 @@ OSMParseResult ParseOSM( const char* file_name )
 		if( !( std::sscanf( lon_str, "%lf", &node_geo_point.x ) == 1 && std::sscanf( lat_str, "%lf", &node_geo_point.y ) == 1 ) )
 			continue;
 
-		if( const char* const public_transport= GetTagValue( *node_element, "public_transport" ) )
+		if( const char* const railway= GetTagValue( *node_element, "railway" ) )
+		{
+			OSMParseResult::PointObject obj;
+			if( std::strcmp( railway, "subway_entrance" ) == 0 )
+				obj.class_= PointObjectClass::SubwayEntrance;
+			else if( std::strcmp( railway, "station" ) == 0 )
+				obj.class_= PointObjectClass::RailwayStation;
+
+			if( obj.class_ != PointObjectClass::None )
+			{
+				obj.vertex_index= result.vertices.size();
+				result.vertices.push_back( node_geo_point );
+				result.point_objects.push_back(obj);
+			}
+		}
+		else if( const char* const public_transport= GetTagValue( *node_element, "public_transport" ) )
 		{
 			OSMParseResult::PointObject obj;
 			if( std::strcmp( public_transport, "platform" ) == 0 )
-				obj.class_= PointObjectClass::StationPlatform;
+				obj.class_= PointObjectClass::BusStop;
 
 			if( obj.class_ != PointObjectClass::None )
 			{
@@ -582,7 +631,7 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			OSMParseResult::PointObject obj;
 			if( std::strcmp( highway, "bus_stop" ) == 0 )
-				obj.class_= PointObjectClass::StationPlatform;
+				obj.class_= PointObjectClass::BusStop;
 
 			if( obj.class_ != PointObjectClass::None )
 			{
@@ -591,16 +640,35 @@ OSMParseResult ParseOSM( const char* file_name )
 				result.point_objects.push_back(obj);
 			}
 		}
-		if( const char* const railway= GetTagValue( *node_element, "railway" ) )
+		else if( const char* const historic= GetTagValue( *node_element, "historic" ) )
 		{
 			OSMParseResult::PointObject obj;
-			if( std::strcmp( railway, "subway_entrance" ) == 0 )
-				obj.class_= PointObjectClass::SubwayEntrance;
+			if( std::strcmp( historic, "memorial" ) == 0 )
+			{
+				const char* const memorial= GetTagValue( *node_element, "memorial" );
+				if( memorial != nullptr && std::strcmp( memorial, "statue" ) == 0 )
+					obj.class_= PointObjectClass::MemorialStatue;
+				else
+					obj.class_= PointObjectClass::Memorial;
+			}
 
 			if( obj.class_ != PointObjectClass::None )
 			{
 				obj.vertex_index= result.vertices.size();
 				result.vertices.push_back( node_geo_point );
+				result.point_objects.push_back(obj);
+			}
+		}
+		else if( const char* const power= GetTagValue( *node_element, "power" ) )
+		{
+			OSMParseResult::PointObject obj;
+			if( std::strcmp( power, "tower" ) == 0 )
+				obj.class_= PointObjectClass::PowerTower;
+
+			if( obj.class_ != PointObjectClass::None )
+			{
+				result.vertices.push_back( node_geo_point );
+				obj.vertex_index= result.vertices.size();
 				result.point_objects.push_back(obj);
 			}
 		}
