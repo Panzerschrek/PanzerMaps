@@ -248,7 +248,7 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				if( std::strcmp( usage, "main" ) == 0 )
 					result.linear_object_class= LinearObjectClass::Railway;
 				else
-					result.linear_object_class= LinearObjectClass::RailwaySecondary;
+					result.linear_object_class= is_secondary ? LinearObjectClass::RailwaySecondary : LinearObjectClass::Railway;
 			}
 			else
 				result.linear_object_class= is_secondary ? LinearObjectClass::RailwaySecondary : LinearObjectClass::Railway;
