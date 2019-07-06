@@ -194,17 +194,17 @@
 
         "Pedestrian":
         {
-            "color" : "#A080A0",
-            "color2" : "#A080A000",
-            "width_m" : 0.75,
+            "color" : "#fa8072",
+            "color2" : "#ffffff50",
+            "width_m" : 1.0,
             "dash_size_m" : 6.0
         },
         "PedestrianUnderground":
         {
-            "color" : "#A080A080",
-            "color2" : "#A080A000",
+            "color" : "#fa807250",
+            "color2" : "#ffffff25",
             "width_m" : 0.75,
-            "dash_size_m" : 6.0
+            "dash_size_m" : 4.0
         },
         "Waterway":
         {
@@ -242,10 +242,8 @@
         },
         "Barrier":
         {
-            "color" : "#706050",
-            "color2" : "#70605000",
-            "width_m" : 0.5,
-            "dash_size_m" : 16.0
+            "color" : "#40404080",
+            "width_m" : 0.75
         }
     },
 
