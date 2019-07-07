@@ -273,6 +273,10 @@
         {
             "color" : "#ffffe5"
         },
+        "Parking":
+        {
+           "color" : "#eeeeee"
+        },
         "Wood":
         {
             "color" : "#add19e"
@@ -296,6 +300,18 @@
         "Field":
         {
             "color" : "#eef0d5"
+        },
+        "Allotments":
+        {
+            "color" : "#c9e1bf"
+        },
+        "Sand":
+        {
+            "color" : "#f5e9c6"
+        },
+        "Wetland":
+        {
+            "color" : "#c8d7ab"
         }
     },
 
@@ -315,11 +331,15 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
+                        "Parking",
                         "Wood",
                         "Park",
                         "SportArea",
                         "PedestrianArea",
-                        "Field"
+                        "Field",
+                        "Allotments",
+                        "Sand",
+                        "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
                 },
@@ -401,10 +421,14 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
+                        "Parking",
                         "Wood",
                         "Park",
                         "SportArea",
-                        "Field"
+                        "Field",
+                        "Allotments",
+                        "Sand",
+                        "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
                 }
@@ -496,10 +520,14 @@
                         "Industrial",
                         "Residential",
                         "Administrative",
+                        "Parking",
                         "Wood",
                         "Park",
                         "SportArea",
-                        "Field"
+                        "Field",
+                        "Allotments",
+                        "Sand",
+                        "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
                 }
@@ -565,7 +593,10 @@
                         "Residential",
                         "Wood",
                         "Park",
-                        "Field"
+                        "Field",
+                        "Allotments",
+                        "Sand",
+                        "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
                 }

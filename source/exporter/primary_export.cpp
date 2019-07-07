@@ -287,6 +287,12 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			result.areal_object_class= ArealObjectClass::Grassland;
 		else if( std::strcmp( natural, "heath" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Grassland;
+		else if( std::strcmp( natural, "beach" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Sand;
+		else if( std::strcmp( natural, "sand" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Sand;
+		else if( std::strcmp( natural, "wetland" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Wetland;
 	}
 	else if( const char* const landuse= GetTagValue( way_element, "landuse" ) )
 	{
@@ -320,6 +326,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 				 std::strcmp( landuse, "farmyard" ) == 0 ||
 				 std::strcmp( landuse, "greenhouse_horticulture" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Field;
+		else if( std::strcmp( landuse, "allotments" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Allotments;
 	}
 	else if( const char* const amenity= GetTagValue( way_element, "amenity" ) )
 	{
@@ -337,6 +345,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			std::strcmp( amenity, "hospital" ) == 0 ||
 			std::strcmp( amenity, "ursing_home" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Administrative;
+		else if(std::strcmp( amenity, "parking" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Parking;
 	}
 	else if( const char* const leisure= GetTagValue( way_element, "leisure" ) )
 	{
