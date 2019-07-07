@@ -667,7 +667,6 @@ OSMParseResult ParseOSM( const char* file_name )
 				result.vertices.push_back( geo_point );
 				result.point_objects.push_back(obj);
 			}
-
 		}
 		if( classify_result.linear_object_class != LinearObjectClass::None )
 		{
@@ -754,6 +753,33 @@ OSMParseResult ParseOSM( const char* file_name )
 
 			if( !obj.multipolygon->outer_rings.empty() )
 				result.areal_objects.push_back( std::move(obj) );
+		}
+
+		if( !outer_ways.empty() && classify_result.point_object_class != PointObjectClass::None )
+		{
+			tmp_points.clear();
+			for( const std::vector<GeoPoint>& outer_way : outer_ways )
+			for( const GeoPoint& geo_point : outer_way )
+				tmp_points.push_back(geo_point);
+
+			if( !tmp_points.empty() )
+			{
+				// TODO - calculate centroid of polygon.
+				GeoPoint geo_point{ 0.0, 0.0 };
+				for( const GeoPoint& way_point : tmp_points )
+				{
+					geo_point.x+= way_point.x;
+					geo_point.y+= way_point.y;
+				}
+				geo_point.x/= double(tmp_points.size());
+				geo_point.y/= double(tmp_points.size());
+
+				OSMParseResult::PointObject obj;
+				obj.class_= classify_result.point_object_class;
+				obj.vertex_index= result.vertices.size();
+				result.vertices.push_back( geo_point );
+				result.point_objects.push_back(obj);
+			}
 		}
 	} // for relations.
 
