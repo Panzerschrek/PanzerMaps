@@ -297,6 +297,10 @@
         {
             "color" : "#dddde8"
         },
+        "Bridge":
+        {
+            "color" : "#b8b8b8"
+        },
         "Field":
         {
             "color" : "#eef0d5"
@@ -346,6 +350,7 @@
                 {
                     "classes":
                     [
+                        "Bridge",
                         "Building"
                     ],
                     "allow_collinear_points_removing" : true
@@ -431,6 +436,13 @@
                         "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
+                },
+                {
+                    "classes":
+                    [
+                        "Bridge"
+                    ],
+                    "allow_collinear_points_removing" : true
                 }
             ],
 
@@ -530,6 +542,13 @@
                         "Wetland"
                     ],
                     "allow_collinear_points_removing" : false
+                },
+                {
+                    "classes":
+                    [
+                        "Bridge"
+                    ],
+                    "allow_collinear_points_removing" : true
                 }
             ],
 

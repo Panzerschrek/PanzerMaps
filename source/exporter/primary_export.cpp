@@ -391,6 +391,11 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 		else if( std::strcmp( leisure, "stadium" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Park; // Stadium area is like park.
 	}
+	else if( const char* const man_made= GetTagValue( way_element, "man_made" ) )
+	{
+		if( std::strcmp( man_made, "bridge" ) == 0 )
+			result.areal_object_class= ArealObjectClass::Bridge;
+	}
 
 	if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
 	{
