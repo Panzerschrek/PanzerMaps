@@ -17,8 +17,9 @@ cd src/main/java
 ln -sfT $PM_SDL_DIR/android-project/app/src/main/java/org org
 cd ../../../jni
 ln -sfT $PM_SDL_DIR SDL2
-
-cd ../..
+cd src
+ln -sfT ../../../../source source
+cd ../../..
 
 ./gradlew
 ./gradlew build

@@ -8,7 +8,7 @@ SDL_PATH := ../SDL2
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(SDL_PATH)/include
 
-PM_SOURCES_ROOT= ../../../../source
+PM_SOURCES_ROOT= source
 LOCAL_SRC_FILES := \
 	$(PM_SOURCES_ROOT)/common/data_file.cpp \
 	$(PM_SOURCES_ROOT)/common/log.cpp \
