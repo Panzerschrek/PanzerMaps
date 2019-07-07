@@ -2,18 +2,17 @@ Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
 * Risovanije mostov
-* Vydelenije neobhodimyh klassov objektov
-* Vygruzka i klassifikaçija vseh neobhodimyh objektov
 * Ikonki vysokogo razrešenija dlä tocecnyh objektov
 * Optimizaçija narezki poligonov
 * Uproscenije linij
 * Objedinenije smežnyh linij odnogo klassa
+* Vydelenije raznyh klassov domov i želyh territorij
 * Vygruzka dannyh dlä platform s drugim porädkom bajt
 * Optimizaçija vremeni raboty i potrebläjemoj pamäti eksportöra
 
 Priloženije
-* Risovanije ploscadnyh objektov s teksturoj (lesa, bolota)
-* Risovanije tocecnyh objektov ikonkami
-* Masštabnaja linejka
+* Risovanije ploscadnyh objektov s teksturoj (lesa, bolota, kladbisca)
+* Knopki masštaba
 * Otobraženije geopoziçii
+* Masštabnaja linejka
 * Zagruzka neskoljkih vygruzok

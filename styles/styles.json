@@ -269,7 +269,7 @@
         {
             "color" : "#e0dfdf"
         },
-        "Administrative":
+        "PublicArea":
         {
             "color" : "#ffffe5"
         },
@@ -330,7 +330,7 @@
                         "Cemetery",
                         "Industrial",
                         "Residential",
-                        "Administrative",
+                        "PublicArea",
                         "Parking",
                         "Wood",
                         "Park",
@@ -420,7 +420,7 @@
                         "Cemetery",
                         "Industrial",
                         "Residential",
-                        "Administrative",
+                        "PublicArea",
                         "Parking",
                         "Wood",
                         "Park",
@@ -519,7 +519,7 @@
                         "Cemetery",
                         "Industrial",
                         "Residential",
-                        "Administrative",
+                        "PublicArea",
                         "Parking",
                         "Wood",
                         "Park",

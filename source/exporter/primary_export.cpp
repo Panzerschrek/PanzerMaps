@@ -300,10 +300,11 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			result.areal_object_class= ArealObjectClass::Water;
 		else if( std::strcmp( landuse, "cemetery" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Cemetery;
-		else if( std::strcmp( landuse, "forest" ) == 0 )
-			result.areal_object_class= ArealObjectClass::Wood;
-		else if( std::strcmp( landuse, "wood" ) == 0 ||
-				 std::strcmp( landuse, "orchard" ) == 0 )
+		else if( std::strcmp( landuse, "forest" ) == 0 ||
+				 std::strcmp( landuse, "wood" ) == 0 ||
+				 std::strcmp( landuse, "orchard" ) == 0 ||
+				 std::strcmp( landuse, "plant_nursery" ) == 0 ||
+				 std::strcmp( landuse, "vineyard" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Wood;
 		else if( std::strcmp( landuse, "grass" ) == 0 ||
 				 std::strcmp( landuse, "meadow" ) == 0 ||
@@ -314,11 +315,13 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 		else if( std::strcmp( landuse, "industrial" ) == 0 ||
 				 std::strcmp( landuse, "garages" ) == 0 ||
 				 std::strcmp( landuse, "railway" ) == 0 ||
-				 std::strcmp( landuse, "construction" ) == 0 )
+				 std::strcmp( landuse, "construction" ) == 0 ||
+				 std::strcmp( landuse, "landfill" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Industrial;
 		else if( std::strcmp( landuse, "commercial" ) == 0 ||
-				 std::strcmp( landuse, "retail" ) == 0 )
-			result.areal_object_class= ArealObjectClass::Administrative;
+				 std::strcmp( landuse, "retail" ) == 0 ||
+				 std::strcmp( landuse, "religious " ) == 0 )
+			result.areal_object_class= ArealObjectClass::PublicArea;
 		else if( std::strcmp( landuse, "recreation_ground" ) == 0 ||
 				 std::strcmp( landuse, "garden" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Park;
@@ -333,18 +336,49 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	{
 		if( std::strcmp( amenity, "grave_yard" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Cemetery;
-		else if(std::strcmp( amenity, "school" ) == 0 ||
+		else if(
+			std::strcmp( amenity, "bar" ) == 0 ||
+			std::strcmp( amenity, "cafe" ) == 0 ||
+			std::strcmp( amenity, "fast_food" ) == 0 ||
+			std::strcmp( amenity, "food_court" ) == 0 ||
+			std::strcmp( amenity, "pub" ) == 0 ||
+			std::strcmp( amenity, "restaurant" ) == 0 ||
 			std::strcmp( amenity, "college" ) == 0  ||
+			std::strcmp( amenity, "driving_school" ) == 0  ||
 			std::strcmp( amenity, "kindergarten" ) == 0 ||
 			std::strcmp( amenity, "library" ) == 0 ||
-			std::strcmp( amenity, "university" ) == 0 )
-			result.areal_object_class= ArealObjectClass::Administrative;
-		else if( std::strcmp( amenity, "clinic" ) == 0 ||
+			std::strcmp( amenity, "school" ) == 0 ||
+			std::strcmp( amenity, "university" ) == 0 ||
+			std::strcmp( amenity, "clinic" ) == 0 ||
 			std::strcmp( amenity, "dentist" ) == 0 ||
 			std::strcmp( amenity, "doctors" ) == 0 ||
 			std::strcmp( amenity, "hospital" ) == 0 ||
-			std::strcmp( amenity, "ursing_home" ) == 0 )
-			result.areal_object_class= ArealObjectClass::Administrative;
+			std::strcmp( amenity, "ursing_home" ) == 0 ||
+			std::strcmp( amenity, "pharmacy" ) == 0 ||
+			std::strcmp( amenity, "social_facility" ) == 0 ||
+			std::strcmp( amenity, "veterinary" ) == 0 ||
+			std::strcmp( amenity, "bank" ) == 0 ||
+			std::strcmp( amenity, "arts_centre" ) == 0 ||
+			std::strcmp( amenity, "brothel" ) == 0 ||
+			std::strcmp( amenity, "casino" ) == 0 ||
+			std::strcmp( amenity, "cinema" ) == 0 ||
+			std::strcmp( amenity, "community_centre" ) == 0 ||
+			std::strcmp( amenity, "gambling" ) == 0 ||
+			std::strcmp( amenity, "nightclub" ) == 0 ||
+			std::strcmp( amenity, "planetarium" ) == 0 ||
+			std::strcmp( amenity, "social_centre" ) == 0 ||
+			std::strcmp( amenity, "theatre" ) == 0 ||
+			std::strcmp( amenity, "courthouse" ) == 0 ||
+			std::strcmp( amenity, "crematorium" ) == 0 ||
+			std::strcmp( amenity, "embassy" ) == 0 ||
+			std::strcmp( amenity, "fire_station" ) == 0 ||
+			std::strcmp( amenity, "marketplace" ) == 0 ||
+			std::strcmp( amenity, "police" ) == 0 ||
+			std::strcmp( amenity, "post_depot" ) == 0 ||
+			std::strcmp( amenity, "post_office" ) == 0 ||
+			std::strcmp( amenity, "public_bath" ) == 0 ||
+			std::strcmp( amenity, "townhall" ) == 0 )
+			result.areal_object_class= ArealObjectClass::PublicArea;
 		else if(std::strcmp( amenity, "parking" ) == 0 )
 			result.areal_object_class= ArealObjectClass::Parking;
 	}
