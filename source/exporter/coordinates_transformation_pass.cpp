@@ -162,6 +162,7 @@ CoordinatesTransformationPassResult TransformCoordinates(
 			{
 				BaseDataRepresentation::ArealObject out_object;
 				out_object.class_= in_object.class_;
+				out_object.z_level= in_object.z_level;
 				out_object.first_vertex_index= out_object.vertex_count= 0u;
 				out_object.multipolygon.reset( new BaseDataRepresentation::Multipolygon( std::move(out_multipolygon) ) );
 				result.areal_objects.push_back( std::move(out_object) );
@@ -171,6 +172,7 @@ CoordinatesTransformationPassResult TransformCoordinates(
 		{
 			BaseDataRepresentation::ArealObject out_object;
 			out_object.class_= in_object.class_;
+			out_object.z_level= in_object.z_level;
 
 			transform_polygon( in_object.first_vertex_index, in_object.vertex_count, out_object.first_vertex_index, out_object.vertex_count );
 			if( out_object.vertex_count > 0u )

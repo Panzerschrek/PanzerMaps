@@ -394,7 +394,11 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 	else if( const char* const man_made= GetTagValue( way_element, "man_made" ) )
 	{
 		if( std::strcmp( man_made, "bridge" ) == 0 )
+		{
 			result.areal_object_class= ArealObjectClass::Bridge;
+			if( GetTagValue( way_element, "layer" ) == 0 )
+				result.z_level= g_zero_z_level + 1u;
+		}
 	}
 
 	if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
@@ -677,8 +681,8 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			OSMParseResult::LinearObject obj;
 			obj.class_= classify_result.linear_object_class;
-			obj.first_vertex_index= result.vertices.size();
 			obj.z_level= classify_result.z_level;
+			obj.first_vertex_index= result.vertices.size();
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
@@ -688,6 +692,7 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			OSMParseResult::ArealObject obj;
 			obj.class_= classify_result.areal_object_class;
+			obj.z_level= classify_result.z_level;
 			obj.first_vertex_index= result.vertices.size();
 			ExtractVertices( way_element, nodes, result.vertices );
 			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
@@ -751,6 +756,7 @@ OSMParseResult ParseOSM( const char* file_name )
 		{
 			OSMParseResult::ArealObject obj;
 			obj.class_= classify_result.areal_object_class;
+			obj.z_level= classify_result.z_level;
 			obj.first_vertex_index= obj.vertex_count= 0u;
 
 			obj.multipolygon.reset( new OSMParseResult::Multipolygon );

@@ -1,7 +1,6 @@
 Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
-* Sortirovka ploscadnikov po vystore
 * Ikonki vysokogo razrešenija dlä tocecnyh objektov
 * Optimizaçija narezki poligonov
 * Uproscenije linij

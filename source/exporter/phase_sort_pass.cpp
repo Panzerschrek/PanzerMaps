@@ -67,16 +67,18 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 			return linear_classes_order[l.class_] < linear_classes_order[r.class_];
 		} );
 
+	for( size_t z_level= 0u; z_level <= g_max_z_level; ++z_level )
 	for( const Styles::ArealObjectPhase& phase : zoom_level.areal_object_phases )
 	{
 		 std::vector< PhaseSortResult::ArealObject > areal_objects;
 		for( const BaseDataRepresentation::ArealObject& in_object : in_data.areal_objects )
 		{
-			if( phase.classes.count(in_object.class_) == 0 )
+			if( in_object.z_level != z_level || phase.classes.count(in_object.class_) == 0 )
 				continue;
 
 			BaseDataRepresentation::ArealObject out_object;
 			out_object.class_= in_object.class_;
+			out_object.z_level= in_object.z_level;
 
 			if( in_object.multipolygon != nullptr )
 			{

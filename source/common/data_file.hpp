@@ -58,10 +58,12 @@ struct Chunk
 	{
 		uint16_t first_vertex;
 		uint16_t vertex_count;
+		uint16_t z_level;
+		uint8_t padding[2u];
 		// vertex with x= 65535 is break primitive vertex.
 		// "y" of this vertex is style index.
 	};
-	static_assert( sizeof(ArealObjectGroup) == 4u, "wrong size" );
+	static_assert( sizeof(ArealObjectGroup) == 8u, "wrong size" );
 
 	GlobalCoordType coord_start_x;
 	GlobalCoordType coord_start_y;

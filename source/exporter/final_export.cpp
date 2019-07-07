@@ -345,10 +345,32 @@ static ChunksData DumpDataChunk(
 	{
 		get_chunk().areal_object_groups_offset= static_cast<uint32_t>(result.size());
 
+		size_t prev_z_level= ~0u;
 		Chunk::ArealObjectGroup group;
 		group.first_vertex= static_cast<uint16_t>(vertices.size());
 		for( const OSMParseResult::ArealObject& object : prepared_data.areal_objects )
 		{
+			if( object.z_level != prev_z_level )
+			{
+				if( prev_z_level != ~0u )
+				{
+					group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+					result.insert(
+						result.end(),
+						reinterpret_cast<const unsigned char*>(&group),
+						reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+					++get_chunk().areal_object_groups_count;
+				}
+
+				group.first_vertex= static_cast<uint16_t>( vertices.size() );
+				group.z_level= static_cast<uint16_t>(object.z_level);
+
+				get_chunk().min_z_level= std::min( get_chunk().min_z_level, group.z_level );
+				get_chunk().max_z_level= std::max( get_chunk().max_z_level, group.z_level );
+
+				prev_z_level= object.z_level;
+			}
+
 			std::vector<MercatorPoint> polygon_vertices;
 			polygon_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
@@ -366,13 +388,15 @@ static ChunksData DumpDataChunk(
 				vertices.back().y= static_cast<uint16_t>( object.class_ );
 			}
 		}
-
-		group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
-		result.insert(
-			result.end(),
-			reinterpret_cast<const unsigned char*>(&group),
-			reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
-		++get_chunk().areal_object_groups_count;
+		if( prev_z_level != -~0u )
+		{
+			group.vertex_count= static_cast<uint16_t>( vertices.size() - group.first_vertex );
+			result.insert(
+				result.end(),
+				reinterpret_cast<const unsigned char*>(&group),
+				reinterpret_cast<const unsigned char*>(&group) + sizeof(group) );
+			++get_chunk().areal_object_groups_count;
+		}
 	}
 
 	// We have vertex limit= 2^16.

@@ -447,10 +447,13 @@ public:
 
 		// Areal objects must be convex polygons.
 		// Draw convex polygons, using "GL_TRIANGLE_FAN" primitive with primitive restart index.
+		size_t prev_polygon_start_vertex_index= 0u;
 		for( uint16_t i= 0u; i < src_chunk_.areal_object_groups_count; ++i )
 		{
 			const DataFileDescription::Chunk::ArealObjectGroup group= areal_object_groups[i];
-			size_t prev_polygon_start_vertex_index= 0u;
+			ArealObjectsGroup out_group;
+			out_group.first_index= areal_objects_indicies.size();
+			out_group.z_level= uint8_t( group.z_level );
 			for( uint16_t v= group.first_vertex; v < group.first_vertex + group.vertex_count; ++v )
 			{
 				const DataFileDescription::ChunkVertex& vertex= vertices[v];
@@ -470,6 +473,9 @@ public:
 					areal_objects_vertices.push_back( out_vertex );
 				}
 			}
+
+			out_group.index_count= areal_objects_indicies.size() - out_group.first_index;
+			areal_objects_groups_.push_back(out_group);
 		}
 
 		point_objects_polygon_buffer_.VertexData( point_objects_vertices.data(), point_objects_vertices.size() * sizeof(PointObjectVertex), sizeof(PointObjectVertex) );
@@ -539,6 +545,12 @@ public:
 		uint8_t style_index;
 		uint8_t z_level;
 	};
+	struct ArealObjectsGroup
+	{
+		size_t first_index;
+		size_t index_count;
+		uint8_t z_level;
+	};
 
 public:
 	// References to memory mapped data file.
@@ -561,6 +573,7 @@ public:
 	r_PolygonBuffer areal_objects_polygon_buffer_;
 
 	std::vector<LinearObjectsGroup> linear_objects_groups_;
+	std::vector<ArealObjectsGroup> areal_objects_groups_;
 };
 
 struct MapDrawer::ZoomLevel
@@ -858,7 +871,12 @@ void MapDrawer::Draw()
 	// Draw chunks.
 	size_t draw_calls= 0u;
 	size_t primitive_count= 0u;
+
+	// Draw areal and linear objects ordered by z_level.
+	for( uint16_t z_level= min_z_level; z_level <= max_z_level; ++z_level )
 	{
+		// -- Areal --
+
 		areal_objects_shader_.Bind();
 		areal_objects_shader_.Uniform( "tex", 0 );
 
@@ -871,18 +889,25 @@ void MapDrawer::Draw()
 				continue;
 
 			areal_objects_shader_.Uniform( "view_matrix", chunk_to_draw.matrix );
-			chunk_to_draw.chunk.areal_objects_polygon_buffer_.Draw();
-			++draw_calls;
-			primitive_count+= chunk_to_draw.chunk.areal_objects_polygon_buffer_.GetIndexDataSize() / sizeof(uint16_t);
+
+			for( const Chunk::ArealObjectsGroup& group : chunk_to_draw.chunk.areal_objects_groups_ )
+			{
+				if( group.z_level == z_level && group.index_count > 0u )
+				{
+					chunk_to_draw.chunk.areal_objects_polygon_buffer_.Bind();
+					glDrawElements( GL_TRIANGLE_FAN, static_cast<int>(group.index_count), GL_UNSIGNED_SHORT, reinterpret_cast<GLsizei*>( group.first_index * sizeof(uint16_t) ) );
+					++draw_calls;
+					primitive_count+= group.index_count;
+				}
+			}
 		}
 		disable_primitive_restart();
-	}
-	{
+
+		// -- linear --
+
 		enable_primitive_restart();
 
-		// Draw linear objects ordered by z_level, inside z_level ordered by style.
 		// Draw linear objects ordered by style and z_level but not by chunk, because linear objects of neighboring chunks may overlap.
-		for( uint16_t z_level= min_z_level; z_level <= max_z_level; ++z_level )
 		for( const uint8_t style_index : zoom_level.linear_styles_order )
 		{
 			for( const ChunkToDraw& chunk_to_draw : visible_chunks )

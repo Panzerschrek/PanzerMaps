@@ -44,6 +44,7 @@ struct BaseDataRepresentation
 		ArealObjectClass class_= ArealObjectClass::None;
 		size_t first_vertex_index;
 		size_t vertex_count;
+		size_t z_level= g_zero_z_level;
 
 		std::unique_ptr<Multipolygon> multipolygon;
 	};
