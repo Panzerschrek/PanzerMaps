@@ -10,7 +10,9 @@ static std::string GetMapFile()
 	const std::string map_file_base= "map.pm";
 #ifdef __ANDROID__
 	Log::Info( "External storage state: ", SDL_AndroidGetExternalStorageState() );
-	return std::string(SDL_AndroidGetExternalStoragePath()) + "/" + map_file_base;
+	const std::string external_storage_path= SDL_AndroidGetExternalStoragePath();
+	Log::Info( "External storage path: ", external_storage_path );
+	return external_storage_path + "/" + map_file_base;
 #else
 	return map_file_base;
 #endif

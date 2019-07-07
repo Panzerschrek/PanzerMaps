@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.libsdl.app"
+    package="panzerschrek.panzermaps.app"
     android:versionCode="1"
     android:versionName="1.0"
     android:installLocation="auto">
@@ -22,7 +22,7 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:hardwareAccelerated="true" >
 
-        <activity android:name="SDLActivity"
+        <activity android:name="PanzerMapsActivity"
             android:label="@string/app_name"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             >
