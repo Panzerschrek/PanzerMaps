@@ -119,8 +119,13 @@ static_assert( sizeof(ArealObjectStyle) == 4u, "wrong size" );
 struct CommonStyle
 {
 	ColorRGBA background_color;
+
+	// Copyright image - RGBA
+	uint32_t copyright_image_offset;
+	uint16_t copyright_image_width;
+	uint16_t copyright_image_height;
 };
-static_assert( sizeof(CommonStyle) == 4u, "wrong size" );
+static_assert( sizeof(CommonStyle) == 12u, "wrong size" );
 
 struct PointStylesOrder
 {
@@ -181,7 +186,7 @@ struct DataFile
 
 	CommonStyle common_style;
 };
-static_assert( sizeof(DataFile) == 32u, "wrong size" );
+static_assert( sizeof(DataFile) == 40u, "wrong size" );
 
 } // namespace DataFile
 

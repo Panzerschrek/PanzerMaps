@@ -74,6 +74,9 @@ Usage:
 	const Styles styles= LoadStyles( styles_dir );
 	const OSMParseResult osm_parse_result= ParseOSM( input_files.front().c_str() );
 
+	// TODO - load another copyright image, if input data is not OSM.
+	const ImageRGBA copyright_image= LoadImage( styles_dir + "/" + "osm copyright.png" );
+
 	std::vector<PolygonsNormalizationPassResult> ou_data_by_zoom_level;
 	ou_data_by_zoom_level.reserve( styles.zoom_levels.size() );
 	size_t zoom_level_scale_log2= 0u;
@@ -102,5 +105,6 @@ Usage:
 	CreateDataFile(
 		ou_data_by_zoom_level,
 		styles,
+		copyright_image,
 		output_file.c_str() );
 }

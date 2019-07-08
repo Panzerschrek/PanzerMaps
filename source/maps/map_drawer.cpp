@@ -5,7 +5,6 @@
 #include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
-#include "../panzer_ogl_lib/texture.hpp"
 #include "shaders.hpp"
 #include "map_drawer.hpp"
 
@@ -722,9 +721,10 @@ struct MapDrawer::ChunkToDraw
 	m_Mat4 matrix;
 };
 
-MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_file )
+MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, const char* const map_file )
 	: viewport_size_(system_window.GetViewportSize())
 	, system_window_(system_window)
+	, ui_drawer_(ui_drawer)
 	, data_file_( MemoryMappedFile::Create( map_file ) )
 {
 	if( data_file_ == nullptr )
@@ -757,6 +757,16 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, const char* const map_f
 		zoom_levels_.emplace_back( zoom_levels[zoom_level_index], file_content );
 
 	std::memcpy( background_color_, data_file.common_style.background_color, sizeof(background_color_) );
+
+	if( data_file.common_style.copyright_image_width > 0 && data_file.common_style.copyright_image_height > 0 )
+	{
+		copyright_texture_=
+			r_Texture(
+				r_Texture::PixelFormat::RGBA8,
+				data_file.common_style.copyright_image_width, data_file.common_style.copyright_image_height,
+				file_content + data_file.common_style.copyright_image_offset );
+		copyright_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
+	}
 
 	// Create shaders
 
@@ -984,6 +994,17 @@ void MapDrawer::Draw()
 		#ifndef PM_OPENGL_ES
 		glDisable( GL_PROGRAM_POINT_SIZE );
 		#endif
+	}
+
+	if( !copyright_texture_.IsEmpty() )
+	{
+		const unsigned int c_border= 4u;
+		ui_drawer_.DrawUiElement(
+			viewport_size_.width - copyright_texture_.Width() - c_border,
+			c_border + copyright_texture_.Height(),
+			+copyright_texture_.Width (),
+			-copyright_texture_.Height(),
+			copyright_texture_ );
 	}
 
 	if( ( frame_number_ & 15u ) == 0u )

@@ -444,7 +444,10 @@ static ChunksData DumpDataChunk(
 	return { result };
 }
 
-static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles )
+static std::vector<unsigned char> DumpDataFile(
+	const std::vector<PolygonsNormalizationPassResult>& prepared_data,
+	const Styles& styles,
+	const ImageRGBA& copyright_image )
 {
 	Log::Info( "Final export: " );
 
@@ -619,6 +622,10 @@ static std::vector<unsigned char> DumpDataFile( const std::vector<PolygonsNormal
 	} // for zoom levels
 
 	std::memcpy( get_data_file().common_style.background_color, styles.background_color, sizeof(unsigned char) * 4u );
+	get_data_file().common_style.copyright_image_offset= static_cast<uint32_t>(result.size());
+	get_data_file().common_style.copyright_image_width = static_cast<uint16_t>(copyright_image.size[0]);
+	get_data_file().common_style.copyright_image_height= static_cast<uint16_t>(copyright_image.size[1]);
+	result.insert( result.end(), copyright_image.data.begin(), copyright_image.data.end() );
 
 	Log::Info( "result size is ", result.size(), " bytes (", result.size() / 1024u, "kb)" );
 
@@ -645,9 +652,13 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 	} while( write_total < content.size() );
 }
 
-void CreateDataFile( const std::vector<PolygonsNormalizationPassResult>& prepared_data, const Styles& styles, const char* const file_name )
+void CreateDataFile(
+	const std::vector<PolygonsNormalizationPassResult>& prepared_data,
+	const Styles& styles,
+	const ImageRGBA& copyright_image,
+	const char* const file_name )
 {
-	WriteFile( DumpDataFile( prepared_data, styles ), file_name );
+	WriteFile( DumpDataFile( prepared_data, styles, copyright_image ), file_name );
 }
 
 } // namespace PanzerMaps

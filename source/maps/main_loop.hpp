@@ -19,8 +19,8 @@ public:
 
 private:
 	SystemWindow system_window_;
-	MapDrawer map_drawer_;
 	UiDrawer ui_drawer_;
+	MapDrawer map_drawer_;
 
 	MouseMapController mouse_map_controller_;
 	TouchMapController touch_map_controller_;
