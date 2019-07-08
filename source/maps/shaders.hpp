@@ -18,6 +18,9 @@ extern const char linear_textured_fragment[];
 extern const char areal_vertex[];
 extern const char areal_fragment[];
 
+extern const char ui_vertex[];
+extern const char ui_fragment[];
+
 } // namespace Shaders
 
 } // namespace PanzerMaps

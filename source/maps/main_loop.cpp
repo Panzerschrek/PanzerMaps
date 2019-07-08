@@ -21,8 +21,10 @@ static std::string GetMapFile()
 MainLoop::MainLoop()
 	: system_window_()
 	, map_drawer_( system_window_, GetMapFile().c_str() )
+	, ui_drawer_( system_window_.GetViewportSize() )
 	, mouse_map_controller_( map_drawer_ )
 	, touch_map_controller_( map_drawer_ )
+	, zoom_controller_( ui_drawer_, map_drawer_ )
 {
 }
 
@@ -49,6 +51,9 @@ bool MainLoop::Loop()
 			return false;
 		}
 
+		if( zoom_controller_.ProcessEvent( event ) )
+			continue;
+
 		#ifdef __ANDROID__
 		touch_map_controller_.ProcessEvent( event );
 		#else
@@ -57,9 +62,11 @@ bool MainLoop::Loop()
 	}
 
 	touch_map_controller_.DoMove();
+	zoom_controller_.DoMove();
 
 	system_window_.BeginFrame();
 	map_drawer_.Draw();
+	zoom_controller_.Draw();
 	system_window_.EndFrame();
 
 	return true;
