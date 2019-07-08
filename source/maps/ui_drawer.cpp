@@ -42,7 +42,9 @@ void UiDrawer::DrawUiElement( const int x, const int y, const int width, const i
 	shader_.Uniform( "tex", 0 );
 	texture.Bind();
 
+	glEnable( GL_BLEND );
 	quad_polygon_buffer_.Draw();
+	glDisable( GL_BLEND );
 }
 
 } // namespace PanzerMaps
