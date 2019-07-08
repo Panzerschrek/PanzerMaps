@@ -21,6 +21,7 @@ static std::string GetMapFile()
 MainLoop::MainLoop()
 	: system_window_()
 	, map_drawer_( system_window_, GetMapFile().c_str() )
+	, ui_drawer_( system_window_.GetViewportSize() )
 	, mouse_map_controller_( map_drawer_ )
 	, touch_map_controller_( map_drawer_ )
 {
