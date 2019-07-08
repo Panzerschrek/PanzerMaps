@@ -22,6 +22,7 @@ LOCAL_SRC_FILES := \
 	$(PM_SOURCES_ROOT)/maps/textures_generation.cpp \
 	$(PM_SOURCES_ROOT)/maps/touch_map_controller.cpp \
 	$(PM_SOURCES_ROOT)/maps/ui_drawer.cpp \
+	$(PM_SOURCES_ROOT)/maps/zoom_controller.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/func_addresses.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/glsl_program.cpp \
 	$(PM_SOURCES_ROOT)/panzer_ogl_lib/matrix.cpp \

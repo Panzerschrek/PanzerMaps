@@ -8,9 +8,9 @@ namespace PanzerMaps
 namespace TexConstants
 {
 
-static const unsigned char circle_color[4]{ 255, 255, 255, 255 };
-static const unsigned char circle_color_pressed[4]{ 200, 200, 200, 255 };
-static const unsigned char plus_color[4]{ 128, 128, 128, 255 };
+static const unsigned char circle_color[4]{ 255, 255, 255, 200 };
+static const unsigned char circle_color_pressed[4]{ 200, 200, 200, 200 };
+static const unsigned char plus_color[4]{ 128, 128, 128, 200 };
 
 } // TexConstants
 
@@ -32,7 +32,7 @@ static void GenCircle( const size_t size, const unsigned char* color_rgba, unsig
 			if( dist <= square_radius )
 			{}
 			else if( dist <= square_radius_plus_one )
-				dst[3]= static_cast<unsigned char>( 255 - 255 * ( dist - square_radius ) / ( square_radius_plus_one - square_radius ) );
+				dst[3]= static_cast<unsigned char>( int(color_rgba[3]) * ( square_radius_plus_one - dist ) / ( square_radius_plus_one - square_radius ) );
 			else
 				dst[3]= 0;
 		}

@@ -3,7 +3,7 @@
 #include "mouse_map_controller.hpp"
 #include "system_window.hpp"
 #include "touch_map_controller.hpp"
-#include "ui_drawer.hpp"
+#include "zoom_controller.hpp"
 
 namespace PanzerMaps
 {
@@ -24,6 +24,7 @@ private:
 
 	MouseMapController mouse_map_controller_;
 	TouchMapController touch_map_controller_;
+	ZoomController zoom_controller_;
 };
 
 } // namespace PanzerMaps
