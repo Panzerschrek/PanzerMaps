@@ -21,14 +21,14 @@ void MouseMapController::ProcessEvent( const SystemEvent& event )
 		if( mouse_pressed_ )
 			map_drawer_.SetPosition(
 				map_drawer_.GetPosition() +
-				m_Vec2( -float(event.event.mouse_move.dx), float(event.event.mouse_move.dy) ) * map_drawer_.GetScale() );
+				m_Vec2( -float(event.event.mouse_move.dx), -float(event.event.mouse_move.dy) ) * map_drawer_.GetScale() );
 		break;
 
 	case SystemEvent::Type::Wheel:
 		{
 			const m_Vec2 pix_delta(
 				-float(map_drawer_.GetViewportSize().width ) * 0.5f + float(event.event.wheel.x),
-				+float(map_drawer_.GetViewportSize().height) * 0.5f - float(event.event.wheel.y) );
+				-float(map_drawer_.GetViewportSize().height) * 0.5f + float(event.event.wheel.y) );
 
 			m_Vec2 position= map_drawer_.GetPosition();
 			float scale= map_drawer_.GetScale();

@@ -159,7 +159,7 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			out_events.back().type= SystemEvent::Type::MouseKey;
 			out_events.back().event.mouse_key.mouse_button= TranslateMouseButton( event.button.button );
 			out_events.back().event.mouse_key.x= event.button.x;
-			out_events.back().event.mouse_key.y= event.button.y;
+			out_events.back().event.mouse_key.y= int(viewport_size_.height) - 1 - event.button.y;
 			out_events.back().event.mouse_key.pressed= event.type == SDL_MOUSEBUTTONUP ? false : true;
 			break;
 
@@ -167,7 +167,7 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			out_events.emplace_back();
 			out_events.back().type= SystemEvent::Type::MouseMove;
 			out_events.back().event.mouse_move.dx= event.motion.xrel;
-			out_events.back().event.mouse_move.dy= event.motion.yrel;
+			out_events.back().event.mouse_move.dy= -event.motion.yrel;
 			break;
 
 		case SDL_MOUSEWHEEL:
@@ -179,7 +179,7 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			int x= 0, y= 0;
 			SDL_GetMouseState( &x, &y );
 			out_event.event.wheel.x= static_cast<unsigned int>(x);
-			out_event.event.wheel.y= static_cast<unsigned int>(y);
+			out_event.event.wheel.y= static_cast<unsigned int>( int(viewport_size_.height) - 1 - y );
 		}
 		break;
 
@@ -195,7 +195,7 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 			if( event.type == SDL_FINGERMOTION ) out_event.type= SystemEvent::Type::TouchMove   ;
 
 			out_event.event.touch.x= event.tfinger.x * float(viewport_size_.width );
-			out_event.event.touch.y= event.tfinger.y * float(viewport_size_.height);
+			out_event.event.touch.y= float( int(viewport_size_.height) - 1 ) - event.tfinger.y * float(viewport_size_.height);
 			out_event.event.touch.id= event.tfinger.fingerId;
 		}
 

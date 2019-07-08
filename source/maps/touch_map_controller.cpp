@@ -65,7 +65,7 @@ void TouchMapController::DoMove()
 
 			const m_Vec2 pix_delta(
 				-float(map_drawer_.GetViewportSize().width ) * 0.5f + pos_cur.x,
-				+float(map_drawer_.GetViewportSize().height) * 0.5f - pos_cur.y );
+				-float(map_drawer_.GetViewportSize().height) * 0.5f + pos_cur.y );
 
 			m_Vec2 position= map_drawer_.GetPosition();
 			float scale= map_drawer_.GetScale();
@@ -73,7 +73,7 @@ void TouchMapController::DoMove()
 			scale*= scale_delta;
 			position-= pix_delta * scale;
 
-			position+= m_Vec2( -d_pos.x, d_pos.y ) * scale;
+			position+= m_Vec2( -d_pos.x, -d_pos.y ) * scale;
 
 			map_drawer_.SetPosition( position );
 			map_drawer_.SetScale( scale );
@@ -83,7 +83,7 @@ void TouchMapController::DoMove()
 			// Do move only.
 			map_drawer_.SetPosition(
 				map_drawer_.GetPosition() +
-				m_Vec2( -d_pos.x, d_pos.y ) * map_drawer_.GetScale() );
+				m_Vec2( -d_pos.x, -d_pos.y ) * map_drawer_.GetScale() );
 		}
 	}
 
