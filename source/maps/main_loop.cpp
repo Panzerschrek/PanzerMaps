@@ -25,10 +25,12 @@ MainLoop::MainLoop()
 	, mouse_map_controller_( map_drawer_ )
 	, touch_map_controller_( map_drawer_ )
 	, zoom_controller_( ui_drawer_, map_drawer_ )
-{
 	#ifdef __ANDROID__
-	gps_service_.SetEnabled(true);
+	, gps_button_( ui_drawer_, gps_service_ )
+	#else
+	, gps_button_( ui_drawer_ )
 	#endif
+{
 }
 
 MainLoop::~MainLoop()
@@ -56,6 +58,8 @@ bool MainLoop::Loop()
 
 		if( zoom_controller_.ProcessEvent( event ) )
 			continue;
+		if( gps_button_.ProcessEvent( event ) )
+			continue;
 
 		#ifdef __ANDROID__
 		touch_map_controller_.ProcessEvent( event );
@@ -75,6 +79,7 @@ bool MainLoop::Loop()
 	system_window_.BeginFrame();
 	map_drawer_.Draw();
 	zoom_controller_.Draw();
+	gps_button_.Draw();
 	system_window_.EndFrame();
 
 	return true;

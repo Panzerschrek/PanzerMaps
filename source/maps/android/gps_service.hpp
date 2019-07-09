@@ -12,6 +12,7 @@ public:
 	~GPSService();
 
 	void SetEnabled( bool enabled );
+	bool GetEnabled() const{ return enabled_; }
 
 	void Update();
 	GeoPoint GetGPSPosition() const { return gps_position_; }

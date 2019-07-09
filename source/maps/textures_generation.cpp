@@ -62,7 +62,7 @@ static r_Texture GenTexture_ZoomPlus_impl( const size_t tex_size, const unsigned
 	for( size_t x= tex_size * 7u / 16u; x < tex_size * 9u / 16u; ++x )
 		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
 
-	return CreateTexture( tex_size, tex_size, tex_data );;
+	return CreateTexture( tex_size, tex_size, tex_data );
 }
 
 static r_Texture GenTexture_ZoomMinus_impl( const size_t tex_size, const unsigned char* const circle_color )
@@ -75,7 +75,7 @@ static r_Texture GenTexture_ZoomMinus_impl( const size_t tex_size, const unsigne
 	for( size_t x= tex_size / 4u; x < tex_size * 3u / 4u; ++x )
 		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
 
-	return CreateTexture( tex_size, tex_size, tex_data );;
+	return CreateTexture( tex_size, tex_size, tex_data );
 }
 
 r_Texture GenTexture_ZoomPlus( size_t tex_size )
@@ -96,6 +96,28 @@ r_Texture GenTexture_ZoomPlusPressed( size_t tex_size )
 r_Texture GenTexture_ZoomMinusPressed( const size_t tex_size )
 {
 	return GenTexture_ZoomMinus_impl( tex_size, TexConstants::circle_color_pressed );
+}
+
+r_Texture GenTexture_GPSButtonActive( const size_t tex_size )
+{
+	std::vector<unsigned char> tex_data( tex_size * tex_size * 4u );
+
+	GenCircle( tex_size, TexConstants::circle_color, tex_data.data() );
+
+	// TODO - generate GPS symbol.
+
+	return CreateTexture( tex_size, tex_size, tex_data );
+}
+
+r_Texture GenTexture_GPSButtonUnactive( const size_t tex_size )
+{
+	std::vector<unsigned char> tex_data( tex_size * tex_size * 4u );
+
+	GenCircle( tex_size, TexConstants::circle_color_pressed, tex_data.data() );
+
+	// TODO - generate GPS symbol.
+
+	return CreateTexture( tex_size, tex_size, tex_data );
 }
 
 } // namespace PanzerMaps

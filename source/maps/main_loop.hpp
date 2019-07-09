@@ -4,9 +4,7 @@
 #include "system_window.hpp"
 #include "touch_map_controller.hpp"
 #include "zoom_controller.hpp"
-#ifdef __ANDROID__
-#include "android/gps_service.hpp"
-#endif
+#include "gps_button.hpp"
 
 namespace PanzerMaps
 {
@@ -31,6 +29,7 @@ private:
 	MouseMapController mouse_map_controller_;
 	TouchMapController touch_map_controller_;
 	ZoomController zoom_controller_;
+	GPSButton gps_button_;
 };
 
 } // namespace PanzerMaps
