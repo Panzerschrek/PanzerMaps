@@ -42,6 +42,7 @@ private:
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram linear_textured_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
+	r_GLSLProgram gps_marker_shader_;
 	r_Texture copyright_texture_;
 
 	std::vector<ZoomLevel> zoom_levels_;
@@ -56,7 +57,6 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
-	float unit_size_m_;
 
 	unsigned char background_color_[4]= {0};
 };

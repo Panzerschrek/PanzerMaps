@@ -790,6 +790,9 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
 	areal_objects_shader_.Create();
 
+	gps_marker_shader_.ShaderSource( Shaders::gps_marker_fragment, Shaders::gps_marker_vertex );
+	gps_marker_shader_.Create();
+
 	// Setup camera
 	if( !zoom_levels_.empty() )
 	{
@@ -806,8 +809,6 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	else
 		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
-
-	unit_size_m_= zoom_levels[0u].unit_size_m;
 
 	min_scale_= 1.0f;
 	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
@@ -994,6 +995,37 @@ void MapDrawer::Draw()
 		#ifndef PM_OPENGL_ES
 		glDisable( GL_PROGRAM_POINT_SIZE );
 		#endif
+	}
+	{
+		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
+
+		const GeoPoint gps_marker_geo_pos{ 83.11094, 54.84557 }; // TODO - get real GPS data.
+		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_geo_pos );
+
+		m_Vec2 gps_marker_pos_scene(
+			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
+			float( gps_marker_pos_mercator.y - data_file.min_y ) / float(data_file.unit_size) );
+		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
+
+		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
+			gps_marker_pos_screen.y <= +1.0f && gps_marker_pos_screen.y >= -1.0f )
+		{
+			gps_marker_shader_.Bind();
+			gps_marker_shader_.Uniform( "pos", gps_marker_pos_screen );
+			gps_marker_shader_.Uniform( "point_size", 40.0f );
+
+			#ifndef PM_OPENGL_ES
+			glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
+			#endif
+			glEnable( GL_BLEND );
+
+			glDrawArrays( GL_POINTS, 0, 1 );
+
+			glDisable( GL_BLEND );
+			#ifndef PM_OPENGL_ES
+			glDisable( GL_PROGRAM_POINT_SIZE );
+			#endif
+		}
 	}
 
 	if( !copyright_texture_.IsEmpty() )
