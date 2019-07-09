@@ -2,6 +2,7 @@ Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
 * Ikonki vysokogo razrešenija dlä tocecnyh objektov
+* Razdelenije faz obrabotki dlä raznyh klassov objektov
 * Optimizaçija narezki poligonov
 * Uproscenije linij
 * Objedinenije smežnyh linij odnogo klassa
@@ -11,7 +12,8 @@ Eksport i podgotovka dannyh:
 
 Priloženije
 * Risovanije ploscadnyh objektov s teksturoj (lesa, bolota, kladbisca)
-* Knopki masštaba
-* Otobraženije geopoziçii
 * Masštabnaja linejka
+* Lenivaja pererisovka - ne pererisovyvatjsä, jesli nicego ne pomenälosj
+* Ulucšenija otobraženija geopoziçii - krug tocnosti, otobraženije nadöžnosti
+* Sleženije za geopoziçijej
 * Zagruzka neskoljkih vygruzok
