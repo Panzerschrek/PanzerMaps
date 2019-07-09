@@ -2,7 +2,6 @@
 #include <cstring>
 #include <unordered_map>
 #include "../common/assert.hpp"
-#include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "shaders.hpp"
@@ -996,11 +995,13 @@ void MapDrawer::Draw()
 		glDisable( GL_PROGRAM_POINT_SIZE );
 		#endif
 	}
+	if( gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
+		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
 	{
 		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
 
-		const GeoPoint gps_marker_geo_pos{ 83.11094, 54.84557 }; // TODO - get real GPS data.
-		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_geo_pos );
+		//const GeoPoint gps_marker_geo_pos{ 83.11094, 54.84557 }; // TODO - get real GPS data.
+		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
 
 		m_Vec2 gps_marker_pos_scene(
 			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
@@ -1087,6 +1088,11 @@ void MapDrawer::SetPosition( const m_Vec2& position )
 const ViewportSize& MapDrawer::GetViewportSize() const
 {
 	return viewport_size_;
+}
+
+void MapDrawer::SetGPSMarkerPosition( const GeoPoint& gps_marker_position )
+{
+	gps_marker_position_= gps_marker_position;
 }
 
 MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()

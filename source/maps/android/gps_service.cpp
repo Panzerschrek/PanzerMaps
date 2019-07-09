@@ -31,7 +31,22 @@ GPSService::GPSService()
 		return;
 	}
 
-	jmethodID enable_gps_source_method = jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/app/Activity;)V" );
+	get_longitude_method_= jni_env->GetStaticMethodID( gps_source_class_, "GetLongitude","()D" );
+	get_latitude_method_ = jni_env->GetStaticMethodID( gps_source_class_, "GetLatitude" ,"()D" );
+	jmethodID enable_gps_source_method= jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/app/Activity;)V" );
+
+	if( get_longitude_method_ == nullptr )
+	{
+		Log::Warning( "Can not get \"GetLongitude\" method" );
+		jni_env->DeleteLocalRef( sdl_activity );
+		return;
+	}
+	if( get_latitude_method_  == nullptr )
+	{
+		Log::Warning( "Can not get \"GetLatitude\"  method" );
+		jni_env->DeleteLocalRef( sdl_activity );
+		return;
+	}
 	if( enable_gps_source_method == nullptr )
 	{
 		Log::Warning( "Can not get \"Enable\" method" );
@@ -83,10 +98,26 @@ GPSService::~GPSService()
 	}
 }
 
-GeoPoint GPSService::GetGeoPosition() const
+void GPSService::Update()
 {
-	// TODO
-	return GeoPoint{ 0.0, 0.0 };
+	if( gps_source_class_ == nullptr )
+		return;
+	JNIEnv* const jni_env= reinterpret_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+	if( jni_env == nullptr )
+	{
+		Log::Warning( "Can not get JNIEnv" );
+		return;
+	}
+
+	GeoPoint new_position;
+	new_position.x= jni_env->CallStaticDoubleMethod( gps_source_class_, get_longitude_method_ );
+	new_position.y= jni_env->CallStaticDoubleMethod( gps_source_class_, get_latitude_method_  );
+
+	if( new_position != gps_position_ )
+	{
+		gps_position_= new_position;
+		Log::Info( "Coordinates: ", new_position.x, " ", new_position.y );
+	}
 }
 
 } // namespace PanzerMaps

@@ -1,4 +1,5 @@
 #pragma once
+#include "../common/coordinates_conversion.hpp"
 #include "../common/memory_mapped_file.hpp"
 #include "../panzer_ogl_lib/glsl_program.hpp"
 #include "../panzer_ogl_lib/polygon_buffer.hpp"
@@ -23,6 +24,8 @@ public:
 	void SetPosition( const m_Vec2& position );
 
 	const ViewportSize& GetViewportSize() const;
+
+	void SetGPSMarkerPosition( const GeoPoint& gps_marker_position );
 
 private:
 	struct Chunk;
@@ -57,6 +60,8 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
+
+	GeoPoint gps_marker_position_{ 1000.0, 1000.0 };
 
 	unsigned char background_color_[4]= {0};
 };
