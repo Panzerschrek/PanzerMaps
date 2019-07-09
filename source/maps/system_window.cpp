@@ -70,13 +70,17 @@ SystemWindow::SystemWindow()
 		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, msaa_samples );
 	}
 
+	#ifdef __ANDROID___
 	SDL_Rect display_rect;
 	if( SDL_GetDisplayUsableBounds( 0, &display_rect ) != 0 )
 		Log::FatalError( "Can not get display 0 bounds" );
 	Log::Info( "display usable bounds: ", display_rect.w, " ", display_rect.h );
-
 	viewport_size_.width= display_rect.w;
 	viewport_size_.height= display_rect.h;
+	#else
+	viewport_size_.width= 1280;
+	viewport_size_.height= 768;
+	#endif
 
 	window_=
 		SDL_CreateWindow(
