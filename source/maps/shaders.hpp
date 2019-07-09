@@ -21,6 +21,9 @@ extern const char areal_fragment[];
 extern const char ui_vertex[];
 extern const char ui_fragment[];
 
+extern const char gps_marker_vertex[];
+extern const char gps_marker_fragment[];
+
 } // namespace Shaders
 
 } // namespace PanzerMaps

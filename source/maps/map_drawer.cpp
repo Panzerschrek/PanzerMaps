@@ -2,7 +2,6 @@
 #include <cstring>
 #include <unordered_map>
 #include "../common/assert.hpp"
-#include "../common/coordinates_conversion.hpp"
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "shaders.hpp"
@@ -790,6 +789,9 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	areal_objects_shader_.SetAttribLocation( "color_index", 1 );
 	areal_objects_shader_.Create();
 
+	gps_marker_shader_.ShaderSource( Shaders::gps_marker_fragment, Shaders::gps_marker_vertex );
+	gps_marker_shader_.Create();
+
 	// Setup camera
 	if( !zoom_levels_.empty() )
 	{
@@ -806,8 +808,6 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	else
 		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
-
-	unit_size_m_= zoom_levels[0u].unit_size_m;
 
 	min_scale_= 1.0f;
 	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
@@ -995,6 +995,40 @@ void MapDrawer::Draw()
 		glDisable( GL_PROGRAM_POINT_SIZE );
 		#endif
 	}
+	if( gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
+		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
+	{
+		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
+
+		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
+
+		m_Vec2 gps_marker_pos_scene(
+			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
+			float( gps_marker_pos_mercator.y - data_file.min_y ) / float(data_file.unit_size) );
+		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
+
+		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
+			gps_marker_pos_screen.y <= +1.0f && gps_marker_pos_screen.y >= -1.0f )
+		{
+			const float marker_size= std::max( 32.0f, float( std::min( viewport_size_.width, viewport_size_.height ) ) / 10.0f );
+
+			gps_marker_shader_.Bind();
+			gps_marker_shader_.Uniform( "pos", gps_marker_pos_screen );
+			gps_marker_shader_.Uniform( "point_size", marker_size );
+
+			#ifndef PM_OPENGL_ES
+			glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
+			#endif
+			glEnable( GL_BLEND );
+
+			glDrawArrays( GL_POINTS, 0, 1 );
+
+			glDisable( GL_BLEND );
+			#ifndef PM_OPENGL_ES
+			glDisable( GL_PROGRAM_POINT_SIZE );
+			#endif
+		}
+	}
 
 	if( !copyright_texture_.IsEmpty() )
 	{
@@ -1055,6 +1089,11 @@ void MapDrawer::SetPosition( const m_Vec2& position )
 const ViewportSize& MapDrawer::GetViewportSize() const
 {
 	return viewport_size_;
+}
+
+void MapDrawer::SetGPSMarkerPosition( const GeoPoint& gps_marker_position )
+{
+	gps_marker_position_= gps_marker_position;
 }
 
 MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()

@@ -145,6 +145,33 @@ R"(
 	}
 )";
 
+const char gps_marker_vertex[]=
+GLSL_VERSION
+R"(
+	uniform highp vec2 pos;
+	uniform highp float point_size;
+	void main()
+	{
+		gl_Position= vec4( pos, 0.0, 1.0 );
+		gl_PointSize= point_size;
+	}
+)";
+
+const char gps_marker_fragment[]=
+GLSL_VERSION
+R"(
+	uniform sampler2D tex;
+	uniform highp float point_size;
+	out lowp vec4 color;
+	void main()
+	{
+		mediump vec2 rv= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
+		mediump float r= dot( rv, rv );
+		mediump float step_eps= 2.0 / point_size;
+		lowp vec3 c= mix( vec3( 0.5, 0.5, 1.0 ), vec3( 1.0, 1.0, 1.0 ), smoothstep( 0.2 - step_eps, 0.2 + step_eps, r ) );
+		color= vec4( c, 1.0 - smoothstep( 0.5 - step_eps, 0.5 + step_eps, r ) );
+	}
+)";
 
 } // namespace Shaders
 

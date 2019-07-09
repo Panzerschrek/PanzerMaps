@@ -12,6 +12,8 @@ class UiDrawer final
 public:
 	explicit UiDrawer( const ViewportSize& viewport_size );
 
+	const ViewportSize& GetViewportSize() const { return viewport_size_; }
+
 	void DrawUiElement( int x, int y, int width, int height, const r_Texture& texture );
 
 private:

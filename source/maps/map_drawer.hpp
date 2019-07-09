@@ -1,4 +1,5 @@
 #pragma once
+#include "../common/coordinates_conversion.hpp"
 #include "../common/memory_mapped_file.hpp"
 #include "../panzer_ogl_lib/glsl_program.hpp"
 #include "../panzer_ogl_lib/polygon_buffer.hpp"
@@ -24,6 +25,8 @@ public:
 
 	const ViewportSize& GetViewportSize() const;
 
+	void SetGPSMarkerPosition( const GeoPoint& gps_marker_position );
+
 private:
 	struct Chunk;
 	struct ZoomLevel;
@@ -42,6 +45,7 @@ private:
 	r_GLSLProgram linear_objets_shader_;
 	r_GLSLProgram linear_textured_objets_shader_;
 	r_GLSLProgram areal_objects_shader_;
+	r_GLSLProgram gps_marker_shader_;
 	r_Texture copyright_texture_;
 
 	std::vector<ZoomLevel> zoom_levels_;
@@ -56,7 +60,8 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
-	float unit_size_m_;
+
+	GeoPoint gps_marker_position_{ 1000.0, 1000.0 };
 
 	unsigned char background_color_[4]= {0};
 };

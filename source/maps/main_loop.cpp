@@ -25,6 +25,11 @@ MainLoop::MainLoop()
 	, mouse_map_controller_( map_drawer_ )
 	, touch_map_controller_( map_drawer_ )
 	, zoom_controller_( ui_drawer_, map_drawer_ )
+	#ifdef __ANDROID__
+	, gps_button_( ui_drawer_, gps_service_ )
+	#else
+	, gps_button_( ui_drawer_ )
+	#endif
 {
 }
 
@@ -53,6 +58,8 @@ bool MainLoop::Loop()
 
 		if( zoom_controller_.ProcessEvent( event ) )
 			continue;
+		if( gps_button_.ProcessEvent( event ) )
+			continue;
 
 		#ifdef __ANDROID__
 		touch_map_controller_.ProcessEvent( event );
@@ -64,9 +71,15 @@ bool MainLoop::Loop()
 	touch_map_controller_.DoMove();
 	zoom_controller_.DoMove();
 
+	#ifdef __ANDROID__
+	gps_service_.Update();
+	map_drawer_.SetGPSMarkerPosition( gps_service_.GetGPSPosition() );
+	#endif
+
 	system_window_.BeginFrame();
 	map_drawer_.Draw();
 	zoom_controller_.Draw();
+	gps_button_.Draw();
 	system_window_.EndFrame();
 
 	return true;

@@ -461,6 +461,12 @@ static std::vector<unsigned char> DumpDataFile(
 	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
 	get_data_file().version= DataFile::c_expected_version;
 
+	get_data_file().min_x= prepared_data.front().min_point.x;
+	get_data_file().min_y= prepared_data.front().min_point.y;
+	get_data_file().max_x= prepared_data.front().max_point.x;
+	get_data_file().max_y= prepared_data.front().max_point.y;
+	get_data_file().unit_size= prepared_data.front().coordinates_scale;
+
 	get_data_file().zoom_levels_offset= static_cast<uint32_t>( result.size() );
 	get_data_file().zoom_level_count= static_cast<uint32_t>( prepared_data.size() );
 	result.resize( result.size() + prepared_data.size() * sizeof(ZoomLevel) );
