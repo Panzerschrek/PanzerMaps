@@ -5,6 +5,18 @@
 namespace PanzerMaps
 {
 
+static bool CheckClearException( JNIEnv* const jni_env ) // Returns true, if ok
+{
+	jthrowable exception= jni_env->ExceptionOccurred();
+	if( exception != nullptr )
+	{
+		jni_env->ExceptionDescribe();
+		jni_env->ExceptionClear();
+		return false;
+	}
+	return true;
+}
+
 GPSService::GPSService()
 {
 	Log::Info( "Start creating GPS service" );
@@ -16,60 +28,42 @@ GPSService::GPSService()
 		return;
 	}
 
-	jobject sdl_activity= static_cast<jobject>(SDL_AndroidGetActivity());
-	if( sdl_activity == nullptr )
-	{
-		Log::Warning( "Can not get SDL activity" );
-		return;
-	}
-
 	gps_source_class_= jni_env->FindClass( "panzerschrek/panzermaps/app/GPSSource" );
 	if( gps_source_class_ == nullptr )
 	{
 		Log::Warning( "Can not get \"GPSSource\" class" );
-		jni_env->DeleteLocalRef( sdl_activity );
 		return;
 	}
 
+	enable_method_ = jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/app/Activity;)V" );
+	disable_method_= jni_env->GetStaticMethodID( gps_source_class_, "Disable","()V" );
 	get_longitude_method_= jni_env->GetStaticMethodID( gps_source_class_, "GetLongitude","()D" );
 	get_latitude_method_ = jni_env->GetStaticMethodID( gps_source_class_, "GetLatitude" ,"()D" );
-	jmethodID enable_gps_source_method= jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/app/Activity;)V" );
-
-	if( get_longitude_method_ == nullptr )
-	{
-		Log::Warning( "Can not get \"GetLongitude\" method" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		return;
-	}
-	if( get_latitude_method_  == nullptr )
-	{
-		Log::Warning( "Can not get \"GetLatitude\"  method" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		return;
-	}
-	if( enable_gps_source_method == nullptr )
-	{
+	if( enable_method_ == nullptr )
 		Log::Warning( "Can not get \"Enable\" method" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		return;
-	}
+	if( disable_method_ == nullptr )
+		Log::Warning( "Can not get \"Disable\" method" );
+	if( get_longitude_method_ == nullptr )
+		Log::Warning( "Can not get \"GetLongitude\" method" );
+	if( get_latitude_method_  == nullptr )
+		Log::Warning( "Can not get \"GetLatitude\"  method" );
 
-	jni_env->CallStaticObjectMethod( gps_source_class_, enable_gps_source_method, sdl_activity );
-
-	jthrowable exception= jni_env->ExceptionOccurred();
-	if( exception != nullptr )
-	{
-		jni_env->ExceptionDescribe();
-		jni_env->ExceptionClear();
-	}
-	else
-		Log::Info( "Enable GPSSource" );
-
-	jni_env->DeleteLocalRef( sdl_activity );
+	initialized_ok_=
+		gps_source_class_ != nullptr &&
+		enable_method_  != nullptr &&
+		disable_method_ != nullptr &&
+		get_longitude_method_ != nullptr &&
+		get_latitude_method_  != nullptr;
 }
 
-GPSService::~GPSService()
+void GPSService::SetEnabled( const bool enabled )
 {
+	if( !initialized_ok_ )
+		return;
+
+	if( enabled == enabled_ )
+		return;
+
 	JNIEnv* const jni_env= reinterpret_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
 	if( jni_env == nullptr )
 	{
@@ -77,31 +71,52 @@ GPSService::~GPSService()
 		return;
 	}
 
-	if( gps_source_class_ != nullptr )
+	if( enabled )
 	{
-		jmethodID disable_gps_source_method = jni_env->GetStaticMethodID( gps_source_class_, "Disable","()V" );
-		if( disable_gps_source_method == nullptr )
+		Log::Info( "Enable GPSService" );
+
+		jobject sdl_activity= static_cast<jobject>(SDL_AndroidGetActivity());
+		if( sdl_activity == nullptr )
 		{
-			Log::Warning( "Can not get \"Enable\" method" );
+			Log::Warning( "Can not get SDL activity" );
 			return;
 		}
 
-		jni_env->CallStaticObjectMethod( gps_source_class_, disable_gps_source_method );
-		jthrowable exception= jni_env->ExceptionOccurred();
-		if( exception != nullptr )
+		jni_env->CallStaticObjectMethod( gps_source_class_, enable_method_, sdl_activity );
+		jni_env->DeleteLocalRef( sdl_activity );
+		if( CheckClearException( jni_env ) )
 		{
-			jni_env->ExceptionDescribe();
-			jni_env->ExceptionClear();
+			Log::Info( "Enable GPSService success" );
+			enabled_= true;
 		}
 		else
-			Log::Info( "Disable GPSSource" );
+			Log::Info( "Enable GPSService failed" );
 	}
+	else
+	{
+		Log::Info( "Disable GPSService" );
+
+		jni_env->CallStaticObjectMethod( gps_source_class_, disable_method_ );
+		if( CheckClearException( jni_env ) )
+		{
+			Log::Info( "Disable GPSService success" );
+			enabled_= false;
+		}
+		else
+			Log::Info( "Disable GPSService failed" );
+	}
+}
+
+GPSService::~GPSService()
+{
+	SetEnabled(false);
 }
 
 void GPSService::Update()
 {
-	if( gps_source_class_ == nullptr )
+	if( !initialized_ok_ )
 		return;
+
 	JNIEnv* const jni_env= reinterpret_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
 	if( jni_env == nullptr )
 	{
@@ -110,8 +125,14 @@ void GPSService::Update()
 	}
 
 	GeoPoint new_position;
+
 	new_position.x= jni_env->CallStaticDoubleMethod( gps_source_class_, get_longitude_method_ );
+	if( !CheckClearException( jni_env ) )
+		return;
+
 	new_position.y= jni_env->CallStaticDoubleMethod( gps_source_class_, get_latitude_method_  );
+	if( !CheckClearException( jni_env ) )
+		return;
 
 	if( new_position != gps_position_ )
 	{

@@ -26,6 +26,9 @@ MainLoop::MainLoop()
 	, touch_map_controller_( map_drawer_ )
 	, zoom_controller_( ui_drawer_, map_drawer_ )
 {
+	#ifdef __ANDROID__
+	gps_service_.SetEnabled(true);
+	#endif
 }
 
 MainLoop::~MainLoop()
