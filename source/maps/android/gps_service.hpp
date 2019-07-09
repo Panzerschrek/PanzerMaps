@@ -14,7 +14,6 @@ public:
 	GeoPoint GetGeoPosition() const;
 
 private:
-	jobject context_= nullptr;
 	jclass gps_source_class_= nullptr;
 };
 

@@ -23,50 +23,23 @@ GPSService::GPSService()
 		return;
 	}
 
-	const jclass activity_class= jni_env->GetObjectClass( sdl_activity );
-	if( activity_class == nullptr )
-	{
-		Log::Warning( "Can not get class of activity" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		return;
-	}
-
-	jmethodID get_context_method = jni_env->GetStaticMethodID( activity_class, "getContext","()Landroid/content/Context;" );
-	if( get_context_method == nullptr )
-	{
-		Log::Warning( "Can not get \"getContext\" method" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		jni_env->DeleteLocalRef( activity_class );
-		return;
-	}
-
-	context_= jni_env->CallStaticObjectMethod( activity_class, get_context_method );
-	if( context_ == nullptr )
-	{
-		Log::Warning( "Context is null" );
-		jni_env->DeleteLocalRef( sdl_activity );
-		jni_env->DeleteLocalRef( activity_class );
-		return;
-	}
-	Log::Info( "Get context" );
-	jni_env->DeleteLocalRef( sdl_activity );
-	jni_env->DeleteLocalRef( activity_class );
-
 	gps_source_class_= jni_env->FindClass( "panzerschrek/panzermaps/app/GPSSource" );
 	if( gps_source_class_ == nullptr )
 	{
 		Log::Warning( "Can not get \"GPSSource\" class" );
+		jni_env->DeleteLocalRef( sdl_activity );
 		return;
 	}
 
-	jmethodID enable_gps_source_method = jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/content/Context;)V" );
+	jmethodID enable_gps_source_method = jni_env->GetStaticMethodID( gps_source_class_, "Enable","(Landroid/app/Activity;)V" );
 	if( enable_gps_source_method == nullptr )
 	{
 		Log::Warning( "Can not get \"Enable\" method" );
+		jni_env->DeleteLocalRef( sdl_activity );
 		return;
 	}
 
-	jni_env->CallStaticObjectMethod( gps_source_class_, enable_gps_source_method, context_ );
+	jni_env->CallStaticObjectMethod( gps_source_class_, enable_gps_source_method, sdl_activity );
 
 	jthrowable exception= jni_env->ExceptionOccurred();
 	if( exception != nullptr )
@@ -76,6 +49,8 @@ GPSService::GPSService()
 	}
 	else
 		Log::Info( "Enable GPSSource" );
+
+	jni_env->DeleteLocalRef( sdl_activity );
 }
 
 GPSService::~GPSService()
@@ -86,9 +61,6 @@ GPSService::~GPSService()
 		Log::Warning( "Can not get JNIEnv" );
 		return;
 	}
-
-	if( context_ != nullptr )
-		jni_env->DeleteLocalRef( context_ );
 
 	if( gps_source_class_ != nullptr )
 	{
