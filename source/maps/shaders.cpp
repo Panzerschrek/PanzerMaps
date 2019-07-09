@@ -168,7 +168,7 @@ R"(
 		mediump vec2 rv= gl_PointCoord * 2.0 - vec2( 1.0, 1.0 );
 		mediump float r= dot( rv, rv );
 		mediump float step_eps= 2.0 / point_size;
-		vec3 c= mix( vec3( 0.5, 0.5, 1.0 ), vec3( 1.0, 1.0, 1.0 ), smoothstep( 0.2 - step_eps, 0.2 + step_eps, r ) );
+		lowp vec3 c= mix( vec3( 0.5, 0.5, 1.0 ), vec3( 1.0, 1.0, 1.0 ), smoothstep( 0.2 - step_eps, 0.2 + step_eps, r ) );
 		color= vec4( c, 1.0 - smoothstep( 0.5 - step_eps, 0.5 + step_eps, r ) );
 	}
 )";
