@@ -4,6 +4,9 @@
 #include "system_window.hpp"
 #include "touch_map_controller.hpp"
 #include "zoom_controller.hpp"
+#ifdef __ANDROID__
+#include "android/gps_service.hpp"
+#endif
 
 namespace PanzerMaps
 {
@@ -21,6 +24,9 @@ private:
 	SystemWindow system_window_;
 	UiDrawer ui_drawer_;
 	MapDrawer map_drawer_;
+	#ifdef __ANDROID__
+	GPSService gps_service_;
+	#endif
 
 	MouseMapController mouse_map_controller_;
 	TouchMapController touch_map_controller_;
