@@ -176,17 +176,25 @@ struct DataFile
 	// All offsets - from start of file.
 
 	static constexpr const char c_expected_header[16]= "PanzerMaps-Data";
-	static constexpr const uint32_t c_expected_version= 1u;
+	static constexpr const uint32_t c_expected_version= 2u; // Change this each time, when DataFileDescripton structs changed.
 
 	uint8_t header[16];
 	uint32_t version;
+
+	// Mercator projection corrdinates (see coordinates_conversion.hpp) and scale of unit, relative to projection unit.
+	// min_x and min_y is also scene zero coordinates.
+	GlobalCoordType min_x;
+	GlobalCoordType min_y;
+	GlobalCoordType max_x;
+	GlobalCoordType max_y;
+	GlobalCoordType unit_size;
 
 	uint32_t zoom_levels_offset;
 	uint32_t zoom_level_count;
 
 	CommonStyle common_style;
 };
-static_assert( sizeof(DataFile) == 40u, "wrong size" );
+static_assert( sizeof(DataFile) == 60u, "wrong size" );
 
 } // namespace DataFile
 
