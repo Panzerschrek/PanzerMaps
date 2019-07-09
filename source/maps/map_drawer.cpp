@@ -1000,7 +1000,6 @@ void MapDrawer::Draw()
 	{
 		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
 
-		//const GeoPoint gps_marker_geo_pos{ 83.11094, 54.84557 }; // TODO - get real GPS data.
 		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
 
 		m_Vec2 gps_marker_pos_scene(
@@ -1011,9 +1010,11 @@ void MapDrawer::Draw()
 		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
 			gps_marker_pos_screen.y <= +1.0f && gps_marker_pos_screen.y >= -1.0f )
 		{
+			const float marker_size= std::max( 32.0f, float( std::min( viewport_size_.width, viewport_size_.height ) ) / 10.0f );
+
 			gps_marker_shader_.Bind();
 			gps_marker_shader_.Uniform( "pos", gps_marker_pos_screen );
-			gps_marker_shader_.Uniform( "point_size", 40.0f );
+			gps_marker_shader_.Uniform( "point_size", marker_size );
 
 			#ifndef PM_OPENGL_ES
 			glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
