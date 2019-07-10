@@ -38,6 +38,8 @@ bool GPSButton::ProcessEvent( const SystemEvent& event )
 		#else
 		active_= !active_;
 		#endif
+
+		redraw_required_= true;
 		return true;
 	}
 	return false;
@@ -45,6 +47,8 @@ bool GPSButton::ProcessEvent( const SystemEvent& event )
 
 void GPSButton::Draw()
 {
+	redraw_required_= false;
+
 	bool active= false;
 	#ifdef __ANDROID__
 	active= gps_service_.GetEnabled();

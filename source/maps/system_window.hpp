@@ -15,6 +15,7 @@ struct SystemEvent
 		TouchRelease,
 		TouchMove,
 		Wheel,
+		Redraw,
 		Quit,
 	};
 
@@ -49,8 +50,6 @@ struct SystemEvent
 		int64_t id;
 	};
 
-	struct QuitEvent
-	{};
 
 	Type type;
 	union
@@ -59,7 +58,6 @@ struct SystemEvent
 		MouseMoveEvent mouse_move;
 		WheelEvent wheel;
 		TouchEvent touch;
-		QuitEvent quit;
 	} event;
 };
 

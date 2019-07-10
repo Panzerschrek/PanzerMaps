@@ -38,6 +38,8 @@ bool ZoomController::ProcessEvent( const SystemEvent& event )
 	case SystemEvent::Type::MouseKey:
 		if( event.event.mouse_key.mouse_button == SystemEvent::MouseKeyEvent::Button::Left )
 		{
+			redraw_required_= true;
+
 			if( event.event.mouse_key.pressed )
 				for( size_t i= 0u; i < 2u; ++i )
 					buttons_[i].pressed=
@@ -66,7 +68,7 @@ bool ZoomController::ProcessEvent( const SystemEvent& event )
 	return false;
 }
 
-void ZoomController::DoMove()
+void ZoomController::Update()
 {
 	const auto cur_time= std::chrono::steady_clock::now();
 	const float time_delta_s= float( std::chrono::duration_cast<std::chrono::milliseconds>( cur_time - prev_time_ ).count() ) * 0.001f;
@@ -79,11 +81,21 @@ void ZoomController::DoMove()
 
 void ZoomController::Draw()
 {
+	redraw_required_= false;
 	for( size_t i= 0u; i < 2u; ++i )
 		ui_drawer_.DrawUiElement(
 			buttons_[i].x, buttons_[i].y,
 			buttons_[i].size, buttons_[i].size,
 			buttons_[i].pressed ? buttons_[i].presed_texture : buttons_[i].texture );
+}
+
+bool ZoomController::RedrawRequired() const
+{
+	for( size_t i= 0u; i < 2u; ++i )
+		if( buttons_[i].pressed )
+			return true;
+
+	return redraw_required_;
 }
 
 } // namespace PanzerMaps

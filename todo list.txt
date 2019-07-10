@@ -13,7 +13,6 @@ Eksport i podgotovka dannyh:
 Priloženije
 * Risovanije ploscadnyh objektov s teksturoj (lesa, bolota, kladbisca)
 * Masštabnaja linejka
-* Lenivaja pererisovka - ne pererisovyvatjsä, jesli nicego ne pomenälosj
 * Ulucšenija otobraženija geopoziçii - krug tocnosti, otobraženije nadöžnosti
 * Sleženije za geopoziçijej
 * Zagruzka neskoljkih vygruzok

@@ -30,7 +30,7 @@ void TouchMapController::ProcessEvent( const SystemEvent& event )
 	}
 }
 
-void TouchMapController::DoMove()
+void TouchMapController::Update()
 {
 	if( !prev_touch_state_.empty() && !touch_state_.empty() )
 	{

@@ -1,4 +1,5 @@
 #include <SDL_system.h>
+#include <SDL_timer.h>
 #include "../common/log.hpp"
 #include "main_loop.hpp"
 
@@ -39,6 +40,8 @@ MainLoop::~MainLoop()
 
 bool MainLoop::Loop()
 {
+	bool redraw_requested= false;
+
 	SystemEvents input_events;
 	system_window_.GetInput( input_events );
 	for( const SystemEvent& event : input_events )
@@ -54,6 +57,9 @@ bool MainLoop::Loop()
 			break;
 		case SystemEvent::Type::Quit:
 			return false;
+		case SystemEvent::Type::Redraw:
+			redraw_requested= true;
+			break;
 		}
 
 		if( zoom_controller_.ProcessEvent( event ) )
@@ -68,19 +74,24 @@ bool MainLoop::Loop()
 		#endif
 	}
 
-	touch_map_controller_.DoMove();
-	zoom_controller_.DoMove();
+	touch_map_controller_.Update();
+	zoom_controller_.Update();
 
 	#ifdef __ANDROID__
 	gps_service_.Update();
 	map_drawer_.SetGPSMarkerPosition( gps_service_.GetGPSPosition() );
 	#endif
 
-	system_window_.BeginFrame();
-	map_drawer_.Draw();
-	zoom_controller_.Draw();
-	gps_button_.Draw();
-	system_window_.EndFrame();
+	if( redraw_requested || map_drawer_.RedrawRequired() || zoom_controller_.RedrawRequired() || gps_button_.RedrawRequired() )
+	{
+		system_window_.BeginFrame();
+		map_drawer_.Draw();
+		zoom_controller_.Draw();
+		gps_button_.Draw();
+		system_window_.EndFrame();
+	}
+	else
+		SDL_Delay(10);
 
 	return true;
 }

@@ -11,7 +11,7 @@ public:
 	explicit TouchMapController( MapDrawer& map_drawer );
 	void ProcessEvent( const SystemEvent& event );
 
-	void DoMove();
+	void Update();
 
 private:
 	MapDrawer& map_drawer_;

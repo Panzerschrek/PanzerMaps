@@ -17,6 +17,8 @@ public:
 	~MapDrawer();
 
 	void Draw();
+	bool RedrawRequired() const { return readraw_required_; }
+
 	float GetScale() const;
 	void SetScale( float scale );
 
@@ -51,6 +53,7 @@ private:
 	std::vector<ZoomLevel> zoom_levels_;
 
 	size_t frame_number_= 0u;
+	bool readraw_required_= true;
 
 	float scale_; // Scale = map units in pixel
 	// Camera position in map space.

@@ -142,6 +142,11 @@ void SystemWindow::GetInput( SystemEvents& out_events )
 				out_events.emplace_back();
 				out_events.back().type= SystemEvent::Type::Quit;
 			}
+			if( event.window.event == SDL_WINDOWEVENT_EXPOSED )
+			{
+				out_events.emplace_back();
+				out_events.back().type= SystemEvent::Type::Redraw;
+			}
 			break;
 
 		case SDL_KEYDOWN:

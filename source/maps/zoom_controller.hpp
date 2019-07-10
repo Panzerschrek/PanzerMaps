@@ -14,8 +14,9 @@ public:
 	// Returns true, if event grabbed.
 	bool ProcessEvent( const SystemEvent& event );
 
-	void DoMove();
+	void Update();
 	void Draw();
+	bool RedrawRequired() const;
 
 private:
 	struct Button
@@ -33,6 +34,7 @@ private:
 
 	Button buttons_[2];
 	std::chrono::steady_clock::time_point prev_time_;
+	bool redraw_required_= true;
 };
 
 } // namespace PanzerMaps

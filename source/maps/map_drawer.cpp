@@ -820,6 +820,8 @@ MapDrawer::~MapDrawer()
 
 void MapDrawer::Draw()
 {
+	readraw_required_= false;
+
 #ifdef PM_OPENGL_ES
 	const auto enable_primitive_restart= [] { glEnable( GL_PRIMITIVE_RESTART_FIXED_INDEX ); };
 	const auto disable_primitive_restart= [] { glDisable( GL_PRIMITIVE_RESTART_FIXED_INDEX ); };
@@ -1072,7 +1074,11 @@ float MapDrawer::GetScale() const
 
 void MapDrawer::SetScale( const float scale )
 {
-	scale_= std::max( min_scale_, std::min( scale, max_scale_ ) );
+	if( scale != scale_ )
+	{
+		readraw_required_= true;
+		scale_= std::max( min_scale_, std::min( scale, max_scale_ ) );
+	}
 }
 
 const m_Vec2& MapDrawer::GetPosition() const
@@ -1082,8 +1088,12 @@ const m_Vec2& MapDrawer::GetPosition() const
 
 void MapDrawer::SetPosition( const m_Vec2& position )
 {
-	cam_pos_.x= std::max( min_cam_pos_.x, std::min( position.x, max_cam_pos_.x ) );
-	cam_pos_.y= std::max( min_cam_pos_.y, std::min( position.y, max_cam_pos_.y ) );
+	if( position != cam_pos_ )
+	{
+		readraw_required_= true;
+		cam_pos_.x= std::max( min_cam_pos_.x, std::min( position.x, max_cam_pos_.x ) );
+		cam_pos_.y= std::max( min_cam_pos_.y, std::min( position.y, max_cam_pos_.y ) );
+	}
 }
 
 const ViewportSize& MapDrawer::GetViewportSize() const
@@ -1093,7 +1103,11 @@ const ViewportSize& MapDrawer::GetViewportSize() const
 
 void MapDrawer::SetGPSMarkerPosition( const GeoPoint& gps_marker_position )
 {
-	gps_marker_position_= gps_marker_position;
+	if( gps_marker_position != gps_marker_position_ )
+	{
+		readraw_required_= true;
+		gps_marker_position_= gps_marker_position;
+	}
 }
 
 MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()

@@ -22,6 +22,7 @@ public:
 	bool ProcessEvent( const SystemEvent& event );
 
 	void Draw();
+	bool RedrawRequired() const { return redraw_required_; }
 
 private:
 	UiDrawer& ui_drawer_;
@@ -34,6 +35,7 @@ private:
 
 	int button_x_, button_y_, button_size_;
 	r_Texture texture_unactive_, texture_active_;
+	bool redraw_required_= true;
 };
 
 } // namespace PanzerMaps
