@@ -498,6 +498,16 @@ public:
 		areal_objects_polygon_buffer_.IndexData( areal_objects_indicies.data(), areal_objects_indicies.size() * sizeof(uint16_t), GL_UNSIGNED_SHORT, GL_TRIANGLE_FAN );
 		areal_objects_polygon_buffer_.VertexAttribPointer( 0, 2, GL_UNSIGNED_SHORT, false, 0 );
 		areal_objects_polygon_buffer_.VertexAttribPointer( 1, 1, GL_UNSIGNED_INT, false, sizeof(uint16_t) * 2 );
+
+		gpu_data_size_= 0u;
+		gpu_data_size_+= point_objects_polygon_buffer_.GetVertexDataSize();
+		gpu_data_size_+= point_objects_polygon_buffer_.GetIndexDataSize();
+		gpu_data_size_+= linear_objects_polygon_buffer_.GetVertexDataSize();
+		gpu_data_size_+= linear_objects_polygon_buffer_.GetIndexDataSize();
+		gpu_data_size_+= linear_objects_as_triangles_buffer_.GetVertexDataSize();
+		gpu_data_size_+= linear_objects_as_triangles_buffer_.GetIndexDataSize();
+		gpu_data_size_+= areal_objects_polygon_buffer_.GetVertexDataSize();
+		gpu_data_size_+= areal_objects_polygon_buffer_.GetIndexDataSize();
 	}
 
 	void ClearGPUData()
@@ -506,6 +516,7 @@ public:
 			return;
 
 		gpu_data_prepared_= false;
+		gpu_data_size_= 0u;
 		point_objects_polygon_buffer_= r_PolygonBuffer();
 		linear_objects_polygon_buffer_= r_PolygonBuffer();
 		linear_objects_as_triangles_buffer_= r_PolygonBuffer();
@@ -514,18 +525,7 @@ public:
 
 	size_t GetGPUDataSize() const
 	{
-		size_t data_size= 0u;
-
-		data_size+= point_objects_polygon_buffer_.GetVertexDataSize();
-		data_size+= point_objects_polygon_buffer_.GetIndexDataSize();
-		data_size+= linear_objects_polygon_buffer_.GetVertexDataSize();
-		data_size+= linear_objects_polygon_buffer_.GetIndexDataSize();
-		data_size+= linear_objects_as_triangles_buffer_.GetVertexDataSize();
-		data_size+= linear_objects_as_triangles_buffer_.GetIndexDataSize();
-		data_size+= areal_objects_polygon_buffer_.GetVertexDataSize();
-		data_size+= areal_objects_polygon_buffer_.GetIndexDataSize();
-
-		return data_size;
+		return gpu_data_size_;
 	}
 
 	Chunk( const Chunk& )= delete;
@@ -565,6 +565,7 @@ public:
 	const int32_t bb_max_y_;
 
 	bool gpu_data_prepared_= false;
+	size_t gpu_data_size_= 0u;
 	r_PolygonBuffer point_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_polygon_buffer_;
 	r_PolygonBuffer linear_objects_as_triangles_buffer_;
@@ -1043,8 +1044,7 @@ void MapDrawer::Draw()
 			copyright_texture_ );
 	}
 
-	if( ( frame_number_ & 15u ) == 0u )
-		ClearGPUData();
+	ClearGPUData();
 
 	if( ( frame_number_ & 63u ) == 0u )
 		Log::User( "Visible chunks: ", visible_chunks.size(), " draw calls: ", draw_calls, " index count: ", primitive_count );
@@ -1128,12 +1128,8 @@ void MapDrawer::ClearGPUData()
 {
 	size_t total_gpu_data_size= 0u;
 	for( const ZoomLevel& zoom_level : zoom_levels_ )
-	{
-		size_t zoom_level_gpu_data_size= 0u;
 		for( const Chunk& chunk : zoom_level.chunks )
-			zoom_level_gpu_data_size+= chunk.GetGPUDataSize();
-		total_gpu_data_size+= zoom_level_gpu_data_size;
-	}
+			total_gpu_data_size+= chunk.GetGPUDataSize();
 
 #ifdef __ANDROID__
 	const size_t c_gpu_memory_limit=  64u * 1024u * 1024u;
