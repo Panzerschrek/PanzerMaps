@@ -42,9 +42,16 @@ bool ZoomController::ProcessEvent( const SystemEvent& event )
 
 			if( event.event.mouse_key.pressed )
 				for( size_t i= 0u; i < 2u; ++i )
-					buttons_[i].pressed=
+				{
+					bool pressed=
 						int(event.event.mouse_key.x) >= buttons_[i].x && int(event.event.mouse_key.x) < buttons_[i].x + buttons_[i].size &&
 						int(event.event.mouse_key.y) >= buttons_[i].y && int(event.event.mouse_key.y) < buttons_[i].y + buttons_[i].size;
+					if( pressed != buttons_[i].pressed )
+					{
+						buttons_[i].pressed= pressed;
+						prev_time_= std::chrono::steady_clock::now();
+					}
+				}
 			else
 				for( size_t i= 0u; i < 2u; ++i )
 					buttons_[i].pressed= false;
