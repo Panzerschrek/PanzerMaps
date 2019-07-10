@@ -5,6 +5,6 @@ namespace PanzerMaps
 {
 
 // Simplify lines and areal objects.
-void SimplificationPass( ObjectsData& in_data, int32_t simplification_distance_units );
+void SimplificationPass( ObjectsData& data, int32_t simplification_distance_units );
 
 } // namespace PanzerMaps

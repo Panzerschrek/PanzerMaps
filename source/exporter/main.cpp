@@ -1,6 +1,7 @@
 #include <cstring>
 #include "../common/log.hpp"
 #include "coordinates_transformation_pass.hpp"
+#include "linear_objects_merge_pass.hpp"
 #include "phase_sort_pass.hpp"
 #include "polygons_normalization_pass.hpp"
 #include "primary_export.hpp"
@@ -96,6 +97,7 @@ Usage:
 
 		ObjectsData objects_data= TransformCoordinates( osm_parse_result, zoom_level_scale_log2 );
 
+		MergeLinearObjects( objects_data );
 		SortByPhase( objects_data, zoom_level );
 		SimplificationPass( objects_data, zoom_level.simplification_distance );
 		NormalizePolygons( objects_data );
