@@ -1,4 +1,3 @@
-#include "../common/log.hpp"
 #include "mouse_map_controller.hpp"
 
 namespace PanzerMaps
@@ -38,7 +37,6 @@ void MouseMapController::ProcessEvent( const SystemEvent& event )
 
 			map_drawer_.SetPosition( position );
 			map_drawer_.SetScale( scale );
-			Log::User( "Scale is ", map_drawer_.GetScale() );
 		}
 		break;
 
