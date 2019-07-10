@@ -1,14 +1,88 @@
+#include "../common/assert.hpp"
 #include "../common/log.hpp"
 #include "simplification_pass.hpp"
 
 namespace PanzerMaps
 {
 
+static void SimplifyLine_r(
+	const MercatorPoint* const start_vertex,
+	const MercatorPoint* const   end_vertex,
+	const int64_t square_simplification_distance,
+	std::vector<MercatorPoint>& out_vertices )
+{
+	PM_ASSERT( end_vertex - start_vertex >= 1 );
+	if( end_vertex - start_vertex == 1 )
+	{
+		out_vertices.push_back( *start_vertex );
+		return;
+	}
+
+	bool simplification_ok= true;
+
+	const int64_t edge_dx= end_vertex->x - start_vertex->x;
+	const int64_t edge_dy= end_vertex->y - start_vertex->y;
+	const int64_t edge_square_length= edge_dx * edge_dx + edge_dy * edge_dy;
+	if( edge_square_length == 0 || // may be in case of loops.
+		edge_square_length >= ( 1L << 40L ) ) // Prevent overflows - split very large lines into parts.
+		simplification_ok= false;
+	else
+	{
+		for( const MercatorPoint* v= start_vertex + 1; v < end_vertex; ++v )
+		{
+			const int64_t v_dx= v->x - start_vertex->x;
+			const int64_t v_dy= v->y - start_vertex->y;
+			const int64_t dot= edge_dx * v_dx + edge_dy * v_dy;
+
+			const int64_t dist_vec_dx= v_dx - edge_dx * dot / edge_square_length;
+			const int64_t dist_vec_dy= v_dy - edge_dy * dot / edge_square_length;
+			const int64_t dist_vec_square_length= dist_vec_dx * dist_vec_dx + dist_vec_dy * dist_vec_dy;
+			if( dist_vec_square_length > square_simplification_distance )
+			{
+				simplification_ok= false;
+				break;
+			}
+
+			const int64_t angle_dot= ( v->x - (v-1)->x ) * ( (v+1)->x - v->x ) + ( v->y - (v-1)->y ) * ( (v+1)->y - v->y );
+			if( angle_dot <= 0 )
+			{
+				// Do not simplify sharp corners.
+				simplification_ok= false;
+				break;
+			}
+		}
+	}
+
+	if( simplification_ok )
+		out_vertices.push_back( *start_vertex );
+	else
+	{
+		const MercatorPoint* const middle= start_vertex + ( end_vertex - start_vertex ) / 2;
+		SimplifyLine_r( start_vertex, middle, square_simplification_distance, out_vertices );
+		SimplifyLine_r( middle, end_vertex  , square_simplification_distance, out_vertices );
+	}
+}
+
+static void SimplifyLine(
+	const MercatorPoint* const vertices,
+	const size_t vertex_count,
+	const int32_t simplification_distance_units,
+	std::vector<MercatorPoint>& out_vertices )
+{
+	PM_ASSERT( vertex_count >= 1u );
+
+	if( vertex_count > 1u )
+		SimplifyLine_r(
+			vertices,
+			vertices + vertex_count - 1u,
+			simplification_distance_units * simplification_distance_units,
+			out_vertices );
+
+	out_vertices.push_back( vertices[ vertex_count - 1u ] );
+}
+
 void SimplificationPass( ObjectsData& data, const int32_t simplification_distance_units )
 {
-	if( simplification_distance_units <= 0 )
-		return;
-
 	std::vector<ObjectsData::LinearObject> result_linear_objects;
 	std::vector<ObjectsData::VertexTranspormed> result_linear_objects_vertices;
 
@@ -25,7 +99,6 @@ void SimplificationPass( ObjectsData& data, const int32_t simplification_distanc
 	};
 
 	// TODO - improve simplification.
-	// For linear objects remove collinear points.
 	// For areal objects remove collinear point, but NOT remove points, which are same for multiple areal objects of same class and z level.
 
 	// Remove equal adjusted vertices of linear objects.
@@ -35,23 +108,17 @@ void SimplificationPass( ObjectsData& data, const int32_t simplification_distanc
 		out_object.class_= in_object.class_;
 		out_object.z_level= in_object.z_level;
 		out_object.first_vertex_index= result_linear_objects_vertices.size();
-		out_object.vertex_count= 1u;
-		result_linear_objects_vertices.push_back( data.linear_objects_vertices[ in_object.first_vertex_index ] );
 
-		for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
-		{
-			const ObjectsData::VertexTranspormed& vertex=data.linear_objects_vertices[ v ];
-			if( !vertices_near( vertex, result_linear_objects_vertices.back() ) )
-			{
-				result_linear_objects_vertices.push_back( vertex );
-				++out_object.vertex_count;
-			}
-			else if( vertex != result_linear_objects_vertices.back() && v == in_object.first_vertex_index + in_object.vertex_count - 1u )
-			{
-				result_linear_objects_vertices.push_back( vertex );
-				++out_object.vertex_count;
-			}
-		}
+		SimplifyLine(
+			data.linear_objects_vertices.data() + in_object.first_vertex_index,
+			in_object.vertex_count,
+			std::max( 1, simplification_distance_units ),
+			result_linear_objects_vertices );
+		out_object.vertex_count= result_linear_objects_vertices.size() - out_object.first_vertex_index;
+
+		PM_ASSERT( out_object.vertex_count >= 1u );
+		if( in_object.vertex_count >= 2u )
+			PM_ASSERT( out_object.vertex_count >= 2u );
 
 		result_linear_objects.push_back( out_object );
 	}
