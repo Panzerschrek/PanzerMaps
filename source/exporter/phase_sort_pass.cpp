@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "../common/assert.hpp"
 #include "../common/log.hpp"
 #include "geometry_utils.hpp"
 #include "phase_sort_pass.hpp"
@@ -27,8 +28,7 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 
 			BaseDataRepresentation::PointObject out_object;
 			out_object.class_= in_object.class_;
-			out_object.vertex_index= result.vertices.size();
-			result.vertices.push_back( in_data.vertices[ in_object.vertex_index ] );
+			result.point_objects_vertices.push_back( in_data.point_objects_vertices[ &in_object - in_data.point_objects.data() ] );
 			result.point_objects.push_back( out_object );
 		}
 	}
@@ -46,11 +46,11 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 			BaseDataRepresentation::LinearObject out_object;
 			out_object.class_= in_object.class_;
 			out_object.z_level= in_object.z_level;
-			out_object.first_vertex_index= result.vertices.size();
+			out_object.first_vertex_index= result.linear_objects_vertices.size();
 			out_object.vertex_count= in_object.vertex_count;
 
 			for( size_t v= 0u; v < in_object.vertex_count; ++v )
-				result.vertices.push_back( in_data.vertices[ in_object.first_vertex_index + v ] );
+				result.linear_objects_vertices.push_back( in_data.linear_objects_vertices[ in_object.first_vertex_index + v ] );
 
 			result.linear_objects.push_back( out_object );
 		}
@@ -90,26 +90,26 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 					out_object.multipolygon->inner_rings.emplace_back();
 					BaseDataRepresentation::Multipolygon::Part& out_ring= out_object.multipolygon->inner_rings.back();
 
-					out_ring.first_vertex_index= result.vertices.size();
+					out_ring.first_vertex_index= result.areal_objects_vertices.size();
 					out_ring.vertex_count= inner_ring.vertex_count;
-					result.vertices.insert( result.vertices.end(), in_data.vertices.data() + inner_ring.first_vertex_index, in_data.vertices.data() + inner_ring.first_vertex_index + inner_ring.vertex_count );
+					result.areal_objects_vertices.insert( result.areal_objects_vertices.end(), in_data.areal_objects_vertices.data() + inner_ring.first_vertex_index, in_data.areal_objects_vertices.data() + inner_ring.first_vertex_index + inner_ring.vertex_count );
 				}
 				for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
 				{
 					out_object.multipolygon->outer_rings.emplace_back();
 					BaseDataRepresentation::Multipolygon::Part& out_ring= out_object.multipolygon->outer_rings.back();
 
-					out_ring.first_vertex_index= result.vertices.size();
+					out_ring.first_vertex_index= result.areal_objects_vertices.size();
 					out_ring.vertex_count= outer_ring.vertex_count;
-					result.vertices.insert( result.vertices.end(), in_data.vertices.data() + outer_ring.first_vertex_index, in_data.vertices.data() + outer_ring.first_vertex_index + outer_ring.vertex_count );
+					result.areal_objects_vertices.insert( result.areal_objects_vertices.end(), in_data.areal_objects_vertices.data() + outer_ring.first_vertex_index, in_data.areal_objects_vertices.data() + outer_ring.first_vertex_index + outer_ring.vertex_count );
 				}
 			}
 			else
 			{
-				out_object.first_vertex_index= result.vertices.size();
+				out_object.first_vertex_index= result.areal_objects_vertices.size();
 				out_object.vertex_count= in_object.vertex_count;
 				for( size_t v= 0u; v < in_object.vertex_count; ++v )
-					result.vertices.push_back( in_data.vertices[ in_object.first_vertex_index + v ] );
+					result.areal_objects_vertices.push_back( in_data.areal_objects_vertices[ in_object.first_vertex_index + v ] );
 			}
 			areal_objects.push_back( std::move(out_object) );
 		}
@@ -122,14 +122,14 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 				int64_t accumulated_area= 0;
 				// Area = total area of outer polygons - area of holes.
 				for( const PhaseSortResult::Multipolygon::Part& outer_ring : polygon.multipolygon->outer_rings )
-					accumulated_area+= std::abs( CalculatePolygonDoubleSignedArea( result.vertices.data() + outer_ring.first_vertex_index, outer_ring.vertex_count ) );
+					accumulated_area+= std::abs( CalculatePolygonDoubleSignedArea( result.areal_objects_vertices.data() + outer_ring.first_vertex_index, outer_ring.vertex_count ) );
 
 				for( const PhaseSortResult::Multipolygon::Part& inner_ring : polygon.multipolygon->inner_rings )
-					accumulated_area-= std::abs( CalculatePolygonDoubleSignedArea( result.vertices.data() + inner_ring.first_vertex_index, inner_ring.vertex_count ) );
+					accumulated_area-= std::abs( CalculatePolygonDoubleSignedArea( result.areal_objects_vertices.data() + inner_ring.first_vertex_index, inner_ring.vertex_count ) );
 				return accumulated_area;
 			}
 			else
-				return std::abs( CalculatePolygonDoubleSignedArea( result.vertices.data() + polygon.first_vertex_index, polygon.vertex_count ) );
+				return std::abs( CalculatePolygonDoubleSignedArea( result.areal_objects_vertices.data() + polygon.first_vertex_index, polygon.vertex_count ) );
 		};
 
 		// Sort by area in descent order.
@@ -145,10 +145,17 @@ PhaseSortResult SortByPhase( const CoordinatesTransformationPassResult& in_data,
 			result.areal_objects.push_back( std::move(areal_object) );
 	}
 
+	PM_ASSERT( result.point_objects.size() == result.point_objects_vertices.size() );
+
 	Log::Info( "Phase sort pass: " );
 	Log::Info( zoom_level.point_classes_ordered.size(), " point classes" );
 	Log::Info( zoom_level.linear_classes_ordered.size(), " linear classes" );
 	Log::Info( zoom_level.areal_object_phases.size(), " areal objects phases" );
+	Log::Info( result.point_objects.size(), " point objects" );
+	Log::Info( result.linear_objects.size(), " linear objects" );
+	Log::Info( result.linear_objects_vertices.size(), " linear objects vertices" );
+	Log::Info( result.areal_objects.size(), " areal objects" );
+	Log::Info( result.areal_objects_vertices.size(), " areal objects vertices" );
 	Log::Info( "" );
 
 	return result;

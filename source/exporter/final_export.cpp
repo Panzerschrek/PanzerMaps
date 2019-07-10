@@ -264,7 +264,7 @@ static ChunksData DumpDataChunk(
 				prev_class= object.class_;
 			}
 
-			const MercatorPoint& mercator_point= prepared_data.vertices[object.vertex_index];
+			const MercatorPoint& mercator_point= prepared_data.point_objects_vertices[ &object - prepared_data.point_objects.data() ];
 			if( mercator_point.x >= chunk_offset_x && mercator_point.y >= chunk_offset_y &&
 				mercator_point.x < chunk_offset_x + chunk_size && mercator_point.y < chunk_offset_y + chunk_size )
 			{
@@ -317,7 +317,7 @@ static ChunksData DumpDataChunk(
 			std::vector<MercatorPoint> polyline_vertices;
 			polyline_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
-				polyline_vertices.push_back( prepared_data.vertices[v] );
+				polyline_vertices.push_back( prepared_data.linear_objects_vertices[v] );
 
 			for( const std::vector<MercatorPoint>& polyline_part : SplitPolyline( polyline_vertices, chunk_offset_x, chunk_offset_y, chunk_offset_x + chunk_size, chunk_offset_y + chunk_size ) )
 			{
@@ -374,7 +374,7 @@ static ChunksData DumpDataChunk(
 			std::vector<MercatorPoint> polygon_vertices;
 			polygon_vertices.reserve( object.vertex_count );
 			for( size_t v= object.first_vertex_index; v < object.first_vertex_index + object.vertex_count; ++v )
-				polygon_vertices.push_back( prepared_data.vertices[v] );
+				polygon_vertices.push_back( prepared_data.areal_objects_vertices[v] );
 
 			for( const std::vector<MercatorPoint> ploygon_part_bbox_splitted : SplitConvexPolygon( polygon_vertices, chunk_offset_x, chunk_offset_y, chunk_offset_x + chunk_size, chunk_offset_y + chunk_size ) )
 			{

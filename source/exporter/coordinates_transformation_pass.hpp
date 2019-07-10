@@ -23,7 +23,9 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	using VertexTranspormed= MercatorPoint;
 
 	// transformed_vertex= ( GeoToProjection(vertex) - start_point ) / coordinates_scale
-	std::vector<VertexTranspormed> vertices;
+	std::vector<VertexTranspormed> point_objects_vertices;
+	std::vector<VertexTranspormed> linear_objects_vertices;
+	std::vector<VertexTranspormed> areal_objects_vertices;
 };
 
 CoordinatesTransformationPassResult TransformCoordinates(
