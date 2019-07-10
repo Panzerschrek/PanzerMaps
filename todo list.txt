@@ -2,7 +2,6 @@ Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
 * Ikonki vysokogo razrešenija dlä tocecnyh objektov
-* Razdelenije faz obrabotki dlä raznyh klassov objektov
 * Optimizaçija narezki poligonov
 * Uproscenije linij
 * Objedinenije smežnyh linij odnogo klassa

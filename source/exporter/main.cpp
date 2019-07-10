@@ -1,5 +1,10 @@
 #include <cstring>
 #include "../common/log.hpp"
+#include "coordinates_transformation_pass.hpp"
+#include "phase_sort_pass.hpp"
+#include "polygons_normalization_pass.hpp"
+#include "primary_export.hpp"
+#include "simplification_pass.hpp"
 #include "final_export.hpp"
 
 int main( int argc, const char* const argv[] )
@@ -89,9 +94,10 @@ Usage:
 		if( &zoom_level != &styles.zoom_levels.front() )
 			zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
 
-		ObjectsData objects_data= TransformCoordinates( osm_parse_result, zoom_level_scale_log2, zoom_level.simplification_distance );
+		ObjectsData objects_data= TransformCoordinates( osm_parse_result, zoom_level_scale_log2 );
 
 		SortByPhase( objects_data, zoom_level );
+		SimplificationPass( objects_data, zoom_level.simplification_distance );
 		NormalizePolygons( objects_data );
 		ou_data_by_zoom_level.push_back( std::move(objects_data) );
 

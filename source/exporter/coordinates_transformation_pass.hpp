@@ -30,7 +30,6 @@ struct ObjectsData : BaseDataRepresentation
 
 ObjectsData TransformCoordinates(
 	const OSMParseResult& prepared_data,
-	size_t additional_scale_log2,
-	int32_t simplification_distance_units );
+	size_t additional_scale_log2 );
 
 } // namespace PanzerMaps

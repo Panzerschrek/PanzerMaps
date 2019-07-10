@@ -8,8 +8,7 @@ namespace PanzerMaps
 
 ObjectsData TransformCoordinates(
 	const OSMParseResult& prepared_data,
-	const size_t additional_scale_log2,
-	const int32_t simplification_distance_units )
+	const size_t additional_scale_log2 )
 {
 	ObjectsData result;
 
@@ -83,15 +82,6 @@ ObjectsData TransformCoordinates(
 		return MercatorPoint{ ( point.x - result.start_point.x ) / result.coordinates_scale, ( point.y - result.start_point.y ) / result.coordinates_scale };
 	};
 
-	const int32_t simplification_suqare_distance= simplification_distance_units * simplification_distance_units;
-	const auto points_near=
-	[&]( const MercatorPoint& p0, const MercatorPoint& p1 ) -> bool
-	{
-		const int32_t dx= p1.x - p0.x;
-		const int32_t dy= p1.y - p0.y;
-		return dx * dx + dy * dy <= simplification_suqare_distance;
-	};
-
 	result.point_objects.reserve( prepared_data.point_objects.size() );
 	result.linear_objects.reserve( prepared_data.linear_objects.size() );
 	result.areal_objects.reserve( prepared_data.areal_objects.size() );
@@ -99,7 +89,7 @@ ObjectsData TransformCoordinates(
 	result.point_objects= prepared_data.point_objects;
 	result.point_objects_vertices= std::move( point_objects_vetices_converted );
 
-	// Remove equal adjusted vertices of linear objects. Remove too short line objects.
+	// Remove equal adjusted vertices of linear objects.
 	for( const BaseDataRepresentation::LinearObject& in_object : prepared_data.linear_objects )
 	{
 		BaseDataRepresentation::LinearObject out_object;
@@ -113,12 +103,7 @@ ObjectsData TransformCoordinates(
 		{
 			const ObjectsData::VertexTranspormed vertex_transformed=
 				convert_point( linear_objects_vetices_converted[v] );
-			if( !points_near( vertex_transformed, result.linear_objects_vertices.back() ) )
-			{
-				result.linear_objects_vertices.push_back( vertex_transformed );
-				++out_object.vertex_count;
-			}
-			else if( vertex_transformed != result.linear_objects_vertices.back() && v == in_object.first_vertex_index + in_object.vertex_count - 1u )
+			if( vertex_transformed != result.linear_objects_vertices.back() )
 			{
 				result.linear_objects_vertices.push_back( vertex_transformed );
 				++out_object.vertex_count;
@@ -142,7 +127,7 @@ ObjectsData TransformCoordinates(
 			for( size_t v= in_first_vertex + 1u; v < in_first_vertex + in_vertex_count; ++v )
 			{
 				const auto vertex_transformed= convert_point( areal_objects_vetices_converted[v] );
-				if( !points_near( vertex_transformed, result.areal_objects_vertices.back() ) )
+				if( vertex_transformed != result.areal_objects_vertices.back() )
 				{
 					result.areal_objects_vertices.push_back( vertex_transformed );
 					++out_vertex_count;
@@ -150,7 +135,7 @@ ObjectsData TransformCoordinates(
 			}
 
 			if( out_vertex_count >= 3u &&
-				points_near( result.areal_objects_vertices[ out_first_vertex ], result.areal_objects_vertices[ out_first_vertex + out_vertex_count - 1u ] ) )
+				result.areal_objects_vertices[ out_first_vertex ] == result.areal_objects_vertices[ out_first_vertex + out_vertex_count - 1u ] )
 			{
 				result.areal_objects_vertices.pop_back(); // Remove duplicated start and end vertex.
 				--out_vertex_count;
@@ -206,7 +191,6 @@ ObjectsData TransformCoordinates(
 
 	Log::Info( "Coordinates transformation pass: " );
 	Log::Info( "Unit size: ", result.coordinates_scale );
-	Log::Info( "Simplification distance: ", result.coordinates_scale * simplification_distance_units );
 	Log::Info( result.point_objects.size(), " point objects" );
 	Log::Info( result.linear_objects.size(), " linear objects" );
 	Log::Info( result.linear_objects_vertices.size(), " linear objects vertices" );
