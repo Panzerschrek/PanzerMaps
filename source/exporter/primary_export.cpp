@@ -640,8 +640,7 @@ OSMParseResult ParseOSM( const char* file_name )
 
 		if( obj.class_ != PointObjectClass::None )
 		{
-			obj.vertex_index= result.vertices.size();
-			result.vertices.push_back( node_geo_point );
+			result.point_objects_vertices.push_back( node_geo_point );
 			result.point_objects.push_back(obj);
 		}
 	}
@@ -672,8 +671,7 @@ OSMParseResult ParseOSM( const char* file_name )
 
 				OSMParseResult::PointObject obj;
 				obj.class_= classify_result.point_object_class;
-				obj.vertex_index= result.vertices.size();
-				result.vertices.push_back( geo_point );
+				result.point_objects_vertices.push_back( geo_point );
 				result.point_objects.push_back(obj);
 			}
 		}
@@ -682,9 +680,9 @@ OSMParseResult ParseOSM( const char* file_name )
 			OSMParseResult::LinearObject obj;
 			obj.class_= classify_result.linear_object_class;
 			obj.z_level= classify_result.z_level;
-			obj.first_vertex_index= result.vertices.size();
-			ExtractVertices( way_element, nodes, result.vertices );
-			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+			obj.first_vertex_index= result.linear_objects_vertices.size();
+			ExtractVertices( way_element, nodes, result.linear_objects_vertices );
+			obj.vertex_count= result.linear_objects_vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
 				result.linear_objects.push_back(obj);
 		}
@@ -693,9 +691,9 @@ OSMParseResult ParseOSM( const char* file_name )
 			OSMParseResult::ArealObject obj;
 			obj.class_= classify_result.areal_object_class;
 			obj.z_level= classify_result.z_level;
-			obj.first_vertex_index= result.vertices.size();
-			ExtractVertices( way_element, nodes, result.vertices );
-			obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+			obj.first_vertex_index= result.areal_objects_vertices.size();
+			ExtractVertices( way_element, nodes, result.areal_objects_vertices );
+			obj.vertex_count= result.areal_objects_vertices.size() - obj.first_vertex_index;
 			if( obj.vertex_count > 0u )
 				result.areal_objects.push_back( std::move(obj) );
 		}
@@ -733,9 +731,9 @@ OSMParseResult ParseOSM( const char* file_name )
 			{
 				OSMParseResult::LinearObject obj;
 				obj.class_= classify_result.linear_object_class;
-				obj.first_vertex_index= result.vertices.size();
-				ExtractVertices( it->second, nodes, result.vertices );
-				obj.vertex_count= result.vertices.size() - obj.first_vertex_index;
+				obj.first_vertex_index= result.linear_objects_vertices.size();
+				ExtractVertices( it->second, nodes, result.linear_objects_vertices );
+				obj.vertex_count= result.linear_objects_vertices.size() - obj.first_vertex_index;
 				if( obj.vertex_count > 0u )
 					result.linear_objects.push_back(obj);
 			}
@@ -760,7 +758,7 @@ OSMParseResult ParseOSM( const char* file_name )
 			obj.first_vertex_index= obj.vertex_count= 0u;
 
 			obj.multipolygon.reset( new OSMParseResult::Multipolygon );
-			CreateMultipolygon( *obj.multipolygon, result.vertices, outer_ways, inner_ways );
+			CreateMultipolygon( *obj.multipolygon, result.areal_objects_vertices, outer_ways, inner_ways );
 
 			if( !obj.multipolygon->outer_rings.empty() )
 				result.areal_objects.push_back( std::move(obj) );
@@ -787,18 +785,21 @@ OSMParseResult ParseOSM( const char* file_name )
 
 				OSMParseResult::PointObject obj;
 				obj.class_= classify_result.point_object_class;
-				obj.vertex_index= result.vertices.size();
-				result.vertices.push_back( geo_point );
+				result.point_objects_vertices.push_back( geo_point );
 				result.point_objects.push_back(obj);
 			}
 		}
 	} // for relations.
 
+	PM_ASSERT( result.point_objects.size() == result.point_objects_vertices.size() );
+
 	Log::Info( "Primary export: " );
 	Log::Info( result.point_objects.size(), " point objects" );
 	Log::Info( result.linear_objects.size(), " linear objects" );
+	Log::Info( result.linear_objects_vertices.size(), " linear objects vertices" );
 	Log::Info( result.areal_objects.size(), " areal objects" );
-	Log::Info( result.vertices.size(), " vertices" );
+	Log::Info( result.areal_objects_vertices.size(), " areal objects vertices" );
+
 	Log::Info( "" );
 
 	return result;

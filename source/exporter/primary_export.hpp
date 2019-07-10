@@ -16,7 +16,6 @@ struct BaseDataRepresentation
 	struct PointObject
 	{
 		PointObjectClass class_= PointObjectClass::None;
-		size_t vertex_index;
 	};
 
 	struct LinearObject
@@ -56,7 +55,9 @@ struct BaseDataRepresentation
 
 struct OSMParseResult : public BaseDataRepresentation
 {
-	std::vector<GeoPoint> vertices;
+	std::vector<GeoPoint> point_objects_vertices;
+	std::vector<GeoPoint> linear_objects_vertices;
+	std::vector<GeoPoint> areal_objects_vertices;
 };
 
 OSMParseResult ParseOSM( const char* file_name );

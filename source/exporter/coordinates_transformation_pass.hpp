@@ -5,7 +5,7 @@
 namespace PanzerMaps
 {
 
-struct CoordinatesTransformationPassResult : BaseDataRepresentation
+struct ObjectsData : BaseDataRepresentation
 {
 	MercatorPoint min_point;
 	MercatorPoint max_point;
@@ -23,12 +23,13 @@ struct CoordinatesTransformationPassResult : BaseDataRepresentation
 	using VertexTranspormed= MercatorPoint;
 
 	// transformed_vertex= ( GeoToProjection(vertex) - start_point ) / coordinates_scale
-	std::vector<VertexTranspormed> vertices;
+	std::vector<VertexTranspormed> point_objects_vertices;
+	std::vector<VertexTranspormed> linear_objects_vertices;
+	std::vector<VertexTranspormed> areal_objects_vertices;
 };
 
-CoordinatesTransformationPassResult TransformCoordinates(
+ObjectsData TransformCoordinates(
 	const OSMParseResult& prepared_data,
-	size_t additional_scale_log2,
-	int32_t simplification_distance_units );
+	size_t additional_scale_log2 );
 
 } // namespace PanzerMaps
