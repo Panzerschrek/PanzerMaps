@@ -552,24 +552,12 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 	return result;
 }
 
-PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_data )
+void NormalizePolygons( ObjectsData& data )
 {
-	PolygonsNormalizationPassResult result;
-	result.min_point= in_data.min_point;
-	result.max_point= in_data.max_point;
-	result.start_point= in_data.start_point;
-	result.coordinates_scale= in_data.coordinates_scale;
-	result.zoom_level= in_data.zoom_level;
-	result.meters_in_unit= in_data.meters_in_unit;
+	std::vector<ObjectsData::ArealObject> result_areal_objects;
+	std::vector<ObjectsData::VertexTranspormed> result_areal_objects_vertices;
 
-	result.point_objects= in_data.point_objects;
-	result.point_objects_vertices= in_data.point_objects_vertices;
-
-	result.linear_objects= in_data.linear_objects;
-	result.linear_objects_vertices= in_data.linear_objects_vertices;
-
-
-	for( const BaseDataRepresentation::ArealObject& in_object : in_data.areal_objects )
+	for( const BaseDataRepresentation::ArealObject& in_object : data.areal_objects )
 	{
 		if( in_object.multipolygon != nullptr )
 		{
@@ -585,7 +573,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 					ring_vertices.clear();
 					ring_vertices.reserve( outer_ring.vertex_count );
 					for( size_t v= outer_ring.first_vertex_index; v < outer_ring.first_vertex_index + outer_ring.vertex_count; ++v )
-						ring_vertices.push_back( in_data.areal_objects_vertices[v] );
+						ring_vertices.push_back( data.areal_objects_vertices[v] );
 					auto ring_splitted= SplitPolygonIntNoncrossingParts( ring_vertices );
 					for( std::vector<MercatorPoint>& ring_part : ring_splitted )
 						outer_rings_splitted.push_back( std::move(ring_part) );
@@ -595,7 +583,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 					ring_vertices.clear();
 					ring_vertices.reserve( inner_ring.vertex_count );
 					for( size_t v= inner_ring.first_vertex_index; v < inner_ring.first_vertex_index + inner_ring.vertex_count; ++v )
-						ring_vertices.push_back( in_data.areal_objects_vertices[v] );
+						ring_vertices.push_back( data.areal_objects_vertices[v] );
 					auto ring_splitted= SplitPolygonIntNoncrossingParts( ring_vertices );
 					for( std::vector<MercatorPoint>& ring_part : ring_splitted )
 						inner_rings_splitted.push_back( std::move(ring_part) );
@@ -616,11 +604,11 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 
 					BaseDataRepresentation::ArealObject out_object;
 					out_object.class_= in_object.class_;
-					out_object.first_vertex_index= result.areal_objects_vertices.size();
+					out_object.first_vertex_index= result_areal_objects_vertices.size();
 					out_object.vertex_count= convex_part.size();
 					for( const MercatorPoint& vertex : convex_part )
-						result.areal_objects_vertices.push_back(vertex);
-					result.areal_objects.push_back( std::move(out_object) );
+						result_areal_objects_vertices.push_back(vertex);
+					result_areal_objects.push_back( std::move(out_object) );
 				}
 			}
 			else // if( in_object.multipolygon->inner_rings.empty() )
@@ -630,7 +618,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 					std::vector<MercatorPoint> ring_vertices;
 					ring_vertices.reserve( outer_ring.vertex_count );
 					for( size_t v= outer_ring.first_vertex_index; v < outer_ring.first_vertex_index + outer_ring.vertex_count; ++v )
-						ring_vertices.push_back( in_data.areal_objects_vertices[v] );
+						ring_vertices.push_back( data.areal_objects_vertices[v] );
 
 					for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( ring_vertices ) )
 					{
@@ -641,11 +629,11 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 							BaseDataRepresentation::ArealObject out_object;
 							out_object.class_= in_object.class_;
 							out_object.z_level= in_object.z_level;
-							out_object.first_vertex_index= result.areal_objects_vertices.size();
+							out_object.first_vertex_index= result_areal_objects_vertices.size();
 							out_object.vertex_count= convex_part.size();
 							for( const MercatorPoint& vertex : convex_part )
-								result.areal_objects_vertices.push_back(vertex);
-							result.areal_objects.push_back( std::move(out_object) );
+								result_areal_objects_vertices.push_back(vertex);
+							result_areal_objects.push_back( std::move(out_object) );
 						}
 					}
 				}
@@ -656,7 +644,7 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 			std::vector<MercatorPoint> polygon_vertices;
 			polygon_vertices.reserve( in_object.vertex_count );
 			for( size_t v= in_object.first_vertex_index; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
-				polygon_vertices.push_back( in_data.areal_objects_vertices[v] );
+				polygon_vertices.push_back( data.areal_objects_vertices[v] );
 
 			for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( polygon_vertices ) )
 			{
@@ -667,28 +655,23 @@ PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_dat
 					BaseDataRepresentation::ArealObject out_object;
 					out_object.class_= in_object.class_;
 					out_object.z_level= in_object.z_level;
-					out_object.first_vertex_index= result.areal_objects_vertices.size();
+					out_object.first_vertex_index= result_areal_objects_vertices.size();
 					out_object.vertex_count= convex_part.size();
 					for( const MercatorPoint& vertex : convex_part )
-						result.areal_objects_vertices.push_back(vertex);
-					result.areal_objects.push_back( std::move(out_object) );
+						result_areal_objects_vertices.push_back(vertex);
+					result_areal_objects.push_back( std::move(out_object) );
 				}
 			}
 		}
 	}
 
-	PM_ASSERT( result.point_objects.size() == result.point_objects_vertices.size() );
+	data.areal_objects= std::move(result_areal_objects);
+	data.areal_objects_vertices= std::move(result_areal_objects_vertices);
 
 	Log::Info( "Polygons normalization pass: " );
-	Log::Info( result.point_objects.size(), " point objects" );
-	Log::Info( result.linear_objects.size(), " linear objects" );
-	Log::Info( result.linear_objects_vertices.size(), " linear object vertices" );
-	Log::Info( result.areal_objects.size(), " areal objects" );
-	Log::Info( result.areal_objects_vertices.size(), " areal objects vertices" );
-
+	Log::Info( data.areal_objects.size(), " areal objects" );
+	Log::Info( data.areal_objects_vertices.size(), " areal objects vertices" );
 	Log::Info( "" );
-
-	return result;
 }
 
 } // namespace PanzerMaps

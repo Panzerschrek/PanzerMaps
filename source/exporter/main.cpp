@@ -77,7 +77,7 @@ Usage:
 	// TODO - load another copyright image, if input data is not OSM.
 	const ImageRGBA copyright_image= LoadImage( styles_dir + "/" + "osm copyright.png" );
 
-	std::vector<PolygonsNormalizationPassResult> ou_data_by_zoom_level;
+	std::vector<ObjectsData> ou_data_by_zoom_level;
 	ou_data_by_zoom_level.reserve( styles.zoom_levels.size() );
 	size_t zoom_level_scale_log2= 0u;
 	for( const Styles::ZoomLevel& zoom_level : styles.zoom_levels )
@@ -89,13 +89,11 @@ Usage:
 		if( &zoom_level != &styles.zoom_levels.front() )
 			zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
 
-		CoordinatesTransformationPassResult coordinates_transform_result= TransformCoordinates( osm_parse_result, zoom_level_scale_log2, zoom_level.simplification_distance );
+		ObjectsData objects_data= TransformCoordinates( osm_parse_result, zoom_level_scale_log2, zoom_level.simplification_distance );
 
-		PhaseSortResult phase_sort_result= SortByPhase( coordinates_transform_result, zoom_level );
-		coordinates_transform_result= CoordinatesTransformationPassResult();
-
-		PolygonsNormalizationPassResult normalize_polygons_result= NormalizePolygons( phase_sort_result );
-		ou_data_by_zoom_level.push_back( std::move(normalize_polygons_result) );
+		SortByPhase( objects_data, zoom_level );
+		NormalizePolygons( objects_data );
+		ou_data_by_zoom_level.push_back( std::move(objects_data) );
 
 		Log::Info( "" );
 		Log::Info( "-- ZOOM LEVEL END ---" );

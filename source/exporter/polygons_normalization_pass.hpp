@@ -4,10 +4,9 @@
 namespace PanzerMaps
 {
 
-using PolygonsNormalizationPassResult= PhaseSortResult;
 
 // Split polygons into convex parts, make all polygons clockwise, etc.
 // TODO - fix also self-intersecting polygons.
-PolygonsNormalizationPassResult NormalizePolygons( const PhaseSortResult& in_data );
+void NormalizePolygons( ObjectsData& in_data );
 
 } // namespace PanzerMaps

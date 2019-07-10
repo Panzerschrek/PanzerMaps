@@ -6,12 +6,12 @@
 namespace PanzerMaps
 {
 
-CoordinatesTransformationPassResult TransformCoordinates(
+ObjectsData TransformCoordinates(
 	const OSMParseResult& prepared_data,
 	const size_t additional_scale_log2,
 	const int32_t simplification_distance_units )
 {
-	CoordinatesTransformationPassResult result;
+	ObjectsData result;
 
 	if( prepared_data.point_objects_vertices.empty() && prepared_data.linear_objects_vertices.empty() && prepared_data.areal_objects_vertices.empty() )
 	{
@@ -111,7 +111,7 @@ CoordinatesTransformationPassResult TransformCoordinates(
 
 		for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
 		{
-			const CoordinatesTransformationPassResult::VertexTranspormed vertex_transformed=
+			const ObjectsData::VertexTranspormed vertex_transformed=
 				convert_point( linear_objects_vetices_converted[v] );
 			if( !points_near( vertex_transformed, result.linear_objects_vertices.back() ) )
 			{

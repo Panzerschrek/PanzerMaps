@@ -209,7 +209,7 @@ using ChunkData= std::vector<unsigned char>;
 using ChunksData= std::vector<ChunkData>;
 
 static ChunksData DumpDataChunk(
-	const PolygonsNormalizationPassResult& prepared_data,
+	const ObjectsData& prepared_data,
 	const int32_t chunk_offset_x,
 	const int32_t chunk_offset_y,
 	const int32_t chunk_size ) // Offset and size - in scaled coordinates.
@@ -222,7 +222,7 @@ static ChunksData DumpDataChunk(
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-	const CoordinatesTransformationPassResult::VertexTranspormed min_point{
+	const ObjectsData::VertexTranspormed min_point{
 		chunk_offset_x - ( 65535 - c_max_chunk_size ) / 2,
 		chunk_offset_y - ( 65535 - c_max_chunk_size ) / 2 };
 
@@ -445,7 +445,7 @@ static ChunksData DumpDataChunk(
 }
 
 static std::vector<unsigned char> DumpDataFile(
-	const std::vector<PolygonsNormalizationPassResult>& prepared_data,
+	const std::vector<ObjectsData>& prepared_data,
 	const Styles& styles,
 	const ImageRGBA& copyright_image )
 {
@@ -479,7 +479,7 @@ static std::vector<unsigned char> DumpDataFile(
 		Log::Info( "-- ZOOM LEVEL ", zoom_level_index, " ---" );
 		Log::Info( "" );
 
-		const PolygonsNormalizationPassResult& zoom_level_data= prepared_data[zoom_level_index];
+		const ObjectsData& zoom_level_data= prepared_data[zoom_level_index];
 		const Styles::ZoomLevel& zoom_level_styles= styles.zoom_levels[zoom_level_index];
 
 		// Dump zoom level chunks.
@@ -659,7 +659,7 @@ static void WriteFile( const std::vector<unsigned char>& content, const char* fi
 }
 
 void CreateDataFile(
-	const std::vector<PolygonsNormalizationPassResult>& prepared_data,
+	const std::vector<ObjectsData>& prepared_data,
 	const Styles& styles,
 	const ImageRGBA& copyright_image,
 	const char* const file_name )
