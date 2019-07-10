@@ -87,7 +87,8 @@ ObjectsData TransformCoordinates(
 	result.areal_objects.reserve( prepared_data.areal_objects.size() );
 
 	result.point_objects= prepared_data.point_objects;
-	result.point_objects_vertices= std::move( point_objects_vetices_converted );
+	for( const MercatorPoint& point_vertex : point_objects_vetices_converted )
+		result.point_objects_vertices.push_back( convert_point( point_vertex ) );
 
 	// Remove equal adjusted vertices of linear objects.
 	for( const BaseDataRepresentation::LinearObject& in_object : prepared_data.linear_objects )
