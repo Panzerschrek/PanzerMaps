@@ -45,6 +45,9 @@ static void EraseObjectFromMap( LinearObjectsMap& linear_objects_map, const Line
 	key_front.vertex= object->vertices.front();
 	key_back .vertex= object->vertices.back ();
 
+	PM_ASSERT( linear_objects_map.count( key_front ) == 1 );
+	PM_ASSERT( linear_objects_map.count( key_back  ) == 1 );
+
 	linear_objects_map.erase( key_front );
 	linear_objects_map.erase( key_back  );
 }
@@ -62,6 +65,7 @@ static void PutObjectToMap( LinearObjectsMap& linear_objects_map, const LinearOb
 	if( front_it != linear_objects_map.end() )
 	{
 		LinearObjectForMergePtr out_object= front_it->second;
+		PM_ASSERT( out_object != object );
 		EraseObjectFromMap( linear_objects_map, out_object );
 
 		if( key_front.vertex == out_object->vertices.front() )
@@ -77,6 +81,7 @@ static void PutObjectToMap( LinearObjectsMap& linear_objects_map, const LinearOb
 	else if( back_it != linear_objects_map.end() )
 	{
 		LinearObjectForMergePtr out_object= back_it->second;
+		PM_ASSERT( out_object != object );
 		EraseObjectFromMap( linear_objects_map, out_object );
 
 		if( key_back.vertex == out_object->vertices.front() )
