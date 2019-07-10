@@ -794,24 +794,15 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	gps_marker_shader_.Create();
 
 	// Setup camera
-	if( !zoom_levels_.empty() )
-	{
-		min_cam_pos_= m_Vec2( +1e20f, +1e20f );
-		max_cam_pos_= m_Vec2( -1e20f, -1e20f );
-		for( const Chunk& chunk : zoom_levels_.front().chunks )
-		{
-			min_cam_pos_.x= std::min( min_cam_pos_.x, float(chunk.coord_start_x_) );
-			min_cam_pos_.y= std::min( min_cam_pos_.y, float(chunk.coord_start_y_) );
-			max_cam_pos_.x= std::max( max_cam_pos_.x, float(chunk.coord_start_x_ + 65536) );
-			max_cam_pos_.y= std::max( max_cam_pos_.y, float(chunk.coord_start_y_ + 65536) );
-		}
-	}
-	else
-		min_cam_pos_= max_cam_pos_= m_Vec2( 0.0f, 0.0f );
+	const m_Vec2 scene_size=
+		m_Vec2( float( data_file.max_x - data_file.min_x ), float( data_file.max_y - data_file.min_y ) ) /
+		float( data_file.unit_size );
+	min_cam_pos_= m_Vec2( 0.0f, 0.0f );
+	max_cam_pos_= scene_size;
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
 	min_scale_= 1.0f;
-	max_scale_= 2.0f * std::max( max_cam_pos_.x - min_cam_pos_.x, max_cam_pos_.y - min_cam_pos_.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
+	max_scale_= 2.0f * std::max( scene_size.x, scene_size.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
 }
 
