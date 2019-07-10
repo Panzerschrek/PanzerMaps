@@ -222,7 +222,7 @@ static ChunksData DumpDataChunk(
 	const auto get_chunk= [&]() -> Chunk& { return *reinterpret_cast<Chunk*>( result.data() ); };
 	get_chunk().point_object_groups_count= get_chunk().linear_object_groups_count= get_chunk().areal_object_groups_count= 0;
 
-	const ObjectsData::VertexTranspormed min_point{
+	const ObjectsData::VertexTransformed min_point{
 		chunk_offset_x - ( 65535 - c_max_chunk_size ) / 2,
 		chunk_offset_y - ( 65535 - c_max_chunk_size ) / 2 };
 

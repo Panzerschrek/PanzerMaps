@@ -9,7 +9,7 @@ namespace PanzerMaps
 
 struct LinearObjectForMerge
 {
-	std::vector<ObjectsData::VertexTranspormed> vertices;
+	std::vector<ObjectsData::VertexTransformed> vertices;
 	LinearObjectClass class_= LinearObjectClass::None;
 	size_t z_level= g_zero_z_level;
 };
@@ -19,7 +19,7 @@ struct LinearObjectKey
 {
 	LinearObjectClass class_= LinearObjectClass::None;
 	size_t z_level= g_zero_z_level;
-	ObjectsData::VertexTranspormed vertex; // strart or finish.
+	ObjectsData::VertexTransformed vertex; // strart or finish.
 };
 
 bool operator==( const LinearObjectKey& l, const LinearObjectKey& r )
@@ -107,7 +107,7 @@ void MergeLinearObjects( ObjectsData& data )
 
 	for( const ObjectsData::LinearObject& in_object : data.linear_objects )
 	{
-		std::vector<ObjectsData::VertexTranspormed> vertices(
+		std::vector<ObjectsData::VertexTransformed> vertices(
 			data.linear_objects_vertices.data() + in_object.first_vertex_index,
 			data.linear_objects_vertices.data() + in_object.first_vertex_index + in_object.vertex_count );
 

@@ -20,12 +20,12 @@ struct ObjectsData : BaseDataRepresentation
 	float meters_in_unit; // Meters in unit for center.
 
 	// Scaled and shifted.
-	using VertexTranspormed= MercatorPoint;
+	using VertexTransformed= MercatorPoint;
 
 	// transformed_vertex= ( GeoToProjection(vertex) - start_point ) / coordinates_scale
-	std::vector<VertexTranspormed> point_objects_vertices;
-	std::vector<VertexTranspormed> linear_objects_vertices;
-	std::vector<VertexTranspormed> areal_objects_vertices;
+	std::vector<VertexTransformed> point_objects_vertices;
+	std::vector<VertexTransformed> linear_objects_vertices;
+	std::vector<VertexTransformed> areal_objects_vertices;
 };
 
 ObjectsData TransformCoordinates(

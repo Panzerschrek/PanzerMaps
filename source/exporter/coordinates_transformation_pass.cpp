@@ -101,7 +101,7 @@ ObjectsData TransformCoordinates(
 
 		for( size_t v= in_object.first_vertex_index + 1u; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
 		{
-			const ObjectsData::VertexTranspormed vertex_transformed= convert_point( linear_objects_vetices_converted[v] );
+			const ObjectsData::VertexTransformed vertex_transformed= convert_point( linear_objects_vetices_converted[v] );
 			if( vertex_transformed != result.linear_objects_vertices.back() )
 			{
 				result.linear_objects_vertices.push_back( vertex_transformed );

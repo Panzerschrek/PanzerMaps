@@ -555,7 +555,7 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 void NormalizePolygons( ObjectsData& data )
 {
 	std::vector<ObjectsData::ArealObject> result_areal_objects;
-	std::vector<ObjectsData::VertexTranspormed> result_areal_objects_vertices;
+	std::vector<ObjectsData::VertexTransformed> result_areal_objects_vertices;
 
 	for( const BaseDataRepresentation::ArealObject& in_object : data.areal_objects )
 	{

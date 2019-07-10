@@ -520,7 +520,7 @@
 
         {
             "scale_to_prev_log2" : 2,
-            "simplification_distance_units" : 4,
+            "simplification_distance_units" : 6,
             "areal_phases" :
             [
                 {
@@ -599,7 +599,7 @@
 
         {
             "scale_to_prev_log2" : 3,
-            "simplification_distance_units" : 4,
+            "simplification_distance_units" : 6,
             "areal_phases" :
             [
                 {
