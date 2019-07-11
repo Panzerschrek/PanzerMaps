@@ -16,6 +16,7 @@ void TouchMapController::ProcessEvent( const SystemEvent& event )
 	case SystemEvent::Type::MouseMove:
 	case SystemEvent::Type::Wheel:
 	case SystemEvent::Type::Quit:
+	case SystemEvent::Type::Redraw:
 		return;
 
 	case SystemEvent::Type::TouchPress:

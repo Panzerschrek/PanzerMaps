@@ -44,6 +44,7 @@ void MouseMapController::ProcessEvent( const SystemEvent& event )
 	case SystemEvent::Type::TouchRelease:
 	case SystemEvent::Type::TouchMove:
 	case SystemEvent::Type::Quit:
+	case SystemEvent::Type::Redraw:
 		return;
 	}
 }
