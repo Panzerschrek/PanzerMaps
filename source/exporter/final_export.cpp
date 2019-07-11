@@ -540,22 +540,28 @@ static std::vector<unsigned char> DumpDataFile(
 			result.resize( result.size() + sizeof(PointObjectStyle) );
 			PointObjectStyle& out_style= *reinterpret_cast<PointObjectStyle*>( result.data() + result.size() - sizeof(PointObjectStyle) );
 
-			std::memset( out_style.icon, 0, sizeof(out_style.icon) );
+			std::memset( out_style.icon_small, 0, sizeof(out_style.icon_small) );
+			std::memset( out_style.icon_large, 0, sizeof(out_style.icon_large) );
+
 
 			const auto style_it= zoom_level_styles.point_object_styles.find( object_class );
 			if( style_it != zoom_level_styles.point_object_styles.end() )
 			{
-				const ImageRGBA& image= style_it->second.image;
-				const int start_x= std::max( 0, int(PointObjectStyle::c_icon_size / 2u) - int(image.size[0] / 2u) );
-				const int start_y= std::max( 0, int(PointObjectStyle::c_icon_size / 2u) - int(image.size[1] / 2u) );
-				const int end_x= std::min( int(PointObjectStyle::c_icon_size), start_x + int(image.size[0]) );
-				const int end_y= std::min( int(PointObjectStyle::c_icon_size), start_y + int(image.size[1]) );
-				for( int y= start_y; y < end_y; ++y )
-				for( int x= start_x; x < end_x; ++x )
+				for( size_t i= 0u; i < 2u; ++i )
 				{
-					const unsigned char* const src= image.data.data() + 4 * ( (x - start_x) + (y - start_y) * int(image.size[0]) );
-					ColorRGBA* const dst= out_style.icon + x + y * int(PointObjectStyle::c_icon_size);
-					std::memcpy( dst, src, sizeof(ColorRGBA) );
+					const ImageRGBA& image= i == 0u ? style_it->second.image_small : style_it->second.image_large;
+					const size_t size= i == 0u ? PointObjectStyle::c_icon_size_small : PointObjectStyle::c_icon_size_large;
+					ColorRGBA* const dst= i == 0u ? out_style.icon_small : out_style.icon_large;
+					const int start_x= std::max( 0, int(size / 2u) - int(image.size[0] / 2u) );
+					const int start_y= std::max( 0, int(size / 2u) - int(image.size[1] / 2u) );
+					const int end_x= std::min( int(size), start_x + int(image.size[0]) );
+					const int end_y= std::min( int(size), start_y + int(image.size[1]) );
+					for( int y= start_y; y < end_y; ++y )
+					for( int x= start_x; x < end_x; ++x )
+					{
+						const unsigned char* const src= image.data.data() + 4 * ( (x - start_x) + (y - start_y) * int(image.size[0]) );
+						std::memcpy( dst + x + y * int(size), src, sizeof(ColorRGBA) );
+					}
 				}
 			}
 			++get_zoom_level(zoom_level_index).point_styles_count;

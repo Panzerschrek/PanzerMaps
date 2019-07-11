@@ -1,7 +1,6 @@
 Zadaci po prioritetu:
 
 Eksport i podgotovka dannyh:
-* Ikonki vysokogo razrešenija dlä tocecnyh objektov
 * Optimizaçija narezki poligonov
 * Vydelenije raznyh klassov domov i želyh territorij
 * Vygruzka dannyh dlä platform s drugim porädkom bajt

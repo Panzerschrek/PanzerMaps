@@ -15,7 +15,8 @@ public:
 
 	struct PointObjectStyle
 	{
-		ImageRGBA image;
+		ImageRGBA image_small;
+		ImageRGBA image_large;
 	};
 
 	struct LinearObjectStyle

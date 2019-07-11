@@ -94,12 +94,13 @@ static_assert( sizeof(Chunk) == 52u, "wrong size" );
 using ColorRGBA= unsigned char[4];
 struct PointObjectStyle
 {
-	static constexpr const uint32_t c_icon_size= 16u;
+	static constexpr const uint32_t c_icon_size_small= 16u;
+	static constexpr const uint32_t c_icon_size_large= 32u;
 
-	ColorRGBA icon[ c_icon_size * c_icon_size ];
-	// TODO - support larger icons
+	ColorRGBA icon_small[ c_icon_size_small * c_icon_size_small ];
+	ColorRGBA icon_large[ c_icon_size_large * c_icon_size_large ];
 };
-static_assert( sizeof(PointObjectStyle) == 4u * 16u * 16u, "wrong size" );
+static_assert( sizeof(PointObjectStyle) == 4u * ( 16u * 16u + 32u * 32u ), "wrong size" );
 
 struct LinearObjectStyle
 {
@@ -176,7 +177,7 @@ struct DataFile
 	// All offsets - from start of file.
 
 	static constexpr const char c_expected_header[16]= "PanzerMaps-Data";
-	static constexpr const uint32_t c_expected_version= 2u; // Change this each time, when DataFileDescripton structs changed.
+	static constexpr const uint32_t c_expected_version= 3u; // Change this each time, when DataFileDescripton structs changed.
 
 	uint8_t header[16];
 	uint32_t version;
