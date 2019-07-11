@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include "../common/coordinates_conversion.hpp"
 
 namespace PanzerMaps
