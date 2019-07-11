@@ -57,7 +57,7 @@ static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, 
 
 		const char* const image_file_name= point_style_json.second["image"].AsString();
 		if( image_file_name != nullptr && image_file_name[0] != '0' )
-			out_style.image= LoadImage( styles_dir + "/" + image_file_name );
+			out_style.image= LoadImage( styles_dir + "/icons_small/" + image_file_name );
 	}
 }
 
