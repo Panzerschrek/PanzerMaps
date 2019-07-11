@@ -32,9 +32,9 @@ UiDrawer::UiDrawer( const ViewportSize& viewport_size )
 
 void UiDrawer::DrawUiElement( const int x, const int y, const int width, const int height, const r_Texture& texture )
 {
-	m_Mat4 scale_mat, shift_mat, view_mat;
-	scale_mat.Scale( m_Vec3( 2.0f * float(width) / float(viewport_size_.width), 2.0f * float(height) / float(viewport_size_.height), 0.0f ) );
-	shift_mat.Translate( m_Vec3( 2.0f * float(x) / float(viewport_size_.width) - 1.0f, 2.0f * float(y) / float(viewport_size_.height) - 1.0f, 0.0f ) );
+	m_Mat3 scale_mat, shift_mat, view_mat;
+	scale_mat.Scale( m_Vec3( 2.0f * float(width) / float(viewport_size_.width), 2.0f * float(height) / float(viewport_size_.height), 1.0f ) );
+	shift_mat.Translate( m_Vec2( 2.0f * float(x) / float(viewport_size_.width) - 1.0f, 2.0f * float(y) / float(viewport_size_.height) - 1.0f ) );
 	view_mat= scale_mat * shift_mat;
 
 	shader_.Bind();

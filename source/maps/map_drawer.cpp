@@ -729,7 +729,7 @@ public:
 struct MapDrawer::ChunkToDraw
 {
 	const MapDrawer::Chunk& chunk;
-	m_Mat4 matrix;
+	m_Mat3 matrix;
 };
 
 MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, const char* const map_file )
@@ -843,12 +843,11 @@ void MapDrawer::Draw()
 	ZoomLevel& zoom_level= SelectZoomLevel();
 
 	// Calculate view matrix.
-	// TODO - maybe use m_Mat3?
-	m_Mat4 zoom_level_matrix, translate_matrix, scale_matrix, aspect_matrix, view_matrix;
+	m_Mat3 zoom_level_matrix, translate_matrix, scale_matrix, aspect_matrix, view_matrix;
 	zoom_level_matrix.Scale( float( 1u << zoom_level.zoom_level_log2 ) );
-	translate_matrix.Translate( m_Vec3( -cam_pos_, 0.0f ) );
+	translate_matrix.Translate( -cam_pos_ );
 	scale_matrix.Scale( 1.0f / scale_ );
-	aspect_matrix.Scale( 2.0f * m_Vec3( 1.0f / float(viewport_size_.width), 1.0f / float(viewport_size_.height), 1.0f ) );
+	aspect_matrix.Scale( m_Vec3( 2.0f / float(viewport_size_.width), 2.0f / float(viewport_size_.height), 1.0f ) );
 	view_matrix= zoom_level_matrix * translate_matrix * scale_matrix * aspect_matrix;
 
 	// Calculate viewport bounding box.
@@ -873,8 +872,8 @@ void MapDrawer::Draw()
 
 		chunk.PrepareGPUData();
 
-		m_Mat4 coords_shift_matrix, chunk_view_matrix;
-		coords_shift_matrix.Translate( m_Vec3( float(chunk.coord_start_x_), float(chunk.coord_start_y_), 0.0f ) );
+		m_Mat3 coords_shift_matrix, chunk_view_matrix;
+		coords_shift_matrix.Translate( m_Vec2( float(chunk.coord_start_x_), float(chunk.coord_start_y_) ) );
 		chunk_view_matrix= coords_shift_matrix * view_matrix;
 
 		visible_chunks.push_back( ChunkToDraw{ chunk, chunk_view_matrix } );
@@ -1015,7 +1014,7 @@ void MapDrawer::Draw()
 		m_Vec2 gps_marker_pos_scene(
 			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
 			float( gps_marker_pos_mercator.y - data_file.min_y ) / float(data_file.unit_size) );
-		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
+		const m_Vec2 gps_marker_pos_screen= gps_marker_pos_scene * (translate_matrix * scale_matrix * aspect_matrix);
 
 		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
 			gps_marker_pos_screen.y <= +1.0f && gps_marker_pos_screen.y >= -1.0f )
