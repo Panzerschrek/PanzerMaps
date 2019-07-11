@@ -70,7 +70,7 @@ SystemWindow::SystemWindow()
 		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, msaa_samples );
 	}
 
-	#ifdef __ANDROID___
+	#ifdef __ANDROID__
 	SDL_Rect display_rect;
 	if( SDL_GetDisplayUsableBounds( 0, &display_rect ) != 0 )
 		Log::FatalError( "Can not get display 0 bounds" );
