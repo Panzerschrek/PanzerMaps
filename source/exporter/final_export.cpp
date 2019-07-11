@@ -399,10 +399,13 @@ static ChunksData DumpDataChunk(
 		}
 	}
 
-	// We have vertex limit= 2^16.
+	// We have vertex limit= 2^16. But we split chunks with vertices > 32k, for better GPU perfomance.
 	// For linear objects we limit vertex count, using approximation 4 vertices for each line vertex.
-	if( vertices.size() >= 65535u || linear_vertex_count >= 65535u / 4u )
+	const size_t size_limit= chunk_size >= c_min_chunk_size * 4 ? 32768u : 65535u;
+	if( vertices.size() >= size_limit || linear_vertex_count >= 65535u / 4u )
 	{
+		Log::Info( "Split chunk ", chunk_offset_x, " ", chunk_offset_y, " into 4 parts with size ", chunk_size / 2 );
+
 		ChunksData result;
 		result.reserve(4u);
 
