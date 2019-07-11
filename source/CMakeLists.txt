@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project( PanzerMaps )
 
+set(CMAKE_CXX_STANDARD 11)
+
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	add_definitions( -DDEBUG )
 	add_definitions( -DPM_DEBUG )
