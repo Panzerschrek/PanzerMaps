@@ -1,3 +1,4 @@
+// Do not forget to update readme, when you changhe this.
 PROCESS_OBJECT_CLASS(BusStop)
 PROCESS_OBJECT_CLASS(TramStop)
 PROCESS_OBJECT_CLASS(SubwayEntrance)

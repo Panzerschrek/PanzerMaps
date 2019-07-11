@@ -1,3 +1,4 @@
+// Do not forget to update readme, when you changhe this.
 PROCESS_OBJECT_CLASS(Water)
 PROCESS_OBJECT_CLASS(Grassland)
 PROCESS_OBJECT_CLASS(Cemetery)
