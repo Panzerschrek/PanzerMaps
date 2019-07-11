@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include "../common/assert.hpp"
+#include "../common/enum_hasher.hpp"
 #include "../common/log.hpp"
 #include "simplification_pass.hpp"
 
@@ -22,7 +23,7 @@ struct ArealObjectVertexHasher
 {
 	size_t operator()( const ArealObjectVertex& key ) const
 	{
-		return std::hash<ArealObjectClass>()(key.class_) ^ std::hash<size_t>()(key.z_level) ^ std::hash<int32_t>()(key.vertex.x) ^ std::hash<int32_t>()(key.vertex.y);
+		return EnumHasher()(key.class_) ^ std::hash<size_t>()(key.z_level) ^ std::hash<int32_t>()(key.vertex.x) ^ std::hash<int32_t>()(key.vertex.y);
 	}
 };
 

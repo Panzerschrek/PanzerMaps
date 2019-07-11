@@ -27,7 +27,7 @@ void SortByPhase( ObjectsData& data, const Styles::ZoomLevel& zoom_level )
 		}
 	}
 
-	std::unordered_map< LinearObjectClass, size_t > linear_classes_order;
+	std::unordered_map< LinearObjectClass, size_t, EnumHasher > linear_classes_order;
 	for( const LinearObjectClass& object_class : zoom_level.linear_classes_ordered )
 	{
 		linear_classes_order[ object_class ]= &object_class - zoom_level.linear_classes_ordered.data();

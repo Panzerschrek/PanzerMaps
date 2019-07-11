@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "../common/assert.hpp"
+#include "../common/enum_hasher.hpp"
 #include "../common/log.hpp"
 #include "linear_objects_merge_pass.hpp"
 
@@ -31,7 +32,7 @@ struct LinearObjectKeyHasher
 {
 	size_t operator()( const LinearObjectKey& key ) const
 	{
-		return std::hash<LinearObjectClass>()(key.class_) ^ std::hash<size_t>()(key.z_level) ^ std::hash<int32_t>()(key.vertex.x) ^ std::hash<int32_t>()(key.vertex.y);
+		return EnumHasher()(key.class_) ^ std::hash<size_t>()(key.z_level) ^ std::hash<int32_t>()(key.vertex.x) ^ std::hash<int32_t>()(key.vertex.y);
 	}
 };
 

@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "../common/enum_hasher.hpp"
 #include "image.hpp"
 #include "object_classes.hpp"
 
@@ -34,12 +35,12 @@ public:
 
 	struct ArealObjectPhase
 	{
-		std::unordered_set<ArealObjectClass> classes;
+		std::unordered_set<ArealObjectClass, EnumHasher> classes;
 	};
 
-	using PointObjectStyles= std::unordered_map<PointObjectClass, PointObjectStyle>;
-	using LinearObjectStyles= std::unordered_map<LinearObjectClass, LinearObjectStyle>;
-	using ArealObjectStyles= std::unordered_map<ArealObjectClass, ArealObjectStyle>;
+	using PointObjectStyles= std::unordered_map<PointObjectClass, PointObjectStyle, EnumHasher>;
+	using LinearObjectStyles= std::unordered_map<LinearObjectClass, LinearObjectStyle, EnumHasher>;
+	using ArealObjectStyles= std::unordered_map<ArealObjectClass, ArealObjectStyle, EnumHasher>;
 
 	struct ZoomLevel
 	{
