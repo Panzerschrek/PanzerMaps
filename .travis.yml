@@ -1,5 +1,5 @@
 dist: xenial
-addons: { apt: { packages: libsdl2-dev } }
+addons: { apt: { packages: libsdl2-dev, libpng-dev } }
 language: cpp
 compiler: gcc
 script: ./travis_build.sh
