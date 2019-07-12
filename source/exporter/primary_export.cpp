@@ -298,6 +298,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			result.linear_object_class= LinearObjectClass::Coastline;
 			result.z_level= 0u; // Draw coastlines abowe all other objects.
 		}
+		else if( std::strcmp( natural, "cliff" ) == 0 )
+			result.linear_object_class= LinearObjectClass::Cliff;
 	}
 	else if( const char* const landuse= GetTagValue( way_element, "landuse" ) )
 	{

@@ -218,6 +218,13 @@
             "dash_size_m" : 32.0,
             "image" : "coastline.png"
         },
+        "Cliff":
+        {
+            "color" : "#000000",
+            "width_m" : 6,
+            "dash_size_m" : 12.0,
+            "image" : "cliff.png"
+        },
         "Railway":
         {
             "color" : "#FFFFFF",
@@ -384,6 +391,7 @@
             [
                 "Waterway",
                 "Coastline",
+                "Cliff",
                 "RoadSignificance0",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
@@ -464,6 +472,7 @@
             [
                 "Waterway",
                 "Coastline",
+                "Cliff",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
                 "RoadUndergroundLanes3",
@@ -523,6 +532,7 @@
                 "RoadSignificance3Lanes10More": { "width_m" : 60.0 },
                 "Waterway" : { "width_m" : 5.0 },
                 "Coastline" : { "width_m" : 60.0, "dash_size_m" : 120.0 },
+                "Cliff" : { "width_m" : 12.0, "dash_size_m" : 24.0 },
                 "Tram" : { "width_m" : 4.0 },
                 "Railway" : { "width_m" : 6.0, "dash_size_m" : 60.0 }
             }
