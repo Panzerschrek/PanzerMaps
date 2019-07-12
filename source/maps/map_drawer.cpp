@@ -1119,13 +1119,18 @@ void MapDrawer::SetGPSMarkerPosition( const GeoPoint& gps_marker_position )
 
 MapDrawer::ZoomLevel& MapDrawer::SelectZoomLevel()
 {
-	// Assume, that nearest scale is equivalent for WebMercator zoom 18.
-
 	const float c_default_pixels_in_m= 3779.0f;
+	// Scale factor for mobile device is less, because user is closer to mobile device screen, then to PC screen.
+#ifdef __ANDROID__
+	const float c_factor= 0.25f;
+#else
+	const float c_factor= 0.5f;
+#endif
+
 	const float pixel_density_scaler= system_window_.GetPixelsInScreenMeter() / c_default_pixels_in_m;
 
 	for( size_t i= 1u; i < zoom_levels_.size(); ++i )
-		if( scale_ * 0.5f * pixel_density_scaler < float( 1u << zoom_levels_[i].zoom_level_log2 ) )
+		if( scale_ * c_factor * pixel_density_scaler < float( 1u << zoom_levels_[i].zoom_level_log2 ) )
 			return zoom_levels_[i-1u];
 
 	return zoom_levels_.back();
