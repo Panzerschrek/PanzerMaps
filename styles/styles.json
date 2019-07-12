@@ -211,6 +211,13 @@
             "color" : "#aad3df",
             "width_m" : 2.5
         },
+        "Coastline":
+        {
+            "color" : "#aad3df",
+            "color2" : "#aad3df00",
+            "width_m" : 8,
+            "dash_size_m" : 32.0
+        },
         "Railway":
         {
             "color" : "#FFFFFF",
@@ -376,6 +383,7 @@
             "linear_classes_ordered":
             [
                 "Waterway",
+                "Coastline",
                 "RoadSignificance0",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
@@ -455,6 +463,7 @@
             "linear_classes_ordered":
             [
                 "Waterway",
+                "Coastline",
                 "RoadUndergroundLanes1",
                 "RoadUndergroundLanes2",
                 "RoadUndergroundLanes3",
@@ -513,6 +522,7 @@
                 "RoadSignificance3Lanes8":      { "width_m" : 48.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 60.0 },
                 "Waterway" : { "width_m" : 5.0 },
+                "Coastline" : { "width_m" : 30.0, "dash_size_m" : 120.0 },
                 "Tram" : { "width_m" : 4.0 },
                 "Railway" : { "width_m" : 6.0, "dash_size_m" : 60.0 }
             }
@@ -556,6 +566,7 @@
 
             "linear_classes_ordered":
             [
+                "Coastline",
                 "RoadSignificance2Lanes1",
                 "RoadSignificance2Lanes2",
                 "RoadSignificance2Lanes3",
@@ -588,6 +599,7 @@
                 "RoadSignificance3Lanes6":      { "width_m" : 40.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 40.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 40.0 },
+                "Coastline" : { "width_m" : 80.0, "dash_size_m" : 320.0 },
                 "Railway" :
                 {
                     "color" : "#707070",
@@ -625,6 +637,7 @@
 
             "linear_classes_ordered":
             [
+                "Coastline",
                 "RoadSignificance3Lanes1",
                 "RoadSignificance3Lanes2",
                 "RoadSignificance3Lanes3",
@@ -645,6 +658,7 @@
                 "RoadSignificance3Lanes6":      { "width_m" : 200.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 200.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 200.0 },
+                "Coastline" : { "width_m" : 200.0, "dash_size_m" : 800.0 },
                 "Railway" :
                 {
                     "color" : "#707070",
