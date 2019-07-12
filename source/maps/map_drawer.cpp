@@ -19,8 +19,8 @@ struct PointObjectVertex
 struct LinearObjectVertex
 {
 	uint16_t xy[2];
-	// For regular linex x is color index, 0 - unused
-	// For dashed line .y is texture coordinate.
+	// For regular linex x is color index, y - unused
+	// For textured lines y - parallel to line, x - perpendicular.
 	uint16_t tex_coord[2];
 };
 
@@ -28,8 +28,8 @@ struct PolygonalLinearObjectVertex
 {
 	float xy[2];
 
-	// For regular linex x is color index, 0 - unused
-	// For dashed line .y is texture coordinate.
+	// For regular linex x is color index, y - unused
+	// For textured lines y - parallel to line, x - perpendicular.
 	float tex_coord[2];
 };
 
@@ -79,7 +79,8 @@ static void SimplifyLine( std::vector<DataFileDescription::ChunkVertex>& line, c
 }
 
 // Creates triangle strip mesh.
-static void CreatePolygonalLine(
+template< bool generate_2d_tex_coord >
+void CreatePolygonalLine(
 	const DataFileDescription::ChunkVertex* const in_vertices,
 	const size_t vertex_count,
 	const uint32_t color_index,
@@ -90,10 +91,22 @@ static void CreatePolygonalLine(
 {
 	PM_ASSERT( vertex_count != 0u );
 
-	const float color_index_f= float(color_index);
+	float tex_coord_y= 0.0f, cup_tex_coord_add, tex_coord_left, tex_coord_lefter, tex_coord_center, tex_coord_right, tex_coord_righter;
+	if( generate_2d_tex_coord )
+	{
+		tex_coord_left= 0.0f;
+		tex_coord_lefter= 0.25f;
+		tex_coord_center= 0.5f;
+		tex_coord_righter= 0.75f;
+		tex_coord_right= 1.0;
+		cup_tex_coord_add= 0.5f * half_width * tex_coord_scale;
+	}
+	else
+	{
+		cup_tex_coord_add= 0.0f;
+		tex_coord_left= tex_coord_lefter= tex_coord_center= tex_coord_righter= tex_coord_right= float(color_index);
+	}
 
-	float tex_coord= 0.0f; // TODO - do not calculate tex_coord for lines with single color.
-	const float cup_tex_coord_add= 0.5f * half_width * tex_coord_scale;
 	if( vertex_count == 1u )
 	{
 		// Line was too simplifyed, draw only caps.
@@ -106,55 +119,55 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.y,
 					vert.y - edge_shift.x },
-				{ color_index_f, tex_coord } } );
-		tex_coord+= cup_tex_coord_add;
+				{ tex_coord_center, tex_coord_y } } );
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x * c_cos_minus_45 - edge_shift.y * c_sin_minus_45,
 					vert.y + edge_shift.x * c_sin_minus_45 + edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_lefter, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x * c_cos_plus_45 + edge_shift.y * c_sin_plus_45,
 					vert.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_righter, tex_coord_y } } );
 		// Center.
-		tex_coord+= cup_tex_coord_add;
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x,
 					vert.y + edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_left, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x,
 					vert.y - edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_right, tex_coord_y } } );
 		// Cup1
-		tex_coord+= cup_tex_coord_add;
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x + edge_shift.x * c_cos_plus_45 - edge_shift.y * c_sin_plus_45,
 					vert.y + edge_shift.x * c_sin_plus_45 + edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_lefter, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.x * c_cos_minus_45 + edge_shift.y * c_sin_minus_45,
 					vert.y - edge_shift.x * c_sin_minus_45 - edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord } } );
-		tex_coord+= cup_tex_coord_add;
+				{ tex_coord_righter, tex_coord_y } } );
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert.x - edge_shift.y,
 					vert.y + edge_shift.x },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_center, tex_coord_y } } );
 
 		out_indices.push_back( c_primitive_restart_index );
 		return;
@@ -179,38 +192,39 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.y,
 					vert0.y - edge_shift.x },
-				{ color_index_f, tex_coord } } );
-		tex_coord+= cup_tex_coord_add;
+				{ tex_coord_center, tex_coord_y } } );
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.x * c_cos_minus_45 - edge_shift.y * c_sin_minus_45,
 					vert0.y + edge_shift.x * c_sin_minus_45 + edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_lefter, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x - edge_shift.x * c_cos_plus_45 + edge_shift.y * c_sin_plus_45,
 					vert0.y - edge_shift.x * c_sin_plus_45 - edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_righter, tex_coord_y } } );
 
 		// Start of line.
-		tex_coord+= cup_tex_coord_add;
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x + edge_shift.x,
 					vert0.y + edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_left, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert0.x - edge_shift.x,
 					vert0.y - edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_right, tex_coord_y } } );
 
 		prev_edge_base_vec= edge_base_vec;
-		tex_coord+= edge_length * tex_coord_scale;
+		if( generate_2d_tex_coord )
+			tex_coord_y+= edge_length * tex_coord_scale;
 	}
 
 	for( size_t i= 1u; i < vertex_count - 1u; ++i )
@@ -238,13 +252,13 @@ static void CreatePolygonalLine(
 				PolygonalLinearObjectVertex{ {
 						vert.x + vertex_shift.x,
 						vert.y + vertex_shift.y },
-					{ color_index_f, tex_coord } } );
+					{ tex_coord_left, tex_coord_y } } );
 			out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 			out_vertices.push_back(
 				PolygonalLinearObjectVertex{ {
 						vert.x - vertex_shift.x,
 						vert.y - vertex_shift.y },
-					{ color_index_f, tex_coord } } );
+					{ tex_coord_right, tex_coord_y } } );
 		}
 		else
 		{
@@ -259,7 +273,7 @@ static void CreatePolygonalLine(
 				PolygonalLinearObjectVertex{ {
 						vert.x - vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len * sign ),
 						vert.y - vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len * sign ) },
-					{ color_index_f, tex_coord } } );
+					{ sign > 0.0f ? tex_coord_left : tex_coord_right, tex_coord_y } } );
 
 			const m_Vec2 vertex_shift= prev_edge_base_vec * ( half_width * sign );
 			const float angle_step= angle / float(rounding_edges);
@@ -285,11 +299,12 @@ static void CreatePolygonalLine(
 					PolygonalLinearObjectVertex{ {
 							vert.x + vertex_shift.x * vert_angle_cos - vertex_shift.y * vert_angle_sin,
 							vert.y + vertex_shift.x * vert_angle_sin + vertex_shift.y * vert_angle_cos },
-						{ color_index_f, tex_coord } } );
+						{ sign > 0.0f ? tex_coord_right : tex_coord_left, tex_coord_y } } );
 			}
 		}
 		prev_edge_base_vec= edge_base_vec;
-		tex_coord+= edge_length * tex_coord_scale;
+		if( generate_2d_tex_coord )
+			tex_coord_y+= edge_length * tex_coord_scale;
 	}
 
 	{
@@ -302,35 +317,35 @@ static void CreatePolygonalLine(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x + edge_shift.x,
 					vert_last.y + edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_left, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.x,
 					vert_last.y - edge_shift.y },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_right, tex_coord_y } } );
 
 		// Cup.
-		tex_coord+= cup_tex_coord_add;
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x + edge_shift.x * c_cos_plus_45 - edge_shift.y * c_sin_plus_45,
 					vert_last.y + edge_shift.x * c_sin_plus_45 + edge_shift.y * c_cos_plus_45 },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_lefter, tex_coord_y } } );
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.x * c_cos_minus_45 + edge_shift.y * c_sin_minus_45,
 					vert_last.y - edge_shift.x * c_sin_minus_45 - edge_shift.y * c_cos_minus_45 },
-				{ color_index_f, tex_coord } } );
-		tex_coord+= cup_tex_coord_add;
+				{ tex_coord_righter, tex_coord_y } } );
+		tex_coord_y+= cup_tex_coord_add;
 		out_indices.push_back( static_cast<uint16_t>(out_vertices.size()) );
 		out_vertices.push_back(
 			PolygonalLinearObjectVertex{ {
 					vert_last.x - edge_shift.y,
 					vert_last.y + edge_shift.x },
-				{ color_index_f, tex_coord } } );
+				{ tex_coord_center, tex_coord_y } } );
 	}
 	out_indices.push_back( c_primitive_restart_index );
 }
@@ -409,7 +424,12 @@ public:
 					{
 						SimplifyLine( tmp_vertices, square_half_width );
 						if( !tmp_vertices.empty() )
-							CreatePolygonalLine( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, tex_coord_scale, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+						{
+							if( std::memcmp( linear_styles_[group.style_index].color, linear_styles_[group.style_index].color2, sizeof(DataFileDescription::ColorRGBA) ) == 0 )
+								CreatePolygonalLine<false>( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, 0.0f, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+							else
+								CreatePolygonalLine<true>( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, tex_coord_scale, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+						}
 						tmp_vertices.clear();
 					}
 					else
@@ -628,8 +648,8 @@ public:
 
 		// Create textures for dashed lines.
 		{
-			const size_t tex_width= 128u;
-			const size_t tex_height= 8u;
+			const size_t tex_width= 8u;
+			const size_t tex_height= 128u;
 			DataFileDescription::ColorRGBA tex_data[ tex_width * tex_height ];
 
 			for( DataFileDescription::Chunk::StyleIndex style_index= 0u; style_index < in_zoom_level.linear_styles_count; ++ style_index )
@@ -638,13 +658,12 @@ public:
 				if( std::memcmp( style.color, style.color2, sizeof(DataFileDescription::ColorRGBA) ) == 0 )
 					continue;
 
-				for( size_t y= 0u; y < tex_height; ++y )
-				{
-					for( size_t x= 0u; x < tex_width / 2u; ++x )
-						std::memcpy( tex_data[ x + y * tex_width ], style.color , sizeof(DataFileDescription::ColorRGBA) );
-					for( size_t x= tex_width / 2u; x < tex_width; ++x )
-						std::memcpy( tex_data[ x + y * tex_width ], style.color2, sizeof(DataFileDescription::ColorRGBA) );
-				}
+				for( size_t y= 0u; y < tex_height / 2u; ++y )
+				for( size_t x= 0u; x < tex_width; ++x )
+					std::memcpy( tex_data[ x + y * tex_width ], style.color , sizeof(DataFileDescription::ColorRGBA) );
+				for( size_t y= tex_height / 2u; y < tex_height; ++y )
+				for( size_t x= 0u; x < tex_width; ++x )
+					std::memcpy( tex_data[ x + y * tex_width ], style.color2, sizeof(DataFileDescription::ColorRGBA) );
 
 				r_Texture texture( r_Texture::PixelFormat::RGBA8, tex_width, tex_height, reinterpret_cast<const unsigned char*>(tex_data) );
 				texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );

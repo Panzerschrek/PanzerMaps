@@ -77,7 +77,7 @@ R"(
 	out mediump vec2 f_tex_coord;
 	void main()
 	{
-		f_tex_coord= vec2( tex_coord.y, 0.5 );
+		f_tex_coord= tex_coord;
 		gl_Position= view_matrix * vec4( pos, 0.0, 1.0 );
 	}
 )";
