@@ -571,25 +571,39 @@ static std::vector<unsigned char> DumpDataFile(
 		}
 
 		get_zoom_level(zoom_level_index).linear_styles_offset= static_cast<uint32_t>( result.size() );
+		result.resize( result.size() + sizeof(LinearObjectStyle) * size_t(LinearObjectClass::Last) );
 		for( LinearObjectClass object_class= LinearObjectClass::None; object_class < LinearObjectClass::Last; object_class= static_cast<LinearObjectClass>( size_t(object_class) + 1u ) )
 		{
 			const auto style_it= zoom_level_styles.linear_object_styles.find( object_class );
 
 			result.resize( result.size() + sizeof(LinearObjectStyle) );
-			LinearObjectStyle& out_style= *reinterpret_cast<LinearObjectStyle*>( result.data() + result.size() - sizeof(LinearObjectStyle) );
+			LinearObjectStyle& out_style= *reinterpret_cast<LinearObjectStyle*>( result.data() + get_zoom_level(zoom_level_index).linear_styles_offset + sizeof(LinearObjectStyle) * size_t(object_class) );
+
+			out_style.dash_size_mul_256= out_style.width_mul_256= 0u;
+			out_style.texture_width= out_style.texture_height= 0u;
+			out_style.texture_data_offset= 0u;
 			if( style_it == zoom_level_styles.linear_object_styles.end() )
 			{
 				out_style.color[0]= out_style.color[1]= out_style.color[2]= 128u;
 				out_style.color[3]= 255u;
 				std::memcpy( out_style.color2, out_style.color, sizeof(unsigned char) * 4u );
-				out_style.width_mul_256= 0u;
 			}
 			else
 			{
-				std::memcpy( out_style.color , style_it->second.color , sizeof(unsigned char) * 4u );
-				std::memcpy( out_style.color2, style_it->second.color2, sizeof(unsigned char) * 4u );
-				out_style.width_mul_256= uint32_t( style_it->second.width_m / zoom_level_data.meters_in_unit * 256.0f );
-				out_style.dash_size_mul_256= uint32_t( style_it->second.dash_size_m / zoom_level_data.meters_in_unit * 256.0f );
+				const Styles::LinearObjectStyle& in_style= style_it->second;
+
+				std::memcpy( out_style.color , in_style.color , sizeof(unsigned char) * 4u );
+				std::memcpy( out_style.color2, in_style.color2, sizeof(unsigned char) * 4u );
+				out_style.width_mul_256= uint32_t( in_style.width_m / zoom_level_data.meters_in_unit * 256.0f );
+				out_style.dash_size_mul_256= uint32_t( in_style.dash_size_m / zoom_level_data.meters_in_unit * 256.0f );
+
+				if( !in_style.image.data.empty() )
+				{
+					out_style.texture_width = uint16_t( in_style.image.size[0u] );
+					out_style.texture_height= uint16_t( in_style.image.size[1u] );
+					out_style.texture_data_offset= static_cast<uint32_t>( result.size() );
+					result.insert( result.end(), in_style.image.data.begin(), in_style.image.data.end() );
+				}
 			}
 
 			++get_zoom_level(zoom_level_index).linear_styles_count;

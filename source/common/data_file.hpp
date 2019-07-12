@@ -108,8 +108,12 @@ struct LinearObjectStyle
 	ColorRGBA color2;
 	uint32_t width_mul_256; // Width of line, in units, multiplied by 256
 	uint32_t dash_size_mul_256; // Dash size, in units, multiplied by 256
+
+	uint16_t texture_width; // Non-zero, if line is textured
+	uint16_t texture_height;
+	uint32_t texture_data_offset;
 };
-static_assert( sizeof(LinearObjectStyle) == 16u, "wrong size" );
+static_assert( sizeof(LinearObjectStyle) == 24u, "wrong size" );
 
 struct ArealObjectStyle
 {
@@ -177,7 +181,7 @@ struct DataFile
 	// All offsets - from start of file.
 
 	static constexpr const char c_expected_header[16]= "PanzerMaps-Data";
-	static constexpr const uint32_t c_expected_version= 3u; // Change this each time, when DataFileDescripton structs changed.
+	static constexpr const uint32_t c_expected_version= 4u; // Change this each time, when DataFileDescripton structs changed.
 
 	uint8_t header[16];
 	uint32_t version;

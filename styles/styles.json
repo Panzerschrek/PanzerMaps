@@ -213,10 +213,10 @@
         },
         "Coastline":
         {
-            "color" : "#aad3df",
-            "color2" : "#aad3df00",
-            "width_m" : 8,
-            "dash_size_m" : 32.0
+            "color" : "#000000",
+            "width_m" : 16,
+            "dash_size_m" : 32.0,
+            "image" : "coastline.png"
         },
         "Railway":
         {
@@ -522,7 +522,7 @@
                 "RoadSignificance3Lanes8":      { "width_m" : 48.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 60.0 },
                 "Waterway" : { "width_m" : 5.0 },
-                "Coastline" : { "width_m" : 30.0, "dash_size_m" : 120.0 },
+                "Coastline" : { "width_m" : 60.0, "dash_size_m" : 120.0 },
                 "Tram" : { "width_m" : 4.0 },
                 "Railway" : { "width_m" : 6.0, "dash_size_m" : 60.0 }
             }
@@ -599,7 +599,7 @@
                 "RoadSignificance3Lanes6":      { "width_m" : 40.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 40.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 40.0 },
-                "Coastline" : { "width_m" : 80.0, "dash_size_m" : 320.0 },
+                "Coastline" : { "width_m" : 160.0, "dash_size_m" : 320.0 },
                 "Railway" :
                 {
                     "color" : "#707070",
@@ -658,7 +658,7 @@
                 "RoadSignificance3Lanes6":      { "width_m" : 200.0 },
                 "RoadSignificance3Lanes8":      { "width_m" : 200.0 },
                 "RoadSignificance3Lanes10More": { "width_m" : 200.0 },
-                "Coastline" : { "width_m" : 200.0, "dash_size_m" : 800.0 },
+                "Coastline" : { "width_m" : 400.0, "dash_size_m" : 800.0 },
                 "Railway" :
                 {
                     "color" : "#707070",

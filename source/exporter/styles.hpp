@@ -25,6 +25,7 @@ public:
 		ColorRGBA color2= {0};
 		float width_m= 0.0f;
 		float dash_size_m= 1.0f;
+		ImageRGBA image;
 	};
 
 	struct ArealObjectStyle

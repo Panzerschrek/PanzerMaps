@@ -56,7 +56,7 @@ static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, 
 		Styles::PointObjectStyle& out_style= point_styles[ object_class ];
 
 		const char* const image_file_name= point_style_json.second["image"].AsString();
-		if( image_file_name != nullptr && image_file_name[0] != '0' )
+		if( image_file_name != nullptr && image_file_name[0] != 0 )
 		{
 			out_style.image_small= LoadImage( styles_dir + "/icons_small/" + image_file_name );
 			out_style.image_large= LoadImage( styles_dir + "/icons_large/" + image_file_name );
@@ -64,7 +64,7 @@ static void ParsePointObjectStyles( const PanzerJson::Value& point_styles_json, 
 	}
 }
 
-static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json, Styles::LinearObjectStyles& linear_styles )
+static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json, Styles::LinearObjectStyles& linear_styles, const std::string& styles_dir )
 {
 	for( const auto& linear_style_json : linear_styles_json.object_elements() )
 	{
@@ -97,6 +97,10 @@ static void ParseLinearObjectStyles( const PanzerJson::Value& linear_styles_json
 			if( dash_size_m_json.IsNumber() )
 			out_style.dash_size_m= std::max( 0.25f, dash_size_m_json.AsFloat() );
 		}
+
+		const char* const image_file_name= linear_style_json.second["image"].AsString();
+		if( image_file_name != nullptr && image_file_name[0] != 0 )
+			out_style.image= LoadImage( styles_dir + "/" + image_file_name );
 	}
 }
 
@@ -139,7 +143,7 @@ static Styles::ZoomLevel ParseZoomLevel(
 	}
 
 	ParsePointObjectStyles( zoom_level_json["point_styles"], zoom_level.point_object_styles, styles_dir );
-	ParseLinearObjectStyles( zoom_level_json["linear_styles"], zoom_level.linear_object_styles );
+	ParseLinearObjectStyles( zoom_level_json["linear_styles"], zoom_level.linear_object_styles, styles_dir );
 	ParseArealObjectStyles( zoom_level_json["areal_styles"], zoom_level.areal_object_styles );
 
 	for( const PanzerJson::Value& areal_object_phase : zoom_level_json["areal_phases"].array_elements() )
@@ -222,7 +226,7 @@ Styles LoadStyles( const std::string& styles_dir )
 	Styles::ArealObjectStyles areal_object_styles;
 
 	ParsePointObjectStyles( json_parse_result->root["point_styles"], point_object_styles, styles_dir );
-	ParseLinearObjectStyles( json_parse_result->root["linear_styles"], linear_object_styles );
+	ParseLinearObjectStyles( json_parse_result->root["linear_styles"], linear_object_styles, styles_dir );
 	ParseArealObjectStyles( json_parse_result->root["areal_styles"], areal_object_styles );
 
 	for( const PanzerJson::Value& zoom_json : json_parse_result->root["zoom_levels" ] )

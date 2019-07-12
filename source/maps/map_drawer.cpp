@@ -98,7 +98,7 @@ void CreatePolygonalLine(
 		tex_coord_lefter= 0.25f;
 		tex_coord_center= 0.5f;
 		tex_coord_righter= 0.75f;
-		tex_coord_right= 1.0;
+		tex_coord_right= 1.0f;
 		cup_tex_coord_add= 0.5f * half_width * tex_coord_scale;
 	}
 	else
@@ -273,7 +273,7 @@ void CreatePolygonalLine(
 				PolygonalLinearObjectVertex{ {
 						vert.x - vertex_base_vec.x * ( half_width * vertex_base_vec_inv_square_len * sign ),
 						vert.y - vertex_base_vec.y * ( half_width * vertex_base_vec_inv_square_len * sign ) },
-					{ sign > 0.0f ? tex_coord_left : tex_coord_right, tex_coord_y } } );
+					{ sign > 0.0f ? tex_coord_right : tex_coord_left, tex_coord_y } } );
 
 			const m_Vec2 vertex_shift= prev_edge_base_vec * ( half_width * sign );
 			const float angle_step= angle / float(rounding_edges);
@@ -299,7 +299,7 @@ void CreatePolygonalLine(
 					PolygonalLinearObjectVertex{ {
 							vert.x + vertex_shift.x * vert_angle_cos - vertex_shift.y * vert_angle_sin,
 							vert.y + vertex_shift.x * vert_angle_sin + vertex_shift.y * vert_angle_cos },
-						{ sign > 0.0f ? tex_coord_right : tex_coord_left, tex_coord_y } } );
+						{ sign > 0.0f ? tex_coord_left : tex_coord_right, tex_coord_y } } );
 			}
 		}
 		prev_edge_base_vec= edge_base_vec;
@@ -348,6 +348,13 @@ void CreatePolygonalLine(
 				{ tex_coord_center, tex_coord_y } } );
 	}
 	out_indices.push_back( c_primitive_restart_index );
+}
+
+static bool TextureShaderRequired( const DataFileDescription::LinearObjectStyle& style )
+{
+	return
+		std::memcmp( style.color, style.color2, sizeof(DataFileDescription::ColorRGBA) ) != 0 ||
+		( style.texture_width > 0u && style.texture_height > 0u );
 }
 
 struct MapDrawer::Chunk
@@ -425,10 +432,10 @@ public:
 						SimplifyLine( tmp_vertices, square_half_width );
 						if( !tmp_vertices.empty() )
 						{
-							if( std::memcmp( linear_styles_[group.style_index].color, linear_styles_[group.style_index].color2, sizeof(DataFileDescription::ColorRGBA) ) == 0 )
-								CreatePolygonalLine<false>( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, 0.0f, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
-							else
+							if( TextureShaderRequired( linear_styles_[group.style_index]) )
 								CreatePolygonalLine<true>( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, tex_coord_scale, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
+							else
+								CreatePolygonalLine<false>( tmp_vertices.data(), tmp_vertices.size(), group.style_index, half_width, 0.0f, linear_objects_as_triangles_vertices, linear_objects_as_triangles_indicies );
 						}
 						tmp_vertices.clear();
 					}
@@ -648,27 +655,37 @@ public:
 
 		// Create textures for dashed lines.
 		{
-			const size_t tex_width= 8u;
-			const size_t tex_height= 128u;
-			DataFileDescription::ColorRGBA tex_data[ tex_width * tex_height ];
-
 			for( DataFileDescription::Chunk::StyleIndex style_index= 0u; style_index < in_zoom_level.linear_styles_count; ++ style_index )
 			{
 				const DataFileDescription::LinearObjectStyle& style= linear_styles[style_index];
-				if( std::memcmp( style.color, style.color2, sizeof(DataFileDescription::ColorRGBA) ) == 0 )
+				if( !TextureShaderRequired( style ) )
 					continue;
 
-				for( size_t y= 0u; y < tex_height / 2u; ++y )
-				for( size_t x= 0u; x < tex_width; ++x )
-					std::memcpy( tex_data[ x + y * tex_width ], style.color , sizeof(DataFileDescription::ColorRGBA) );
-				for( size_t y= tex_height / 2u; y < tex_height; ++y )
-				for( size_t x= 0u; x < tex_width; ++x )
-					std::memcpy( tex_data[ x + y * tex_width ], style.color2, sizeof(DataFileDescription::ColorRGBA) );
+				if( style.texture_width > 0u && style.texture_height > 0u )
+				{
+					r_Texture texture( r_Texture::PixelFormat::RGBA8, style.texture_width, style.texture_height, file_content + style.texture_data_offset );
+					texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+					texture.BuildMips();
+					textured_lines_textures[style_index]= std::move(texture);
+				}
+				else
+				{
+					const size_t tex_width= 8u;
+					const size_t tex_height= 128u;
+					DataFileDescription::ColorRGBA tex_data[ tex_width * tex_height ];
 
-				r_Texture texture( r_Texture::PixelFormat::RGBA8, tex_width, tex_height, reinterpret_cast<const unsigned char*>(tex_data) );
-				texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
-				texture.BuildMips();
-				dashed_lines_textures[style_index]= std::move(texture);
+					for( size_t y= 0u; y < tex_height / 2u; ++y )
+					for( size_t x= 0u; x < tex_width; ++x )
+						std::memcpy( tex_data[ x + y * tex_width ], style.color , sizeof(DataFileDescription::ColorRGBA) );
+					for( size_t y= tex_height / 2u; y < tex_height; ++y )
+					for( size_t x= 0u; x < tex_width; ++x )
+						std::memcpy( tex_data[ x + y * tex_width ], style.color2, sizeof(DataFileDescription::ColorRGBA) );
+
+					r_Texture texture( r_Texture::PixelFormat::RGBA8, tex_width, tex_height, reinterpret_cast<const unsigned char*>(tex_data) );
+					texture.SetFiltration( r_Texture::Filtration::LinearMipmapLinear, r_Texture::Filtration::Linear );
+					texture.BuildMips();
+					textured_lines_textures[style_index]= std::move(texture);
+				}
 			}
 		}
 
@@ -737,7 +754,7 @@ public:
 	std::vector< DataFileDescription::LinearObjectStyle > linear_styles;
 	std::vector<uint8_t> linear_styles_order;
 
-	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > dashed_lines_textures;
+	std::unordered_map< DataFileDescription::Chunk::StyleIndex, r_Texture > textured_lines_textures;
 
 	PointObjectsIconsAtlas point_objects_icons_atlas[2];
 
@@ -954,8 +971,8 @@ void MapDrawer::Draw()
 				{
 					if( group.style_index == style_index && group.z_level == z_level && group.index_count > 0u )
 					{
-						const auto tex_it= zoom_level.dashed_lines_textures.find( group.style_index );
-						if( tex_it != zoom_level.dashed_lines_textures.end() )
+						const auto tex_it= zoom_level.textured_lines_textures.find( group.style_index );
+						if( tex_it != zoom_level.textured_lines_textures.end() )
 						{
 							linear_textured_objets_shader_.Bind();
 							linear_textured_objets_shader_.Uniform( "tex", 0 );
