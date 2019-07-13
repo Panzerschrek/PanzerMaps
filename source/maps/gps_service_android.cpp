@@ -1,5 +1,5 @@
 #include <SDL_system.h>
-#include "../../common/log.hpp"
+#include "../common/log.hpp"
 #include "gps_service.hpp"
 
 namespace PanzerMaps

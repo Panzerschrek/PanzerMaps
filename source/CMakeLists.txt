@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.6)
 
 project( PanzerMaps )
 
@@ -36,6 +36,12 @@ file( GLOB MAPS_SOURCES
 	"panzer_ogl_lib/*.hpp"
 	"panzer_ogl_lib/*.h"
 	"panzer_ogl_lib/*.cpp" )
+
+if( ANDROID )
+	list( FILTER MAPS_SOURCES EXCLUDE REGEX "stub" )
+else()
+	list( FILTER MAPS_SOURCES EXCLUDE REGEX "android" )
+endif()
 
 add_executable( PanzerMaps ${MAPS_SOURCES} )
 target_compile_definitions( PanzerMaps PRIVATE -DPM_HAVE_SDL )

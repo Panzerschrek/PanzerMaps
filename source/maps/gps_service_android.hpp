@@ -1,6 +1,6 @@
 #pragma once
 #include <jni.h>
-#include "../../common/coordinates_conversion.hpp"
+#include "../common/coordinates_conversion.hpp"
 
 namespace PanzerMaps
 {

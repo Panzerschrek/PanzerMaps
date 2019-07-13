@@ -14,8 +14,8 @@ LOCAL_SRC_FILES := \
 	$(PM_SOURCES_ROOT)/common/data_file.cpp \
 	$(PM_SOURCES_ROOT)/common/log.cpp \
 	$(PM_SOURCES_ROOT)/common/memory_mapped_file.cpp \
-	$(PM_SOURCES_ROOT)/maps/android/gps_service.cpp \
 	$(PM_SOURCES_ROOT)/maps/gps_button.cpp \
+	$(PM_SOURCES_ROOT)/maps/gps_service_android.cpp \
 	$(PM_SOURCES_ROOT)/maps/main.cpp \
 	$(PM_SOURCES_ROOT)/maps/main_loop.cpp \
 	$(PM_SOURCES_ROOT)/maps/map_drawer.cpp \

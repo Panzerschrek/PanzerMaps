@@ -26,11 +26,7 @@ MainLoop::MainLoop()
 	, mouse_map_controller_( map_drawer_ )
 	, touch_map_controller_( map_drawer_ )
 	, zoom_controller_( ui_drawer_, map_drawer_ )
-	#ifdef __ANDROID__
 	, gps_button_( ui_drawer_, gps_service_ )
-	#else
-	, gps_button_( ui_drawer_ )
-	#endif
 {
 }
 
@@ -77,10 +73,8 @@ bool MainLoop::Loop()
 	touch_map_controller_.Update();
 	zoom_controller_.Update();
 
-	#ifdef __ANDROID__
 	gps_service_.Update();
 	map_drawer_.SetGPSMarkerPosition( gps_service_.GetGPSPosition() );
-	#endif
 
 	if( redraw_requested || map_drawer_.RedrawRequired() || zoom_controller_.RedrawRequired() || gps_button_.RedrawRequired() )
 	{

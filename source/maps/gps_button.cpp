@@ -4,16 +4,8 @@
 namespace PanzerMaps
 {
 
-GPSButton::GPSButton(
-	UiDrawer& ui_drawer
-	#ifdef __ANDROID__
-	, GPSService& gps_service
-	#endif
-	)
-	: ui_drawer_(ui_drawer)
-	#ifdef __ANDROID__
-	, gps_service_(gps_service)
-	#endif
+GPSButton::GPSButton( UiDrawer& ui_drawer , GPSService& gps_service )
+	: ui_drawer_(ui_drawer), gps_service_(gps_service)
 {
 	// TODO - move UI constants to one place.
 	const int c_border_size= 4;
@@ -33,11 +25,7 @@ bool GPSButton::ProcessEvent( const SystemEvent& event )
 		int(event.event.mouse_key.x) >= button_x_ && int(event.event.mouse_key.x) < button_x_ + button_size_ &&
 		int(event.event.mouse_key.y) >= button_y_ && int(event.event.mouse_key.y) < button_y_ + button_size_ )
 	{
-		#ifdef __ANDROID__
 		gps_service_.SetEnabled( !gps_service_.GetEnabled() );
-		#else
-		active_= !active_;
-		#endif
 
 		redraw_required_= true;
 		return true;
@@ -48,14 +36,7 @@ bool GPSButton::ProcessEvent( const SystemEvent& event )
 void GPSButton::Draw()
 {
 	redraw_required_= false;
-
-	bool active= false;
-	#ifdef __ANDROID__
-	active= gps_service_.GetEnabled();
-	#else
-	active= active_;
-	#endif
-	ui_drawer_.DrawUiElement( button_x_, button_y_, button_size_, button_size_, active ? texture_active_ : texture_unactive_ );
+	ui_drawer_.DrawUiElement( button_x_, button_y_, button_size_, button_size_, gps_service_.GetEnabled() ? texture_active_ : texture_unactive_ );
 }
 
 } // namespace PanzerMaps
