@@ -26,60 +26,60 @@ ObjectsData TransformCoordinates(
 	result.max_point.y= std::numeric_limits<int32_t>::min();
 
 	// Convert geo points to projection, calculate bounding box.
-	std::vector<MercatorPoint> point_objects_vetices_converted, linear_objects_vetices_converted, areal_objects_vetices_converted;
+	std::vector<ProjectionPoint> point_objects_vetices_converted, linear_objects_vetices_converted, areal_objects_vetices_converted;
 
 	point_objects_vetices_converted.reserve( prepared_data.point_objects_vertices.size() );
 	for( const GeoPoint& geo_point : prepared_data.point_objects_vertices )
 	{
-		const MercatorPoint mercator_point= GeoPointToMercatorPoint(geo_point);
-		result.min_point.x= std::min( result.min_point.x, mercator_point.x );
-		result.min_point.y= std::min( result.min_point.y, mercator_point.y );
-		result.max_point.x= std::max( result.max_point.x, mercator_point.x );
-		result.max_point.y= std::max( result.max_point.y, mercator_point.y );
-		point_objects_vetices_converted.push_back( mercator_point );
+		const ProjectionPoint projection_point= GeoPointToMercatorPoint(geo_point);
+		result.min_point.x= std::min( result.min_point.x, projection_point.x );
+		result.min_point.y= std::min( result.min_point.y, projection_point.y );
+		result.max_point.x= std::max( result.max_point.x, projection_point.x );
+		result.max_point.y= std::max( result.max_point.y, projection_point.y );
+		point_objects_vetices_converted.push_back( projection_point );
 	}
 
 	linear_objects_vetices_converted.reserve( prepared_data.linear_objects_vertices.size() );
 	for( const GeoPoint& geo_point : prepared_data.linear_objects_vertices )
 	{
-		const MercatorPoint mercator_point= GeoPointToMercatorPoint(geo_point);
-		result.min_point.x= std::min( result.min_point.x, mercator_point.x );
-		result.min_point.y= std::min( result.min_point.y, mercator_point.y );
-		result.max_point.x= std::max( result.max_point.x, mercator_point.x );
-		result.max_point.y= std::max( result.max_point.y, mercator_point.y );
-		linear_objects_vetices_converted.push_back( mercator_point );
+		const ProjectionPoint projection_point= GeoPointToMercatorPoint(geo_point);
+		result.min_point.x= std::min( result.min_point.x, projection_point.x );
+		result.min_point.y= std::min( result.min_point.y, projection_point.y );
+		result.max_point.x= std::max( result.max_point.x, projection_point.x );
+		result.max_point.y= std::max( result.max_point.y, projection_point.y );
+		linear_objects_vetices_converted.push_back( projection_point );
 	}
 
 	areal_objects_vetices_converted.reserve( prepared_data.areal_objects_vertices.size() );
 	for( const GeoPoint& geo_point : prepared_data.areal_objects_vertices )
 	{
-		const MercatorPoint mercator_point= GeoPointToMercatorPoint(geo_point);
-		result.min_point.x= std::min( result.min_point.x, mercator_point.x );
-		result.min_point.y= std::min( result.min_point.y, mercator_point.y );
-		result.max_point.x= std::max( result.max_point.x, mercator_point.x );
-		result.max_point.y= std::max( result.max_point.y, mercator_point.y );
-		areal_objects_vetices_converted.push_back( mercator_point );
+		const ProjectionPoint projection_point= GeoPointToMercatorPoint(geo_point);
+		result.min_point.x= std::min( result.min_point.x, projection_point.x );
+		result.min_point.y= std::min( result.min_point.y, projection_point.y );
+		result.max_point.x= std::max( result.max_point.x, projection_point.x );
+		result.max_point.y= std::max( result.max_point.y, projection_point.y );
+		areal_objects_vetices_converted.push_back( projection_point );
 	}
 
 	// Calculate unit scale.
 	// For closest to equator point we must have accuracy, near to expected.
 	const double c_required_accuracy_m= 0.2; // 20 cm
 	const int32_t min_abs_y= std::min( std::abs( result.max_point.y ), std::abs( result.min_point.y ) );
-	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, min_abs_y } ).y * Constants::deg_to_rad );
+	const double max_latitude_scale= std::cos( MercatorPointToGeoPoint( ProjectionPoint{ 0, min_abs_y } ).y * Constants::deg_to_rad );
 	const double scale_calculated= Constants::two_pow_32 / ( Constants::earth_equator_length_m / c_required_accuracy_m  * max_latitude_scale );
 	result.coordinates_scale= std::max( 1, static_cast<int32_t>(scale_calculated) );
 	result.coordinates_scale <<= int(additional_scale_log2);
 	result.zoom_level= additional_scale_log2;
 
-	const double average_latitude_scale= std::cos( MercatorPointToGeoPoint( MercatorPoint{ 0, result.min_point.y / 2 + result.max_point.y / 2 } ).y * Constants::deg_to_rad );
+	const double average_latitude_scale= std::cos( MercatorPointToGeoPoint( ProjectionPoint{ 0, result.min_point.y / 2 + result.max_point.y / 2 } ).y * Constants::deg_to_rad );
 	result.meters_in_unit= static_cast<float>( double(result.coordinates_scale) * Constants::earth_equator_length_m * average_latitude_scale / Constants::two_pow_32 );
 
 	result.start_point= result.min_point;
 
 	const auto convert_point=
-	[&result]( MercatorPoint point ) -> MercatorPoint
+	[&result]( ProjectionPoint point ) -> ProjectionPoint
 	{
-		return MercatorPoint{ ( point.x - result.start_point.x ) / result.coordinates_scale, ( point.y - result.start_point.y ) / result.coordinates_scale };
+		return ProjectionPoint{ ( point.x - result.start_point.x ) / result.coordinates_scale, ( point.y - result.start_point.y ) / result.coordinates_scale };
 	};
 
 	result.point_objects.reserve( prepared_data.point_objects.size() );
@@ -87,7 +87,7 @@ ObjectsData TransformCoordinates(
 	result.areal_objects.reserve( prepared_data.areal_objects.size() );
 
 	result.point_objects= prepared_data.point_objects;
-	for( const MercatorPoint& point_vertex : point_objects_vetices_converted )
+	for( const ProjectionPoint& point_vertex : point_objects_vetices_converted )
 		result.point_objects_vertices.push_back( convert_point( point_vertex ) );
 
 	// Remove equal adjusted vertices of linear objects.

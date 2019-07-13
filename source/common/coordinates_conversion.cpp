@@ -13,19 +13,19 @@ bool operator!=( const GeoPoint& l, const GeoPoint& r )
 	return !( l == r );
 }
 
-bool operator==( const MercatorPoint& l, const MercatorPoint& r )
+bool operator==( const ProjectionPoint& l, const ProjectionPoint& r )
 {
 	return l.x == r.x && l.y == r.y;
 }
 
-bool operator!=( const MercatorPoint& l, const MercatorPoint& r )
+bool operator!=( const ProjectionPoint& l, const ProjectionPoint& r )
 {
 	return !( l == r );
 }
 
-MercatorPoint GeoPointToMercatorPoint( const GeoPoint& point )
+ProjectionPoint GeoPointToMercatorPoint( const GeoPoint& point )
 {
-	MercatorPoint result;
+	ProjectionPoint result;
 
 	result.x=
 		static_cast<int32_t>( ( Constants::two_pow_31 / 180.0 ) * point.x );
@@ -36,7 +36,7 @@ MercatorPoint GeoPointToMercatorPoint( const GeoPoint& point )
 	return result;
 }
 
-GeoPoint MercatorPointToGeoPoint( const MercatorPoint& point )
+GeoPoint MercatorPointToGeoPoint( const ProjectionPoint& point )
 {
 	GeoPoint result;
 

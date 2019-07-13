@@ -7,10 +7,10 @@ namespace PanzerMaps
 
 struct ObjectsData : BaseDataRepresentation
 {
-	MercatorPoint min_point;
-	MercatorPoint max_point;
+	ProjectionPoint min_point;
+	ProjectionPoint max_point;
 
-	MercatorPoint start_point;
+	ProjectionPoint start_point;
 	 // Scale to Mercator unit.
 	int coordinates_scale;
 
@@ -20,7 +20,7 @@ struct ObjectsData : BaseDataRepresentation
 	float meters_in_unit; // Meters in unit for center.
 
 	// Scaled and shifted.
-	using VertexTransformed= MercatorPoint;
+	using VertexTransformed= ProjectionPoint;
 
 	// transformed_vertex= ( GeoToProjection(vertex) - start_point ) / coordinates_scale
 	std::vector<VertexTransformed> point_objects_vertices;

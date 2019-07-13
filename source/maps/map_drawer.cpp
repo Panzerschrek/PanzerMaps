@@ -1037,7 +1037,7 @@ void MapDrawer::Draw()
 	{
 		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
 
-		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
+		const ProjectionPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
 
 		m_Vec2 gps_marker_pos_scene(
 			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),

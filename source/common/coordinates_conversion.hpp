@@ -18,9 +18,7 @@ const double rad_to_deg = 180.0 / pi;
 const double two_pow_31 = 2147483648.0;
 const double two_pow_32 = 4294967296.0;
 
-// Max latitude for used projection.
-const double max_latitude = 2.0 * std::atan(std::exp(Constants::pi)) - Constants::pi * 0.5;
-
+const double mercator_projection_max_latitude = 2.0 * std::atan(std::exp(Constants::pi)) - Constants::pi * 0.5;
 }
 
 struct GeoPoint
@@ -29,19 +27,23 @@ struct GeoPoint
 	double y; // latitude, ( -90; 90 )
 };
 
-struct MercatorPoint
+struct ProjectionPoint
 {
-	int32_t x; // map [ -180; 180 ) to [ int_min, int_max ]
-	int32_t y; // map [ -max_latitude, max_latitude ) to [ int_min, int_max ]
+	int32_t x;
+	int32_t y;
 };
 
 bool operator==( const GeoPoint& l, const GeoPoint& r );
 bool operator!=( const GeoPoint& l, const GeoPoint& r );
 
-bool operator==( const MercatorPoint& l, const MercatorPoint& r );
-bool operator!=( const MercatorPoint& l, const MercatorPoint& r );
+bool operator==( const ProjectionPoint& l, const ProjectionPoint& r );
+bool operator!=( const ProjectionPoint& l, const ProjectionPoint& r );
 
-MercatorPoint GeoPointToMercatorPoint( const GeoPoint& point );
-GeoPoint MercatorPointToGeoPoint( const MercatorPoint& point );
+// Mercator projection.
+// Maps longitude in range [ -180; 180 ) to projection x in range [ int_min, int_max ].
+// Maps latitude in range [ -max_latitude, max_latitude ) to projection y in range [ int_min, int_max ].
+ProjectionPoint GeoPointToMercatorPoint( const GeoPoint& point );
+GeoPoint MercatorPointToGeoPoint( const ProjectionPoint& point );
+
 
 } // namespace PanzerMaps

@@ -4,7 +4,7 @@
 namespace PanzerMaps
 {
 
-int64_t CalculatePolygonDoubleSignedArea( const MercatorPoint* const vertices, size_t vertex_count )
+int64_t CalculatePolygonDoubleSignedArea( const ProjectionPoint* const vertices, size_t vertex_count )
 {
 	PM_ASSERT( vertex_count >= 3u );
 
