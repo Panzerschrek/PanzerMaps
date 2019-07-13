@@ -10,7 +10,6 @@ struct ObjectsData : BaseDataRepresentation
 	ProjectionPoint min_point;
 	ProjectionPoint max_point;
 
-	ProjectionPoint start_point;
 	 // Scale to Mercator unit.
 	int coordinates_scale;
 

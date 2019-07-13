@@ -487,12 +487,11 @@ static std::vector<unsigned char> DumpDataFile(
 
 		// Dump zoom level chunks.
 		const int32_t used_chunk_size= c_max_chunk_size;
-		const int32_t chunks_x= ( zoom_level_data.max_point.x / zoom_level_data.coordinates_scale - zoom_level_data.start_point.x / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
-		const int32_t chunks_y= ( zoom_level_data.max_point.y / zoom_level_data.coordinates_scale - zoom_level_data.start_point.y / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+		const int32_t chunks_x= ( ( zoom_level_data.max_point.x - zoom_level_data.min_point.x ) / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
+		const int32_t chunks_y= ( ( zoom_level_data.max_point.y - zoom_level_data.min_point.y ) / zoom_level_data.coordinates_scale + (used_chunk_size-1) ) / used_chunk_size;
 
 		// All zoom levels must have same start point.
 		PM_ASSERT( zoom_level_data.min_point == prepared_data.front().min_point );
-		PM_ASSERT( zoom_level_data.start_point == prepared_data.front().start_point );
 
 		ChunksData final_chunks_data;
 		for( int32_t x= 0; x < chunks_x; ++x )
