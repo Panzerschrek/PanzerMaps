@@ -94,6 +94,35 @@
             "width_m" : 24.0
         },
 
+        "RoadDirtLanes1":
+        {
+            "color" : "#996600",
+            "color2" : "#99660000",
+            "width_m" : 2.0,
+            "dash_size_m" : 12.0
+        },
+        "RoadDirtLanes2":
+        {
+            "color" : "#996600",
+            "color2" : "#99660000",
+            "width_m" : 4.0,
+            "dash_size_m" : 24.0
+        },
+        "RoadDirtLanes3":
+        {
+            "color" : "#996600",
+            "color2" : "#99660000",
+            "width_m" : 6.0,
+            "dash_size_m" : 36.0
+        },
+        "RoadDirtLanes4More":
+        {
+            "color" : "#996600",
+            "color2" : "#99660000",
+            "width_m" : 8.0,
+            "dash_size_m" : 48.0
+        },
+
         "RoadSignificance1Lanes1":
         {
             "color" : "#ffffff",
@@ -398,6 +427,10 @@
                 "RoadUndergroundLanes3",
                 "RoadUndergroundLanes4",
                 "RoadUndergroundLanes6",
+                "RoadDirtLanes1",
+                "RoadDirtLanes2",
+                "RoadDirtLanes3",
+                "RoadDirtLanes4More",
                 "RoadUndergroundLanes8More",
                 "RoadSignificance1Lanes1",
                 "RoadSignificance1Lanes2",

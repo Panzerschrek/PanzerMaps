@@ -123,11 +123,23 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			else
 				result.linear_object_class= LinearObjectClass::RoadSignificance1Lanes2;
 		}
+		else if( std::strcmp( highway, "track" ) == 0 )
+		{
+				if( lane_count == 0u )
+				result.linear_object_class= LinearObjectClass::RoadDirtLanes1;
+			else if( lane_count <= 1u )
+				result.linear_object_class= LinearObjectClass::RoadDirtLanes1;
+			else if( lane_count <= 2u )
+				result.linear_object_class= LinearObjectClass::RoadDirtLanes2;
+			else if( lane_count <= 3u )
+				result.linear_object_class= LinearObjectClass::RoadDirtLanes3;
+			else
+				result.linear_object_class= LinearObjectClass::RoadDirtLanes4More;
+		}
 		else if(
 			std::strcmp( highway, "unclassified" ) == 0 ||
 			std::strcmp( highway, "tertiary" ) == 0 ||
 			std::strcmp( highway, "tertiary_link" ) == 0 ||
-			std::strcmp( highway, "track" ) == 0 ||
 			std::strcmp( highway, "bus_guideway" ) == 0 ||
 			std::strcmp( highway, "road" ) == 0 )
 		{
