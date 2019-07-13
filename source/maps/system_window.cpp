@@ -222,6 +222,20 @@ void SystemWindow::BeginFrame()
 	float dots_per_inch;
 	if( SDL_GetDisplayDPI( SDL_GetWindowDisplayIndex( window_ ), &dots_per_inch, nullptr, nullptr ) == 0 )
 		pixels_in_screen_meter_= dots_per_inch / c_inches_to_meters;
+
+	// Setup initial OpenGL state.
+
+	glDisable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+	// We do not needs cull face and depth test, because "PanzerMaps" is pure 2d application.
+	glDisable( GL_CULL_FACE );
+	glDisable( GL_DEPTH_TEST );
+	glDepthMask( 0 );
+
+	#ifndef PM_OPENGL_ES
+	glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
+	#endif
 }
 
 void SystemWindow::EndFrame()

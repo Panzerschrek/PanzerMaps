@@ -873,9 +873,6 @@ void MapDrawer::Draw()
 	glClearColor( float(background_color_[0]) / 255.0f, float(background_color_[1]) / 255.0f, float(background_color_[2]) / 255.0f, float(background_color_[3]) / 255.0f );
 	glClear( GL_COLOR_BUFFER_BIT );
 
-	// Setup OpenGL state.
-	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
 	ZoomLevel& zoom_level= SelectZoomLevel();
 
 	// Calculate view matrix.
@@ -1022,9 +1019,6 @@ void MapDrawer::Draw()
 
 		point_objects_icons_atlas.texture.Bind();
 
-		#ifndef PM_OPENGL_ES
-		glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
-		#endif
 		glEnable( GL_BLEND );
 		for( const ChunkToDraw& chunk_to_draw : visible_chunks )
 		{
@@ -1037,9 +1031,6 @@ void MapDrawer::Draw()
 			primitive_count+= chunk_to_draw.chunk.point_objects_polygon_buffer_.GetVertexDataSize() / sizeof(PointObjectVertex);
 		}
 		glDisable( GL_BLEND );
-		#ifndef PM_OPENGL_ES
-		glDisable( GL_PROGRAM_POINT_SIZE );
-		#endif
 	}
 	if( gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
 		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
@@ -1062,17 +1053,9 @@ void MapDrawer::Draw()
 			gps_marker_shader_.Uniform( "pos", gps_marker_pos_screen );
 			gps_marker_shader_.Uniform( "point_size", marker_size );
 
-			#ifndef PM_OPENGL_ES
-			glEnable( GL_PROGRAM_POINT_SIZE ); // In OpenGL ES program point size is default behaviour.
-			#endif
 			glEnable( GL_BLEND );
-
 			glDrawArrays( GL_POINTS, 0, 1 );
-
 			glDisable( GL_BLEND );
-			#ifndef PM_OPENGL_ES
-			glDisable( GL_PROGRAM_POINT_SIZE );
-			#endif
 		}
 	}
 
