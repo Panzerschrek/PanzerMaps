@@ -39,7 +39,8 @@ public:
 		const double base_latitude1_cos= std::cos( base_latitude1 * Constants::deg_to_rad );
 		const double base_latitude2_sin= std::sin( base_latitude2 * Constants::deg_to_rad );
 
-		zero_longitude_rad_= ( min_point.x + max_point.x ) * 0.5 * Constants::deg_to_rad;
+		const double zero_latitude_deg= ( min_point.x + max_point.x ) * 0.5;
+		zero_longitude_rad_= zero_latitude_deg * Constants::deg_to_rad;
 		latitude_avg_sin_= ( base_latitude1_sin + base_latitude2_sin ) * 0.5;
 		c_= base_latitude1_cos * base_latitude1_cos + 2.0 * latitude_avg_sin_ * base_latitude1_sin;
 		p0_= std::sqrt( c_ - 2.0 * latitude_avg_sin_ * std::sin(zero_latitude) ) / latitude_avg_sin_;
@@ -47,16 +48,16 @@ public:
 		// Calculate scale factor.
 		scale_factor_= double( 1 << 28 );
 		ProjectionPoint special_points[10];
-		special_points[0]= Project( GeoPoint{ -90.0, -90.0 } );
-		special_points[1]= Project( GeoPoint{ +90.0, -90.0 } );
-		special_points[2]= Project( GeoPoint{ -90.0, +90.0 } );
-		special_points[3]= Project( GeoPoint{ +90.0, +90.0 } );
-		special_points[4]= Project( GeoPoint{   0.0, -90.0 } );
-		special_points[5]= Project( GeoPoint{   0.0, +90.0 } );
-		special_points[6]= Project( GeoPoint{ -90.0 / latitude_avg_sin_, -90.0 } );
-		special_points[7]= Project( GeoPoint{ +90.0 / latitude_avg_sin_, -90.0 } );
-		special_points[8]= Project( GeoPoint{ -90.0 / latitude_avg_sin_, +90.0 } );
-		special_points[9]= Project( GeoPoint{ +90.0 / latitude_avg_sin_, +90.0 } );
+		special_points[0]= Project( GeoPoint{ zero_latitude_deg -90.0, -90.0 } );
+		special_points[1]= Project( GeoPoint{ zero_latitude_deg +90.0, -90.0 } );
+		special_points[2]= Project( GeoPoint{ zero_latitude_deg -90.0, +90.0 } );
+		special_points[3]= Project( GeoPoint{ zero_latitude_deg +90.0, +90.0 } );
+		special_points[4]= Project( GeoPoint{ zero_latitude_deg  +0.0, -90.0 } );
+		special_points[5]= Project( GeoPoint{ zero_latitude_deg  +0.0, +90.0 } );
+		special_points[6]= Project( GeoPoint{ zero_latitude_deg -90.0 / latitude_avg_sin_, -90.0 } );
+		special_points[7]= Project( GeoPoint{ zero_latitude_deg +90.0 / latitude_avg_sin_, -90.0 } );
+		special_points[8]= Project( GeoPoint{ zero_latitude_deg -90.0 / latitude_avg_sin_, +90.0 } );
+		special_points[9]= Project( GeoPoint{ zero_latitude_deg +90.0 / latitude_avg_sin_, +90.0 } );
 
 		ProjectionPoint min_test_point= special_points[0], max_test_point= special_points[0];
 		for( const ProjectionPoint& point : special_points )
@@ -106,7 +107,7 @@ public:
 		special_points[1]= projection_->Project( GeoPoint{ max_point.x, min_point.y } );
 		special_points[2]= projection_->Project( GeoPoint{ min_point.x, max_point.y } );
 		special_points[3]= projection_->Project( GeoPoint{ max_point.x, max_point.y } );
-		special_points[4]= projection_->Project( GeoPoint{ ( min_point.x + max_point.x ) * 0.5, max_point.y } );
+		special_points[4]= projection_->Project( GeoPoint{ ( min_point.x + max_point.x ) * 0.5, min_point.y } );
 		special_points[5]= projection_->Project( GeoPoint{ ( min_point.x + max_point.x ) * 0.5, max_point.y } );
 		special_points[6]= projection_->Project( GeoPoint{ min_point.x, ( min_point.y + max_point.y ) * 0.5 } );
 		special_points[7]= projection_->Project( GeoPoint{ max_point.x, ( min_point.y + max_point.y ) * 0.5 } );
