@@ -5,6 +5,7 @@
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "shaders.hpp"
+#include "textures_generation.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps
@@ -815,6 +816,7 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 		copyright_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 	}
 
+	north_arrow_texture_= GenTexture_NorthArrow( std::min( viewport_size_.width, viewport_size_.height ) / 10u );
 	// Create shaders
 
 	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
@@ -1021,7 +1023,7 @@ void MapDrawer::Draw()
 		}
 		disable_primitive_restart();
 	}
-
+	// Point objects.
 	const auto& point_objects_icons_atlas=
 		system_window_.GetPixelsInScreenMeter() > 5600.0f
 		? zoom_level.point_objects_icons_atlas[1]
@@ -1049,7 +1051,7 @@ void MapDrawer::Draw()
 		}
 		glDisable( GL_BLEND );
 	}
-
+	// Gps marker.
 	if( projection_ != nullptr &&
 		gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
 		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
@@ -1073,7 +1075,7 @@ void MapDrawer::Draw()
 			glDisable( GL_BLEND );
 		}
 	}
-
+	// North arrow.
 	if( projection_ != nullptr )
 	{
 		ProjectionPoint camera_position_scene{ int32_t(cam_pos_.x), int32_t(cam_pos_.y) };
@@ -1088,9 +1090,19 @@ void MapDrawer::Draw()
 		const ProjectionPoint try_point_north_projected= projection_->Project( try_point_north );
 
 		const double angle_to_north_rad= std::atan2( double( try_point_north_projected.x - try_point_south_projected.x ), double( try_point_north_projected.y - try_point_south_projected.y ) );
-		Log::Info( "Local angle to north: ", angle_to_north_rad * Constants::rad_to_deg, " deg" );
-	}
 
+		if( std::abs( angle_to_north_rad) > 0.1 * Constants::deg_to_rad )
+		{
+		ui_drawer_.DrawUiElementRotated(
+				4u + north_arrow_texture_.Width () / 2u,
+				4u + north_arrow_texture_.Height() / 2u,
+				north_arrow_texture_.Width (),
+				north_arrow_texture_.Height(),
+				float(angle_to_north_rad),
+				north_arrow_texture_ );
+		}
+	}
+	// Copyright.
 	if( !copyright_texture_.IsEmpty() )
 	{
 		const unsigned int c_border= 4u;

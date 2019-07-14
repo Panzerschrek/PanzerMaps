@@ -49,6 +49,7 @@ private:
 	r_GLSLProgram areal_objects_shader_;
 	r_GLSLProgram gps_marker_shader_;
 	r_Texture copyright_texture_;
+	r_Texture north_arrow_texture_;
 
 	std::vector<ZoomLevel> zoom_levels_;
 

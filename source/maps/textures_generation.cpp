@@ -157,4 +157,40 @@ r_Texture GenTexture_GPSButtonUnactive( const size_t tex_size )
 	return GenTexture_GPSButton_impl( tex_size, TexConstants::plus_color );
 }
 
+r_Texture GenTexture_NorthArrow( const size_t tex_size )
+{
+	std::vector<unsigned char> tex_data( tex_size * tex_size * 4u, 0 );
+
+	// Arrow body.
+	for( size_t y= tex_size * 1u / 16u; y < tex_size * 14u / 16u; ++y )
+	for( size_t x= tex_size * 7u / 16u; x < tex_size * 9u / 16u; ++x )
+		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+	// Left part.
+	for( size_t x= tex_size * 4u / 16u; x < tex_size / 2u; ++x )
+	for( size_t y= tex_size * 6u / 16u + x; y < tex_size * 8u / 16u + x; ++y )
+		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+	// Right part.
+	for( size_t x= tex_size / 2u; x < tex_size * 12u / 16u; ++x )
+	for( size_t y= tex_size * 22u / 16u - x; y < tex_size * 24u / 16u - x; ++y )
+		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+
+	// N left part.
+	for( size_t y= tex_size * 2u / 16u; y < tex_size * 6u / 16u; ++y )
+	for( size_t x= tex_size * 10u / 16u; x < tex_size * 11u / 16u; ++x )
+		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+	// N right part.
+	for( size_t y= tex_size * 2u / 16u; y < tex_size * 6u / 16u; ++y )
+	for( size_t x= tex_size * 13u / 16u; x < tex_size * 14u / 16u; ++x )
+		std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+
+	for( size_t x= tex_size * 11u / 16u; x < tex_size * 13u / 16u; ++x )
+	{
+		size_t dy= ( x - tex_size * 11u / 16u ) * 4u / 3u;
+		for( size_t y= tex_size * 9u / 32u - dy; y < tex_size * 12u / 32u - dy; ++y )
+			std::memcpy( tex_data.data() + 4u * ( x + y * tex_size ), TexConstants::plus_color, sizeof(unsigned char) * 4u );
+	}
+
+	return CreateTexture( tex_size, tex_size, tex_data );
+}
+
 } // namespace PanzerMaps
