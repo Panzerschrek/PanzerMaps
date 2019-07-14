@@ -48,13 +48,16 @@ ObjectsData TransformCoordinates(
 	// Select projection.
 	IProjectionPtr base_projection;
 	{
-		const double min_lat_cos= std::cos( std::min( std::abs(result.projection_min_point.y), std::abs(result.projection_max_point.y ) ) * Constants::deg_to_rad );
-		const double max_lat_cos= std::cos( std::max( std::abs(result.projection_min_point.y), std::abs(result.projection_max_point.y ) ) * Constants::deg_to_rad );
+		const double min_abs_lat= std::min( std::abs(result.projection_min_point.y), std::abs(result.projection_max_point.y ) );
+		const double max_abs_lat= std::max( std::abs(result.projection_min_point.y), std::abs(result.projection_max_point.y ) );
+		const double min_lat_cos= std::cos( min_abs_lat * Constants::deg_to_rad );
+		const double max_lat_cos= std::cos( max_abs_lat * Constants::deg_to_rad );
 
 		const double c_max_lat_cos_ratio= 1.05;
+		const double max_mercator_projection_latitude= 85.0;
 		const double c_max_delta_lat_for_stereographic_projection= 20.0;
 
-		if( min_lat_cos / max_lat_cos <= c_max_lat_cos_ratio )
+		if( min_lat_cos / max_lat_cos <= c_max_lat_cos_ratio && max_abs_lat < max_mercator_projection_latitude )
 		{
 			// Select Mercator projection for regions, where lengths distortion will be unsignificant.
 			result.projection= DataFileDescription::DataFile::Projection::Mercator;
@@ -63,18 +66,21 @@ ObjectsData TransformCoordinates(
 		}
 		else
 		{
-			if( result.projection_max_point.y - result.projection_min_point.y < c_max_delta_lat_for_stereographic_projection )
-			{
-				result.projection= DataFileDescription::DataFile::Projection::Stereographic;
-				base_projection.reset( new StereographicProjection( result.projection_min_point, result.projection_max_point ) );
-				Log::Info( "Select projection: Stereographic" );
-			}
-			else
+			// Use Albers projection for regions with big latitude delta, but disable it for regions in bots north/south hemispheres.
+			if( result.projection_max_point.y - result.projection_min_point.y > c_max_delta_lat_for_stereographic_projection &&
+				result.projection_min_point.y * result.projection_max_point.y > 0.0 )
 			{
 				result.projection= DataFileDescription::DataFile::Projection::Albers;
 				base_projection.reset( new AlbersProjection( result.projection_min_point, result.projection_max_point ) );
 				Log::Info( "Select projection: Albers" );
 			}
+			else
+			{
+				result.projection= DataFileDescription::DataFile::Projection::Stereographic;
+				base_projection.reset( new StereographicProjection( result.projection_min_point, result.projection_max_point ) );
+				Log::Info( "Select projection: Stereographic" );
+			}
+
 		}
 	}
 	{ // Calculate unit size.
