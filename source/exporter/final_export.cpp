@@ -464,6 +464,11 @@ static std::vector<unsigned char> DumpDataFile(
 	std::memcpy( get_data_file().header, DataFile::c_expected_header, sizeof(get_data_file().header) );
 	get_data_file().version= DataFile::c_expected_version;
 
+	get_data_file().projection= prepared_data.front().projection;
+	get_data_file().projection_min_lon= prepared_data.front().projection_min_point.x;
+	get_data_file().projection_min_lat= prepared_data.front().projection_min_point.y;
+	get_data_file().projection_max_lon= prepared_data.front().projection_max_point.x;
+	get_data_file().projection_max_lat= prepared_data.front().projection_max_point.y;
 	get_data_file().min_x= prepared_data.front().min_point.x;
 	get_data_file().min_y= prepared_data.front().min_point.y;
 	get_data_file().max_x= prepared_data.front().max_point.x;

@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <cstdint>
+#include <memory>
 
 namespace PanzerMaps
 {
@@ -45,5 +46,62 @@ bool operator!=( const ProjectionPoint& l, const ProjectionPoint& r );
 ProjectionPoint GeoPointToMercatorPoint( const GeoPoint& point );
 GeoPoint MercatorPointToGeoPoint( const ProjectionPoint& point );
 
+class IProjection
+{
+public:
+	virtual ~IProjection()= default;
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const= 0;
+};
+
+using IProjectionPtr= std::unique_ptr<IProjection>;
+
+class MercatorProjection final : public IProjection
+{
+public:
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+};
+
+class StereographicProjection final : public IProjection
+{
+public:
+	StereographicProjection( const GeoPoint& min_point, const GeoPoint& max_point );
+
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+private:
+	double center_lon_rad_, center_lat_sin_, center_lat_cos_;
+};
+
+class AlbersProjection final : public IProjection
+{
+public:
+	AlbersProjection( const GeoPoint& min_point, const GeoPoint& max_point );
+
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+
+private:
+	double zero_longitude_rad_;
+	double latitude_avg_sin_;
+	double c_;
+	double p0_;
+	double scale_factor_;
+	int32_t unit_scale_;
+};
+
+class LinearProjectionTransformation final : public IProjection
+{
+public:
+	LinearProjectionTransformation( IProjectionPtr projection, const GeoPoint& min_point, const GeoPoint& max_point, const int32_t unit_size );
+
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const;
+
+	const ProjectionPoint GetMinPoint() const { return min_point_; }
+	const ProjectionPoint GetMaxPoint() const { return max_point_; }
+
+private:
+	const IProjectionPtr projection_;
+	ProjectionPoint min_point_;
+	ProjectionPoint max_point_;
+	int32_t unit_size_;
+};
 
 } // namespace PanzerMaps

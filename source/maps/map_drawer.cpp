@@ -851,6 +851,23 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	min_scale_= 1.0f;
 	max_scale_= 2.0f * std::max( scene_size.x, scene_size.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
+
+	IProjectionPtr base_projection;
+	switch( data_file.projection )
+	{
+	case DataFileDescription::DataFile::Projection::Mercator:
+		base_projection.reset( new MercatorProjection );
+		break;
+	case DataFileDescription::DataFile::Projection::Stereographic:
+		base_projection.reset( new StereographicProjection( GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat } ) );
+		break;
+	case DataFileDescription::DataFile::Projection::Albers:
+		base_projection.reset( new AlbersProjection( GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat } ) );
+		break;
+	};
+
+	if( base_projection != nullptr )
+		projection_.reset( new LinearProjectionTransformation( std::move(base_projection), GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat }, data_file.unit_size ) );
 }
 
 MapDrawer::~MapDrawer()
@@ -1032,16 +1049,13 @@ void MapDrawer::Draw()
 		}
 		glDisable( GL_BLEND );
 	}
-	if( gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
+	if( projection_ != nullptr &&
+		gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
 		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
 	{
-		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
+		const ProjectionPoint gps_marker_pos_projected= projection_->Project( gps_marker_position_ );
 
-		const ProjectionPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
-
-		m_Vec2 gps_marker_pos_scene(
-			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
-			float( gps_marker_pos_mercator.y - data_file.min_y ) / float(data_file.unit_size) );
+		m_Vec2 gps_marker_pos_scene( float(gps_marker_pos_projected.x), float(gps_marker_pos_projected.y) );
 		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
 
 		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&

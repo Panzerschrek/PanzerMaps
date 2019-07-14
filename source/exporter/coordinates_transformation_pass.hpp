@@ -1,5 +1,6 @@
 #pragma once
 #include "../common/coordinates_conversion.hpp"
+#include  "../common/data_file.hpp"
 #include "primary_export.hpp"
 
 namespace PanzerMaps
@@ -7,6 +8,9 @@ namespace PanzerMaps
 
 struct ObjectsData : BaseDataRepresentation
 {
+	DataFileDescription::DataFile::Projection projection;
+	GeoPoint projection_min_point;
+	GeoPoint projection_max_point;
 	ProjectionPoint min_point;
 	ProjectionPoint max_point;
 

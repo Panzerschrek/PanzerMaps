@@ -64,6 +64,9 @@ private:
 	float min_scale_;
 	float max_scale_;
 
+	// Projecton, based on parameters of data file.
+	std::unique_ptr<LinearProjectionTransformation> projection_;
+
 	GeoPoint gps_marker_position_{ 1000.0, 1000.0 };
 
 	unsigned char background_color_[4]= {0};
