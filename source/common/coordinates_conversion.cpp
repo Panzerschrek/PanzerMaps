@@ -52,6 +52,11 @@ ProjectionPoint MercatorProjection::Project( const GeoPoint& geo_point ) const
 	return GeoPointToMercatorPoint( geo_point );
 }
 
+GeoPoint MercatorProjection::UnProject( const ProjectionPoint& projection_point ) const
+{
+	return MercatorPointToGeoPoint( projection_point );
+}
+
 StereographicProjection::StereographicProjection( const GeoPoint& min_point, const GeoPoint& max_point )
 {
 	const GeoPoint center{ ( min_point.x + max_point.x ) * 0.5, ( min_point.y + max_point.y ) * 0.5 };
@@ -81,6 +86,25 @@ ProjectionPoint StereographicProjection::Project( const GeoPoint& geo_point ) co
 	const double y= k * ( center_lat_cos_ * lat_sin - center_lat_sin_ * lat_cos * lon_delta_cos );
 
 	return ProjectionPoint{ int32_t(x), int32_t(y) };
+}
+
+GeoPoint StereographicProjection::UnProject( const ProjectionPoint& projection_point ) const
+{
+	const double x= double(projection_point.x) / double( 1 << 30 );
+	const double y= double(projection_point.y) / double( 1 << 30 );
+
+	const double p= std::sqrt( x * x + y * y );
+	const double c= 2.0 * std::atan( p / 2.0 );
+	const double c_sin= std::sin(c);
+	const double c_cos= std::cos(c);
+
+	const double result_lon=
+		center_lon_rad_ +
+		std::atan( x * c_sin / ( p * center_lat_cos_ * c_cos - y * center_lat_sin_ * c_sin ) );
+	const double result_lat=
+		std::asin( c_cos * center_lat_sin_ + y * c_sin * center_lat_cos_ / p );
+
+	return GeoPoint{ result_lon * Constants::rad_to_deg, result_lat * Constants::rad_to_deg };
 }
 
 AlbersProjection::AlbersProjection( const GeoPoint& min_point, const GeoPoint& max_point )
@@ -142,6 +166,20 @@ ProjectionPoint AlbersProjection::Project( const GeoPoint& geo_point ) const
 	return result;
 }
 
+GeoPoint AlbersProjection::UnProject( const ProjectionPoint& projection_point ) const
+{
+	const double x= double(projection_point.x) / scale_factor_;
+	const double y= double(projection_point.y) / scale_factor_;
+
+	const double p= std::sqrt( x * x + ( p0_ - y ) * ( p0_ - y ) );
+	const double o= std::atan( x / ( p0_ - y ) );
+
+	const double result_lon= zero_longitude_rad_ + o / latitude_avg_sin_;
+	const double result_lat= std::asin( ( c_ -  p * p * latitude_avg_sin_ * latitude_avg_sin_ ) / ( 2.0 * latitude_avg_sin_ ) );
+
+	return GeoPoint{ result_lon * Constants::rad_to_deg, result_lat * Constants::rad_to_deg };
+}
+
 LinearProjectionTransformation::LinearProjectionTransformation(
 	IProjectionPtr projection,
 	const GeoPoint& min_point,
@@ -173,6 +211,12 @@ ProjectionPoint LinearProjectionTransformation::Project( const GeoPoint& geo_poi
 {
 	const ProjectionPoint p= projection_->Project( geo_point );
 	return ProjectionPoint{ ( p.x - min_point_.x ) / unit_size_, ( p.y - min_point_.y ) / unit_size_ };
+}
+
+GeoPoint LinearProjectionTransformation::UnProject( const ProjectionPoint& projection_point ) const
+{
+	ProjectionPoint projection_point_transformed{ projection_point.x * unit_size_ + min_point_.x, projection_point.y * unit_size_ + min_point_.y };
+	return projection_->UnProject( projection_point_transformed );
 }
 
 } // namespace PanzerMaps

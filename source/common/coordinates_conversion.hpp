@@ -51,6 +51,7 @@ class IProjection
 public:
 	virtual ~IProjection()= default;
 	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const= 0;
+	virtual GeoPoint UnProject( const ProjectionPoint& projection_point ) const= 0;
 };
 
 using IProjectionPtr= std::unique_ptr<IProjection>;
@@ -59,6 +60,7 @@ class MercatorProjection final : public IProjection
 {
 public:
 	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+	virtual GeoPoint UnProject( const ProjectionPoint& projection_point ) const override;
 };
 
 class StereographicProjection final : public IProjection
@@ -67,6 +69,8 @@ public:
 	StereographicProjection( const GeoPoint& min_point, const GeoPoint& max_point );
 
 	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+	virtual GeoPoint UnProject( const ProjectionPoint& projection_point ) const override;
+
 private:
 	double center_lon_rad_, center_lat_sin_, center_lat_cos_;
 };
@@ -77,6 +81,7 @@ public:
 	AlbersProjection( const GeoPoint& min_point, const GeoPoint& max_point );
 
 	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+	virtual GeoPoint UnProject( const ProjectionPoint& projection_point ) const override;
 
 private:
 	double zero_longitude_rad_;
@@ -92,7 +97,8 @@ class LinearProjectionTransformation final : public IProjection
 public:
 	LinearProjectionTransformation( IProjectionPtr projection, const GeoPoint& min_point, const GeoPoint& max_point, const int32_t unit_size );
 
-	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const;
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override;
+	virtual GeoPoint UnProject( const ProjectionPoint& projection_point ) const override;
 
 	const ProjectionPoint GetMinPoint() const { return min_point_; }
 	const ProjectionPoint GetMaxPoint() const { return max_point_; }

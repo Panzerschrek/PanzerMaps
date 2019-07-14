@@ -1049,6 +1049,7 @@ void MapDrawer::Draw()
 		}
 		glDisable( GL_BLEND );
 	}
+
 	if( projection_ != nullptr &&
 		gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
 		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
@@ -1071,6 +1072,23 @@ void MapDrawer::Draw()
 			glDrawArrays( GL_POINTS, 0, 1 );
 			glDisable( GL_BLEND );
 		}
+	}
+
+	if( projection_ != nullptr )
+	{
+		ProjectionPoint camera_position_scene{ int32_t(cam_pos_.x), int32_t(cam_pos_.y) };
+		const GeoPoint camera_position_absolute= projection_->UnProject( camera_position_scene );
+
+		const double c_try_meters= 1000.0;
+		const double try_distance_deg= c_try_meters * ( 360.0 / Constants::earth_radius_m );
+		const GeoPoint try_point_south{ camera_position_absolute.x, camera_position_absolute.y - try_distance_deg };
+		const GeoPoint try_point_north{ camera_position_absolute.x, camera_position_absolute.y + try_distance_deg };
+
+		const ProjectionPoint try_point_south_projected= projection_->Project( try_point_south );
+		const ProjectionPoint try_point_north_projected= projection_->Project( try_point_north );
+
+		const double angle_to_north_rad= std::atan2( double( try_point_north_projected.x - try_point_south_projected.x ), double( try_point_north_projected.y - try_point_south_projected.y ) );
+		Log::Info( "Local angle to north: ", angle_to_north_rad * Constants::rad_to_deg, " deg" );
 	}
 
 	if( !copyright_texture_.IsEmpty() )
