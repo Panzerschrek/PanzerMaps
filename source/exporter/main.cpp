@@ -92,8 +92,18 @@ Usage:
 		Log::Info( "-- ZOOM LEVEL ", &zoom_level - styles.zoom_levels.data(), " ---" );
 		Log::Info( "" );
 
-		if( &zoom_level != &styles.zoom_levels.front() )
+		if( &zoom_level == &styles.zoom_levels.front() )
 			zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
+		else
+		{
+			if( zoom_level.scale_to_prev_log2 > 0 )
+				zoom_level_scale_log2+= std::max( size_t(1u), zoom_level.scale_to_prev_log2 );
+			else
+			{
+				Log::Warning( "Invalid zoom level scale_log_2. Expeced positive value" );
+				++zoom_level_scale_log2;
+			}
+		}
 
 		ObjectsData objects_data= TransformCoordinates( osm_parse_result, zoom_level_scale_log2 );
 

@@ -135,7 +135,7 @@ static Styles::ZoomLevel ParseZoomLevel(
 	zoom_level.linear_object_styles= default_linear_styles;
 	zoom_level.areal_object_styles= default_areal_styles;
 
-	zoom_level.scale_to_prev_log2= static_cast<size_t>( std::max( 1, std::min( zoom_level_json[ "scale_to_prev_log2" ].AsInt(), 4 ) ) );
+	zoom_level.scale_to_prev_log2= static_cast<size_t>( std::max( 0, std::min( zoom_level_json[ "scale_to_prev_log2" ].AsInt(), 4 ) ) );
 
 	if( zoom_level_json.IsMember( "simplification_distance_units" ) )
 	{

@@ -365,7 +365,7 @@
     "zoom_levels":
     [
         {
-            "scale_to_prev_log2" : 1,
+            "scale_to_prev_log2" : 0,
             "simplification_distance_units" : 0,
             "areal_phases" :
             [
@@ -387,16 +387,14 @@
                         "Allotments",
                         "Sand",
                         "Wetland"
-                    ],
-                    "allow_collinear_points_removing" : false
+                    ]
                 },
                 {
                     "classes":
                     [
                         "Bridge",
                         "Building"
-                    ],
-                    "allow_collinear_points_removing" : true
+                    ]
                 }
             ],
 
@@ -483,15 +481,13 @@
                         "Allotments",
                         "Sand",
                         "Wetland"
-                    ],
-                    "allow_collinear_points_removing" : false
+                    ]
                 },
                 {
                     "classes":
                     [
                         "Bridge"
-                    ],
-                    "allow_collinear_points_removing" : true
+                    ]
                 }
             ],
 
@@ -593,15 +589,13 @@
                         "Allotments",
                         "Sand",
                         "Wetland"
-                    ],
-                    "allow_collinear_points_removing" : false
+                    ]
                 },
                 {
                     "classes":
                     [
                         "Bridge"
-                    ],
-                    "allow_collinear_points_removing" : true
+                    ]
                 }
             ],
 
@@ -671,8 +665,7 @@
                         "Allotments",
                         "Sand",
                         "Wetland"
-                    ],
-                    "allow_collinear_points_removing" : false
+                    ]
                 }
             ],
 

@@ -845,12 +845,12 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	// Setup camera
 	const m_Vec2 scene_size=
 		m_Vec2( float( data_file.max_x - data_file.min_x ), float( data_file.max_y - data_file.min_y ) ) /
-		float( data_file.unit_size );
+		float( data_file.unit_size ) * float( 1 << int(zoom_levels_.front().zoom_level_log2 ) );
 	min_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	max_cam_pos_= scene_size;
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
-	min_scale_= 1.0f;
+	min_scale_= float( 1 << int(zoom_levels_.front().zoom_level_log2 ) );
 	max_scale_= 2.0f * std::max( scene_size.x, scene_size.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
 
@@ -1058,7 +1058,7 @@ void MapDrawer::Draw()
 	{
 		const ProjectionPoint gps_marker_pos_projected= projection_->Project( gps_marker_position_ );
 
-		m_Vec2 gps_marker_pos_scene( float(gps_marker_pos_projected.x), float(gps_marker_pos_projected.y) );
+		m_Vec2 gps_marker_pos_scene= m_Vec2( float(gps_marker_pos_projected.x), float(gps_marker_pos_projected.y) ) * float( 1 << int(zoom_levels_.front().zoom_level_log2) );
 		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
 
 		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
