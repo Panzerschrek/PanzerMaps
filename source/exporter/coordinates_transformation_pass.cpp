@@ -96,6 +96,44 @@ private:
 	int32_t unit_scale_;
 };
 
+class StereographicalProjection final : public IProjection
+{
+public:
+	StereographicalProjection( const GeoPoint& min_point, const GeoPoint& max_point )
+	{
+		const GeoPoint center{ ( min_point.x + max_point.x ) * 0.5, ( min_point.y + max_point.y ) * 0.5 };
+		center_lon_rad_= center.x * Constants::deg_to_rad;
+		const double center_lat_rad= center.y * Constants::deg_to_rad;
+
+		center_lat_sin_= std::sin(center_lat_rad);
+		center_lat_cos_= std::cos(center_lat_rad);
+	}
+
+	virtual ProjectionPoint Project( const GeoPoint& geo_point ) const override
+	{
+		// http://mathworld.wolfram.com/StereographicProjection.html
+		const double lon_rad= geo_point.x * Constants::deg_to_rad;
+		const double lat_rad= geo_point.y * Constants::deg_to_rad;
+
+		const double lon_delta= lon_rad - center_lon_rad_;
+		const double lon_dalta_sin= std::sin(lon_delta);
+		const double lon_delta_cos= std::cos(lon_delta);
+
+		const double lat_sin= std::sin(lat_rad);
+		const double lat_cos= std::cos(lat_rad);
+
+		// Project sphere with radius 1, maximum projection will be 2. Scale it to fit integer range.
+		const double k= double( 1 << 30 ) * 2.0 / ( 1.0 + center_lat_sin_ * lat_sin + center_lat_cos_ * lat_cos * lon_delta_cos );
+		const double x= k * ( lat_cos * lon_dalta_sin );
+		const double y= k * ( center_lat_cos_ * lat_sin - center_lat_sin_ * lat_cos * lon_delta_cos );
+
+		return ProjectionPoint{ int32_t(x), int32_t(y) };
+	}
+
+private:
+	double center_lon_rad_, center_lat_sin_, center_lat_cos_;
+};
+
 class LinearProjectionTransformation final : public IProjection
 {
 public:
@@ -184,11 +222,17 @@ ObjectsData TransformCoordinates(
 
 	// Select projection.
 	IProjectionPtr base_projection;
-	const bool use_albers_projection= true;
+	const bool use_albers_projection= false;
+	const bool use_stereographical_projection= true;
 	if( use_albers_projection )
 	{
 		base_projection.reset( new AlbersProjection( geo_min, geo_max ) );
 		Log::Info( "Select projection: Albers" );
+	}
+	else if( use_stereographical_projection )
+	{
+		base_projection.reset( new StereographicalProjection( geo_min, geo_max ) );
+		Log::Info( "Select projection: Stereographical" );
 	}
 	else
 	{
