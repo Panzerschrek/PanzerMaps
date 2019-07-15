@@ -1,4 +1,5 @@
 #include "textures_generation.hpp"
+#include "ui_common.hpp"
 #include "zoom_controller.hpp"
 
 namespace PanzerMaps
@@ -9,10 +10,9 @@ static const float g_scale_speed= 3.0f;
 ZoomController::ZoomController( UiDrawer& ui_drawer, MapDrawer& map_drawer )
 	: ui_drawer_(ui_drawer), map_drawer_(map_drawer)
 {
-	const int button_size= std::min( map_drawer_.GetViewportSize().width, map_drawer.GetViewportSize().height ) / 6u;
-	const int c_border_size= 4;
-	const int left= map_drawer_.GetViewportSize().width - button_size - c_border_size;
-	const int top= map_drawer_.GetViewportSize().height * 5u / 8u;
+	const int button_size= GetButtonSize( map_drawer.GetViewportSize() );
+	const int left= map_drawer_.GetViewportSize().width - button_size - UiConstants::border_size;
+	const int top= GetButtonsTop( map_drawer_.GetViewportSize() );
 
 	buttons_[0].scale_direction= -g_scale_speed;
 	buttons_[0].texture= GenTexture_ZoomPlus( button_size );
@@ -25,7 +25,7 @@ ZoomController::ZoomController( UiDrawer& ui_drawer, MapDrawer& map_drawer )
 	buttons_[1].texture= GenTexture_ZoomMinus( button_size );
 	buttons_[1].presed_texture= GenTexture_ZoomMinusPressed( button_size );
 	buttons_[1].x= left;
-	buttons_[1].y= top - button_size - c_border_size;
+	buttons_[1].y= top - button_size - UiConstants::border_size;
 	buttons_[1].size= int(button_size);
 
 	prev_time_= std::chrono::steady_clock::now();

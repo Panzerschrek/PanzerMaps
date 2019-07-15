@@ -6,6 +6,7 @@
 #include "../common/log.hpp"
 #include "shaders.hpp"
 #include "textures_generation.hpp"
+#include "ui_common.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps
@@ -816,7 +817,7 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 		copyright_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 	}
 
-	north_arrow_texture_= GenTexture_NorthArrow( std::min( viewport_size_.width, viewport_size_.height ) / 10u );
+	north_arrow_texture_= GenTexture_NorthArrow( GetNorthArrowSize( viewport_size_ ) );
 	// Create shaders
 
 	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
@@ -1104,15 +1105,12 @@ void MapDrawer::Draw()
 	}
 	// Copyright.
 	if( !copyright_texture_.IsEmpty() )
-	{
-		const unsigned int c_border= 4u;
 		ui_drawer_.DrawUiElement(
-			viewport_size_.width - copyright_texture_.Width() - c_border,
-			c_border + copyright_texture_.Height(),
+			viewport_size_.width - copyright_texture_.Width() - UiConstants::border_size,
+			 UiConstants::border_size + copyright_texture_.Height(),
 			+copyright_texture_.Width (),
 			-copyright_texture_.Height(),
 			copyright_texture_ );
-	}
 
 	ClearGPUData();
 

@@ -1,4 +1,5 @@
 #include "textures_generation.hpp"
+#include "ui_common.hpp"
 #include "gps_button.hpp"
 
 namespace PanzerMaps
@@ -7,11 +8,9 @@ namespace PanzerMaps
 GPSButton::GPSButton( UiDrawer& ui_drawer , GPSService& gps_service )
 	: ui_drawer_(ui_drawer), gps_service_(gps_service)
 {
-	// TODO - move UI constants to one place.
-	const int c_border_size= 4;
-	button_x_= c_border_size;
-	button_y_= ui_drawer.GetViewportSize().height * 5u / 8u;
-	button_size_= std::min( ui_drawer.GetViewportSize().width, ui_drawer.GetViewportSize().height ) / 6u;
+	button_x_= UiConstants::border_size;
+	button_y_= GetButtonsTop( ui_drawer.GetViewportSize() );
+	button_size_= GetButtonSize( ui_drawer.GetViewportSize() );
 	texture_unactive_= GenTexture_GPSButtonUnactive( button_size_ );
 	texture_active_  = GenTexture_GPSButtonActive( button_size_ );
 }
