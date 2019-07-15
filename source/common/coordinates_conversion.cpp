@@ -23,38 +23,28 @@ bool operator!=( const ProjectionPoint& l, const ProjectionPoint& r )
 	return !( l == r );
 }
 
-ProjectionPoint GeoPointToMercatorPoint( const GeoPoint& point )
+ProjectionPoint MercatorProjection::Project( const GeoPoint& geo_point ) const
 {
 	ProjectionPoint result;
 
 	result.x=
-		static_cast<int32_t>( ( Constants::two_pow_31 / 180.0 ) * point.x );
+		static_cast<int32_t>( ( Constants::two_pow_31 / 180.0 ) * geo_point.x );
 	result.y=
 		static_cast<int32_t>(
 			( Constants::two_pow_31 / Constants::pi ) *
-			std::log( std::tan( Constants::pi * 0.25 + point.y * ( 0.5 * Constants::deg_to_rad ) ) ) );
+			std::log( std::tan( Constants::pi * 0.25 + geo_point.y * ( 0.5 * Constants::deg_to_rad ) ) ) );
 	return result;
-}
-
-GeoPoint MercatorPointToGeoPoint( const ProjectionPoint& point )
-{
-	GeoPoint result;
-
-	result.x= static_cast<double>(point.x) * ( 180.0 / Constants::two_pow_31 );
-	result.y=
-		Constants::rad_to_deg *
-		( 2.0 * std::atan( std::exp( static_cast<double>(point.y) * ( Constants::pi / Constants::two_pow_31 ) ) ) - Constants::pi * 0.5 );
-	return result;
-}
-
-ProjectionPoint MercatorProjection::Project( const GeoPoint& geo_point ) const
-{
-	return GeoPointToMercatorPoint( geo_point );
 }
 
 GeoPoint MercatorProjection::UnProject( const ProjectionPoint& projection_point ) const
 {
-	return MercatorPointToGeoPoint( projection_point );
+	GeoPoint result;
+
+	result.x= static_cast<double>(projection_point.x) * ( 180.0 / Constants::two_pow_31 );
+	result.y=
+		Constants::rad_to_deg *
+		( 2.0 * std::atan( std::exp( static_cast<double>(projection_point.y) * ( Constants::pi / Constants::two_pow_31 ) ) ) - Constants::pi * 0.5 );
+	return result;
 }
 
 StereographicProjection::StereographicProjection( const GeoPoint& min_point, const GeoPoint& max_point )
@@ -81,7 +71,7 @@ ProjectionPoint StereographicProjection::Project( const GeoPoint& geo_point ) co
 	const double lat_cos= std::cos(lat_rad);
 
 	// Project sphere with radius 1, maximum projection will be 2. Scale it to fit integer range.
-	const double k= double( 1 << 30 ) * 2.0 / ( 1.0 + center_lat_sin_ * lat_sin + center_lat_cos_ * lat_cos * lon_delta_cos );
+	const double k= Constants::two_pow_30 * 2.0 / ( 1.0 + center_lat_sin_ * lat_sin + center_lat_cos_ * lat_cos * lon_delta_cos );
 	const double x= k * ( lat_cos * lon_dalta_sin );
 	const double y= k * ( center_lat_cos_ * lat_sin - center_lat_sin_ * lat_cos * lon_delta_cos );
 
@@ -90,8 +80,8 @@ ProjectionPoint StereographicProjection::Project( const GeoPoint& geo_point ) co
 
 GeoPoint StereographicProjection::UnProject( const ProjectionPoint& projection_point ) const
 {
-	const double x= double(projection_point.x) / double( 1 << 30 );
-	const double y= double(projection_point.y) / double( 1 << 30 );
+	const double x= double(projection_point.x) / Constants::two_pow_30;
+	const double y= double(projection_point.y) / Constants::two_pow_30;
 
 	const double p= std::sqrt( x * x + y * y );
 	const double c= 2.0 * std::atan( p / 2.0 );

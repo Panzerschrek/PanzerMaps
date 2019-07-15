@@ -97,11 +97,11 @@ Usage:
 		else
 		{
 			if( zoom_level.scale_to_prev_log2 > 0 )
-				zoom_level_scale_log2+= std::max( size_t(1u), zoom_level.scale_to_prev_log2 );
+				zoom_level_scale_log2+= zoom_level.scale_to_prev_log2;
 			else
 			{
 				Log::Warning( "Invalid zoom level scale_log_2. Expeced positive value" );
-				++zoom_level_scale_log2;
+				zoom_level_scale_log2+= 1u;
 			}
 		}
 

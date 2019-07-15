@@ -16,10 +16,10 @@ const double earth_equator_length_m= earth_radius_m * 2.0 * pi;
 const double deg_to_rad = pi / 180.0;
 const double rad_to_deg = 180.0 / pi;
 
+const double two_pow_30 = 1073741824.0;
 const double two_pow_31 = 2147483648.0;
 const double two_pow_32 = 4294967296.0;
 
-const double mercator_projection_max_latitude = 2.0 * std::atan(std::exp(Constants::pi)) - Constants::pi * 0.5;
 }
 
 struct GeoPoint
@@ -40,12 +40,6 @@ bool operator!=( const GeoPoint& l, const GeoPoint& r );
 bool operator==( const ProjectionPoint& l, const ProjectionPoint& r );
 bool operator!=( const ProjectionPoint& l, const ProjectionPoint& r );
 
-// Mercator projection.
-// Maps longitude in range [ -180; 180 ) to projection x in range [ int_min, int_max ].
-// Maps latitude in range [ -max_latitude, max_latitude ) to projection y in range [ int_min, int_max ].
-ProjectionPoint GeoPointToMercatorPoint( const GeoPoint& point );
-GeoPoint MercatorPointToGeoPoint( const ProjectionPoint& point );
-
 class IProjection
 {
 public:
@@ -56,6 +50,9 @@ public:
 
 using IProjectionPtr= std::unique_ptr<IProjection>;
 
+// Mercator projection.
+// Maps longitude in range [ -180; 180 ) to projection x in range [ int_min, int_max ].
+// Maps latitude in range [ -max_latitude, max_latitude ) to projection y in range [ int_min, int_max ].
 class MercatorProjection final : public IProjection
 {
 public:
@@ -89,7 +86,6 @@ private:
 	double c_;
 	double p0_;
 	double scale_factor_;
-	int32_t unit_scale_;
 };
 
 class LinearProjectionTransformation final : public IProjection

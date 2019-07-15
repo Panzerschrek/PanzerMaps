@@ -14,7 +14,7 @@ struct ObjectsData : BaseDataRepresentation
 	ProjectionPoint min_point;
 	ProjectionPoint max_point;
 
-	 // Scale to Mercator unit.
+	 // Scale to Projection unit.
 	int coordinates_scale;
 
 	// logarithm of zoom level of this pass.

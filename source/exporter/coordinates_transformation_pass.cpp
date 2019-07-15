@@ -1,5 +1,4 @@
 #include <limits>
-#include <numeric>
 #include "../common/assert.hpp"
 #include "../common/log.hpp"
 #include "coordinates_transformation_pass.hpp"
@@ -66,7 +65,7 @@ ObjectsData TransformCoordinates(
 		}
 		else
 		{
-			// Use Albers projection for regions with big latitude delta, but disable it for regions in bots north/south hemispheres.
+			// Use Albers projection for regions with big latitude delta, but disable it for regions in both north/south hemispheres.
 			if( result.projection_max_point.y - result.projection_min_point.y > c_max_delta_lat_for_stereographic_projection &&
 				result.projection_min_point.y * result.projection_max_point.y > 0.0 )
 			{
