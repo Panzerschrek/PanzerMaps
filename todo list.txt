@@ -6,9 +6,14 @@ Eksport i podgotovka dannyh:
 * Vygruzka dannyh dlä platform s drugim porädkom bajt
 * Optimizaçija vremeni raboty i potrebläjemoj pamäti eksportöra
 
-Priloženije
-* Risovanije ploscadnyh objektov s teksturoj (lesa, bolota, kladbisca)
+Priloženije:
 * Masštabnaja linejka
+* Risovanije ploscadnyh objektov s teksturoj (lesa, bolota, kladbisca)
+* Vybor fajla dannyh
 * Ulucšenija otobraženija geopoziçii - krug tocnosti, otobraženije nadöžnosti
 * Sleženije za geopoziçijej
 * Zagruzka neskoljkih vygruzok
+
+Daljnejšeje razvitije:
+* Server s kopijej bazy dannyh OSM i vozmožnostju zapustitj na nöm eksportör
+* Razmescenije priloženija v "Google Play"
