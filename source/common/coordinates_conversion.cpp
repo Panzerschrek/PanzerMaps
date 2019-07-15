@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "coordinates_conversion.hpp"
 
 namespace PanzerMaps
