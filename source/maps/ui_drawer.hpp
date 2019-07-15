@@ -15,6 +15,7 @@ public:
 	const ViewportSize& GetViewportSize() const { return viewport_size_; }
 
 	void DrawUiElement( int x, int y, int width, int height, const r_Texture& texture );
+	void DrawUiElementRotated( int center_x, int center_y, int width, int height, float angle_rad, const r_Texture& texture );
 
 private:
 	const ViewportSize viewport_size_;

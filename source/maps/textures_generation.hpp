@@ -13,4 +13,6 @@ r_Texture GenTexture_ZoomMinusPressed( const size_t tex_size );
 r_Texture GenTexture_GPSButtonActive( const size_t tex_size );
 r_Texture GenTexture_GPSButtonUnactive( const size_t tex_size );
 
+r_Texture GenTexture_NorthArrow( const size_t tex_size );
+
 } // namespace PanzerMaps

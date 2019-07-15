@@ -178,16 +178,26 @@ struct DataFile
 		uint32_t size;
 	};
 
+	enum class Projection : int32_t
+	{
+		Mercator,
+		Stereographic,
+		Albers,
+	};
+
 	// All offsets - from start of file.
 
 	static constexpr const char c_expected_header[16]= "PanzerMaps-Data";
-	static constexpr const uint32_t c_expected_version= 4u; // Change this each time, when DataFileDescripton structs changed.
+	static constexpr const uint32_t c_expected_version= 5u; // Change this each time, when DataFileDescripton structs changed.
 
 	uint8_t header[16];
 	uint32_t version;
 
-	// Mercator projection corrdinates (see coordinates_conversion.hpp) and scale of unit, relative to projection unit.
-	// min_x and min_y is also scene zero coordinates.
+	// Parameters of projection of data.
+	Projection projection;
+	double projection_min_lon, projection_min_lat;
+	double projection_max_lon, projection_max_lat;
+	// Parameters of linear transformation of data.
 	GlobalCoordType min_x;
 	GlobalCoordType min_y;
 	GlobalCoordType max_x;
@@ -199,7 +209,7 @@ struct DataFile
 
 	CommonStyle common_style;
 };
-static_assert( sizeof(DataFile) == 60u, "wrong size" );
+static_assert( sizeof(DataFile) == 96u, "wrong size" );
 
 } // namespace DataFile
 

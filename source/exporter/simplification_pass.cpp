@@ -29,10 +29,10 @@ struct ArealObjectVertexHasher
 using AdjustedVerticesMap= std::unordered_map< ArealObjectVertex, size_t, ArealObjectVertexHasher >;
 
 static void SimplifyLine_r(
-	const MercatorPoint* const start_vertex,
-	const MercatorPoint* const   end_vertex,
+	const ProjectionPoint* const start_vertex,
+	const ProjectionPoint* const   end_vertex,
 	const int64_t square_simplification_distance,
-	std::vector<MercatorPoint>& out_vertices )
+	std::vector<ProjectionPoint>& out_vertices )
 {
 	PM_ASSERT( end_vertex - start_vertex >= 1 );
 	if( end_vertex - start_vertex == 1 )
@@ -51,7 +51,7 @@ static void SimplifyLine_r(
 		simplification_ok= false;
 	else
 	{
-		for( const MercatorPoint* v= start_vertex + 1; v < end_vertex; ++v )
+		for( const ProjectionPoint* v= start_vertex + 1; v < end_vertex; ++v )
 		{
 			const int64_t v_dx= v->x - start_vertex->x;
 			const int64_t v_dy= v->y - start_vertex->y;
@@ -80,17 +80,17 @@ static void SimplifyLine_r(
 		out_vertices.push_back( *start_vertex );
 	else
 	{
-		const MercatorPoint* const middle= start_vertex + ( end_vertex - start_vertex ) / 2;
+		const ProjectionPoint* const middle= start_vertex + ( end_vertex - start_vertex ) / 2;
 		SimplifyLine_r( start_vertex, middle, square_simplification_distance, out_vertices );
 		SimplifyLine_r( middle, end_vertex  , square_simplification_distance, out_vertices );
 	}
 }
 
 static void SimplifyLine(
-	const MercatorPoint* const vertices,
+	const ProjectionPoint* const vertices,
 	const size_t vertex_count,
 	const int32_t simplification_distance_units,
-	std::vector<MercatorPoint>& out_vertices )
+	std::vector<ProjectionPoint>& out_vertices )
 {
 	PM_ASSERT( vertex_count >= 1u );
 
@@ -106,7 +106,7 @@ static void SimplifyLine(
 
 static bool HaveAdjustedVertices(
 	const AdjustedVerticesMap& adjusted_vertices_map,
-	const MercatorPoint& vertex,
+	const ProjectionPoint& vertex,
 	const ArealObjectClass object_class,
 	const size_t z_level )
 {
@@ -122,13 +122,13 @@ static bool HaveAdjustedVertices(
 }
 
 static void SimplifyPolygon_r(
-	const MercatorPoint* const start_vertex,
-	const MercatorPoint* const   end_vertex,
+	const ProjectionPoint* const start_vertex,
+	const ProjectionPoint* const   end_vertex,
 	const int64_t square_simplification_distance,
 	const AdjustedVerticesMap& adjusted_vertices_map,
 	const ArealObjectClass object_class,
 	const size_t z_level,
-	std::vector<MercatorPoint>& out_vertices )
+	std::vector<ProjectionPoint>& out_vertices )
 {
 	PM_ASSERT( end_vertex - start_vertex >= 1 );
 	if( end_vertex - start_vertex == 1 )
@@ -147,7 +147,7 @@ static void SimplifyPolygon_r(
 		simplification_ok= false;
 	else
 	{
-		for( const MercatorPoint* v= start_vertex + 1; v < end_vertex; ++v )
+		for( const ProjectionPoint* v= start_vertex + 1; v < end_vertex; ++v )
 		{
 			const int64_t v_dx= v->x - start_vertex->x;
 			const int64_t v_dy= v->y - start_vertex->y;
@@ -183,20 +183,20 @@ static void SimplifyPolygon_r(
 		out_vertices.push_back( *start_vertex );
 	else
 	{
-		const MercatorPoint* const middle= start_vertex + ( end_vertex - start_vertex ) / 2;
+		const ProjectionPoint* const middle= start_vertex + ( end_vertex - start_vertex ) / 2;
 		SimplifyPolygon_r( start_vertex, middle, square_simplification_distance, adjusted_vertices_map, object_class, z_level, out_vertices );
 		SimplifyPolygon_r( middle, end_vertex  , square_simplification_distance, adjusted_vertices_map, object_class, z_level, out_vertices );
 	}
 }
 
 static void SimplifyPolygon(
-	const MercatorPoint* const vertices,
+	const ProjectionPoint* const vertices,
 	const size_t vertex_count,
 	const int32_t simplification_distance_units,
 	const AdjustedVerticesMap& adjusted_vertices_map,
 	const ArealObjectClass object_class,
 	const size_t z_level,
-	std::vector<MercatorPoint>& out_vertices )
+	std::vector<ProjectionPoint>& out_vertices )
 {
 	PM_ASSERT( vertex_count >= 3u );
 
@@ -237,7 +237,7 @@ static void SimplifyPolygon(
 	}
 
 	// Discard small pulygons.
-	MercatorPoint min_point= out_vertices.back(), max_point= out_vertices.back();
+	ProjectionPoint min_point= out_vertices.back(), max_point= out_vertices.back();
 	for( size_t i= first_vertex_index; i < out_vertices.size(); ++i )
 	{
 		min_point.x= std::min( min_point.x, out_vertices[i].x );

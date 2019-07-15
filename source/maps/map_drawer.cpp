@@ -5,6 +5,7 @@
 #include "../common/data_file.hpp"
 #include "../common/log.hpp"
 #include "shaders.hpp"
+#include "textures_generation.hpp"
 #include "map_drawer.hpp"
 
 namespace PanzerMaps
@@ -815,6 +816,7 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 		copyright_texture_.SetFiltration( r_Texture::Filtration::Nearest, r_Texture::Filtration::Nearest );
 	}
 
+	north_arrow_texture_= GenTexture_NorthArrow( std::min( viewport_size_.width, viewport_size_.height ) / 10u );
 	// Create shaders
 
 	point_objets_shader_.ShaderSource( Shaders::point_fragment, Shaders::point_vertex );
@@ -843,14 +845,31 @@ MapDrawer::MapDrawer( const SystemWindow& system_window, UiDrawer& ui_drawer, co
 	// Setup camera
 	const m_Vec2 scene_size=
 		m_Vec2( float( data_file.max_x - data_file.min_x ), float( data_file.max_y - data_file.min_y ) ) /
-		float( data_file.unit_size );
+		float( data_file.unit_size ) * float( 1 << int(zoom_levels_.front().zoom_level_log2 ) );
 	min_cam_pos_= m_Vec2( 0.0f, 0.0f );
 	max_cam_pos_= scene_size;
 	cam_pos_= ( min_cam_pos_ + max_cam_pos_ ) * 0.5f;
 
-	min_scale_= 1.0f;
+	min_scale_= float( 1 << int(zoom_levels_.front().zoom_level_log2 ) );
 	max_scale_= 2.0f * std::max( scene_size.x, scene_size.y ) / float( std::max( viewport_size_.width, viewport_size_.height ) );
 	scale_= max_scale_;
+
+	IProjectionPtr base_projection;
+	switch( data_file.projection )
+	{
+	case DataFileDescription::DataFile::Projection::Mercator:
+		base_projection.reset( new MercatorProjection );
+		break;
+	case DataFileDescription::DataFile::Projection::Stereographic:
+		base_projection.reset( new StereographicProjection( GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat } ) );
+		break;
+	case DataFileDescription::DataFile::Projection::Albers:
+		base_projection.reset( new AlbersProjection( GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat } ) );
+		break;
+	};
+
+	if( base_projection != nullptr )
+		projection_.reset( new LinearProjectionTransformation( std::move(base_projection), GeoPoint{ data_file.projection_min_lon, data_file.projection_min_lat }, GeoPoint{ data_file.projection_max_lon, data_file.projection_max_lat }, data_file.unit_size ) );
 }
 
 MapDrawer::~MapDrawer()
@@ -1004,7 +1023,7 @@ void MapDrawer::Draw()
 		}
 		disable_primitive_restart();
 	}
-
+	// Point objects.
 	const auto& point_objects_icons_atlas=
 		system_window_.GetPixelsInScreenMeter() > 5600.0f
 		? zoom_level.point_objects_icons_atlas[1]
@@ -1032,16 +1051,14 @@ void MapDrawer::Draw()
 		}
 		glDisable( GL_BLEND );
 	}
-	if( gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
+	// Gps marker.
+	if( projection_ != nullptr &&
+		gps_marker_position_.x >= -180.0 && gps_marker_position_.x <= +180.0 &&
 		gps_marker_position_.y >= -90.0 && gps_marker_position_.y <= +90.0 )
 	{
-		const DataFileDescription::DataFile& data_file= *reinterpret_cast<const DataFileDescription::DataFile*>( data_file_->Data() );
+		const ProjectionPoint gps_marker_pos_projected= projection_->Project( gps_marker_position_ );
 
-		const MercatorPoint gps_marker_pos_mercator= GeoPointToMercatorPoint( gps_marker_position_ );
-
-		m_Vec2 gps_marker_pos_scene(
-			float( gps_marker_pos_mercator.x - data_file.min_x ) / float(data_file.unit_size),
-			float( gps_marker_pos_mercator.y - data_file.min_y ) / float(data_file.unit_size) );
+		m_Vec2 gps_marker_pos_scene= m_Vec2( float(gps_marker_pos_projected.x), float(gps_marker_pos_projected.y) ) * float( 1 << int(zoom_levels_.front().zoom_level_log2) );
 		const m_Vec2 gps_marker_pos_screen= ( m_Vec3( gps_marker_pos_scene, 0.0f ) * (translate_matrix * scale_matrix * aspect_matrix) ).xy();
 
 		if( gps_marker_pos_screen.x <= +1.0f && gps_marker_pos_screen.x >= -1.0f &&
@@ -1058,7 +1075,34 @@ void MapDrawer::Draw()
 			glDisable( GL_BLEND );
 		}
 	}
+	// North arrow.
+	if( projection_ != nullptr )
+	{
+		ProjectionPoint camera_position_scene{ int32_t(cam_pos_.x), int32_t(cam_pos_.y) };
+		const GeoPoint camera_position_absolute= projection_->UnProject( camera_position_scene );
 
+		const double c_try_meters= 1000.0;
+		const double try_distance_deg= c_try_meters * ( 360.0 / Constants::earth_radius_m );
+		const GeoPoint try_point_south{ camera_position_absolute.x, camera_position_absolute.y - try_distance_deg };
+		const GeoPoint try_point_north{ camera_position_absolute.x, camera_position_absolute.y + try_distance_deg };
+
+		const ProjectionPoint try_point_south_projected= projection_->Project( try_point_south );
+		const ProjectionPoint try_point_north_projected= projection_->Project( try_point_north );
+
+		const double angle_to_north_rad= std::atan2( double( try_point_north_projected.x - try_point_south_projected.x ), double( try_point_north_projected.y - try_point_south_projected.y ) );
+
+		if( std::abs( angle_to_north_rad) > 0.1 * Constants::deg_to_rad )
+		{
+		ui_drawer_.DrawUiElementRotated(
+				4u + north_arrow_texture_.Width () / 2u,
+				4u + north_arrow_texture_.Height() / 2u,
+				north_arrow_texture_.Width (),
+				north_arrow_texture_.Height(),
+				float(angle_to_north_rad),
+				north_arrow_texture_ );
+		}
+	}
+	// Copyright.
 	if( !copyright_texture_.IsEmpty() )
 	{
 		const unsigned int c_border= 4u;

@@ -49,6 +49,7 @@ private:
 	r_GLSLProgram areal_objects_shader_;
 	r_GLSLProgram gps_marker_shader_;
 	r_Texture copyright_texture_;
+	r_Texture north_arrow_texture_;
 
 	std::vector<ZoomLevel> zoom_levels_;
 
@@ -63,6 +64,9 @@ private:
 	m_Vec2 max_cam_pos_;
 	float min_scale_;
 	float max_scale_;
+
+	// Projecton, based on parameters of data file.
+	std::unique_ptr<LinearProjectionTransformation> projection_;
 
 	GeoPoint gps_marker_position_{ 1000.0, 1000.0 };
 

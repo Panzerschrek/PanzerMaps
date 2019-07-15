@@ -8,7 +8,7 @@ namespace PanzerMaps
 {
 
 // Returns non-negative value for convex vertex of clockwise polygon.
-static int64_t PolygonVertexCross( const MercatorPoint& p0, const MercatorPoint& p1, const MercatorPoint& p2 )
+static int64_t PolygonVertexCross( const ProjectionPoint& p0, const ProjectionPoint& p1, const ProjectionPoint& p2 )
 {
 	const int32_t dx0= p1.x - p0.x;
 	const int32_t dy0= p1.y - p0.y;
@@ -18,7 +18,7 @@ static int64_t PolygonVertexCross( const MercatorPoint& p0, const MercatorPoint&
 	return int64_t(dx1) * int64_t(dy0) - int64_t(dx0) * int64_t(dy1);
 }
 
-static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const vertices, size_t vertex_count, const MercatorPoint& test_vertex )
+static bool VertexIsInisideClockwiseConvexPolygon( const ProjectionPoint* const vertices, size_t vertex_count, const ProjectionPoint& test_vertex )
 {
 	PM_ASSERT( vertex_count >= 3u );
 
@@ -36,8 +36,8 @@ static bool VertexIsInisideClockwiseConvexPolygon( const MercatorPoint* const ve
 
 // Return 1 - have intersection, 0 - touches, -1 - no intersection.
 static int32_t SegemntsIntersects(
-	const MercatorPoint& e0v0, const MercatorPoint& e0v1,
-	const MercatorPoint& e1v0, const MercatorPoint& e1v1 )
+	const ProjectionPoint& e0v0, const ProjectionPoint& e0v1,
+	const ProjectionPoint& e1v0, const ProjectionPoint& e1v1 )
 {
 	const int32_t e0_dx= e0v1.x - e0v0.x;
 	const int32_t e0_dy= e0v1.y - e0v0.y;
@@ -65,7 +65,7 @@ static int32_t SegemntsIntersects(
 	return -1;
 }
 
-static bool VertexOnEdge( const MercatorPoint& ev0, const MercatorPoint& ev1, const MercatorPoint& v )
+static bool VertexOnEdge( const ProjectionPoint& ev0, const ProjectionPoint& ev1, const ProjectionPoint& v )
 {
 	const int64_t dx0= v.x - ev0.x;
 	const int64_t dy0= v.y - ev0.y;
@@ -77,7 +77,7 @@ static bool VertexOnEdge( const MercatorPoint& ev0, const MercatorPoint& ev1, co
 
 }
 
-static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts( const std::vector<MercatorPoint>& vertices )
+static std::vector< std::vector<ProjectionPoint> > SplitPolygonIntNoncrossingParts( const std::vector<ProjectionPoint>& vertices )
 {
 	for( size_t e0= 0u; e0 < vertices.size(); ++e0 )
 	for( size_t e1= 0u; e1 < vertices.size(); ++e1 )
@@ -88,11 +88,11 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 			( e0 + 1u ) % vertices.size() == (e1 + 1u)  % vertices.size() )
 			continue;
 
-		const MercatorPoint& e0v0= vertices[e0];
-		const MercatorPoint& e0v1= vertices[ (e0+1u) % vertices.size() ];
+		const ProjectionPoint& e0v0= vertices[e0];
+		const ProjectionPoint& e0v1= vertices[ (e0+1u) % vertices.size() ];
 
-		const MercatorPoint& e1v0= vertices[e1];
-		const MercatorPoint& e1v1= vertices[ (e1+1u) % vertices.size() ];
+		const ProjectionPoint& e1v0= vertices[e1];
+		const ProjectionPoint& e1v1= vertices[ (e1+1u) % vertices.size() ];
 
 		const int32_t e0_dx= e0v1.x - e0v0.x;
 		const int32_t e0_dy= e0v1.y - e0v0.y;
@@ -113,11 +113,11 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 
 		if( s >= 0 && s <= abs_denom && t >= 0 && t <= abs_denom )
 		{
-			const MercatorPoint inersection_point{
+			const ProjectionPoint inersection_point{
 				int32_t( e0v0.x + e0_dx * t / abs_denom ),
 				int32_t( e0v0.y + e0_dy * t / abs_denom ) };
 
-			std::vector<MercatorPoint> res0;
+			std::vector<ProjectionPoint> res0;
 			const size_t res0_vertex_count= ( vertices.size() + e1 - e0 ) % vertices.size();
 			PM_ASSERT( res0_vertex_count >= 2u );
 			for( size_t i= 0u; i < res0_vertex_count; ++i )
@@ -125,7 +125,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 			if( res0.front() != inersection_point && res0.back() != inersection_point )
 				res0.push_back( inersection_point );
 
-			std::vector<MercatorPoint> res1;
+			std::vector<ProjectionPoint> res1;
 			const size_t res1_vertex_count= ( vertices.size() + e0 - e1 ) % vertices.size();
 			PM_ASSERT( res1_vertex_count >= 2u );
 			for( size_t i= 0u; i < res1_vertex_count; ++i )
@@ -133,14 +133,14 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 			if( res1.front() != inersection_point && res1.back() != inersection_point )
 				res1.push_back( inersection_point );
 
-			std::vector< std::vector<MercatorPoint> > res_total;
+			std::vector< std::vector<ProjectionPoint> > res_total;
 			if( res0.size() >= 3u )
 				res_total= SplitPolygonIntNoncrossingParts( res0 );
 
 			if( res1.size() >= 3u )
 			{
-				std::vector< std::vector<MercatorPoint> > res1_splitted= SplitPolygonIntNoncrossingParts( res1 );
-				for( std::vector<MercatorPoint>& split_result : res1_splitted )
+				std::vector< std::vector<ProjectionPoint> > res1_splitted= SplitPolygonIntNoncrossingParts( res1 );
+				for( std::vector<ProjectionPoint>& split_result : res1_splitted )
 					res_total.push_back( std::move( split_result ) );
 			}
 
@@ -152,7 +152,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntNoncrossingParts
 }
 
 // Input polygons must be clockwise
-static void CombineAdjustedConvexPolygons( std::vector< std::vector<MercatorPoint> >& polygons )
+static void CombineAdjustedConvexPolygons( std::vector< std::vector<ProjectionPoint> >& polygons )
 {
 	// TODO - optimize it, make something, like O(n*log(n)), rather then O(n^3).
 	if( polygons.size() > 16384u )
@@ -163,14 +163,14 @@ static void CombineAdjustedConvexPolygons( std::vector< std::vector<MercatorPoin
 		const size_t mul_limit= std::max( size_t(16u), 4096u / std::max( size_t(1u), polygons.size() ) );
 		for( size_t p0= 0u; p0 < polygons.size(); ++p0 )
 		{
-			const std::vector<MercatorPoint>& poly0= polygons[p0];
+			const std::vector<ProjectionPoint>& poly0= polygons[p0];
 			if( poly0.size() * 3u > mul_limit )
 				continue;
 			const size_t p0_size_add= poly0.size() * 4u;
 
 			for( size_t p1= p0 + 1u; p1 < polygons.size(); ++p1 )
 			{
-				const std::vector<MercatorPoint>& poly1= polygons[p1];
+				const std::vector<ProjectionPoint>& poly1= polygons[p1];
 
 				if( poly0.size() * poly1.size() > mul_limit )
 					continue; // Skip two big polygons mering, because calculations for such polygons are too slow.
@@ -233,7 +233,7 @@ static void CombineAdjustedConvexPolygons( std::vector< std::vector<MercatorPoin
 				if( !( cross0 >= 0 && cross1 >= 0 ) )
 					continue; // Result polygon will be non-convex.
 
-				std::vector<MercatorPoint> poly_combined;
+				std::vector<ProjectionPoint> poly_combined;
 
 				const size_t poly0_vertex_count= poly0.size() - ( adjusted_end0 - adjusted_start0 );
 				const size_t poly1_vertex_count= poly1.size() - ( adjusted_end1 - adjusted_start1 );
@@ -260,10 +260,10 @@ static void CombineAdjustedConvexPolygons( std::vector< std::vector<MercatorPoin
 
 // Input polygons must not be self-intersecting.
 // Result parts are clockwise.
-static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( std::vector<MercatorPoint> vertices, bool enable_triangles_merge= true )
+static std::vector< std::vector<ProjectionPoint> > SplitPolygonIntoConvexParts( std::vector<ProjectionPoint> vertices, bool enable_triangles_merge= true )
 {
 	PM_ASSERT( vertices.size() >= 3u );
-	std::vector< std::vector<MercatorPoint> > result;
+	std::vector< std::vector<ProjectionPoint> > result;
 
 	const int64_t polygon_double_signed_area= CalculatePolygonDoubleSignedArea( vertices.data(), vertices.size() );
 	if( polygon_double_signed_area == 0 )
@@ -286,7 +286,7 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 
 	// TODO - optimize splitting, make faster, and produce less polygons.
 
-	std::vector<MercatorPoint> triangle;
+	std::vector<ProjectionPoint> triangle;
 	while( vertices.size() > 3u )
 	{
 		bool have_split_vertices= false;
@@ -315,8 +315,8 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 
 			for( size_t j = 2u; j < vertices.size() - 1u; ++j )
 			{
-				const MercatorPoint& e0v0= vertices[ ( i + j      ) % vertices.size() ];
-				const MercatorPoint& e0v1= vertices[ ( i + j + 1u ) % vertices.size() ];
+				const ProjectionPoint& e0v0= vertices[ ( i + j      ) % vertices.size() ];
+				const ProjectionPoint& e0v1= vertices[ ( i + j + 1u ) % vertices.size() ];
 
 				if( VertexIsInisideClockwiseConvexPolygon( triangle.data(), triangle.size(), e0v0 ) )
 					goto select_next_vertex_fo_triangulation;
@@ -354,14 +354,14 @@ static std::vector< std::vector<MercatorPoint> > SplitPolygonIntoConvexParts( st
 	return result;
 }
 
-static bool VertexIsInsidePolygon( const std::vector<MercatorPoint>& polygon, const MercatorPoint& vertex )
+static bool VertexIsInsidePolygon( const std::vector<ProjectionPoint>& polygon, const ProjectionPoint& vertex )
 {
 	size_t intersections= 0u;
 
 	for( size_t i= 0u; i < polygon.size(); ++i )
 	{
-		const MercatorPoint& edge_v0= polygon[i];
-		const MercatorPoint& edge_v1= polygon[ (i+1u) % polygon.size() ];
+		const ProjectionPoint& edge_v0= polygon[i];
+		const ProjectionPoint& edge_v1= polygon[ (i+1u) % polygon.size() ];
 
 		if( (edge_v0.y > vertex.y && edge_v1.y > vertex.y ) || // skip edges abowe test line
 			(edge_v0.y < vertex.y && edge_v1.y < vertex.y ) || // Skip edges below test line
@@ -382,10 +382,10 @@ static bool VertexIsInsidePolygon( const std::vector<MercatorPoint>& polygon, co
 }
 
 // 'a' is inside 'b'
-static bool PolygonIsInsidePolygon( const std::vector<MercatorPoint>& a, const std::vector<MercatorPoint>& b )
+static bool PolygonIsInsidePolygon( const std::vector<ProjectionPoint>& a, const std::vector<ProjectionPoint>& b )
 {
 	size_t vertices_inside= 0u;
-	for( const MercatorPoint& vertex : a )
+	for( const ProjectionPoint& vertex : a )
 		if( VertexIsInsidePolygon( b, vertex ) )
 			++vertices_inside;
 
@@ -393,16 +393,16 @@ static bool PolygonIsInsidePolygon( const std::vector<MercatorPoint>& a, const s
 	return 2u * vertices_inside >= a.size();
 }
 
-static std::vector< std::vector<MercatorPoint> > CutHoles(
-	std::vector<MercatorPoint> outer_ring,
-	const std::vector< std::vector<MercatorPoint> >& inner_rings )
+static std::vector< std::vector<ProjectionPoint> > CutHoles(
+	std::vector<ProjectionPoint> outer_ring,
+	const std::vector< std::vector<ProjectionPoint> >& inner_rings )
 {
 	if( CalculatePolygonDoubleSignedArea( outer_ring.data(), outer_ring.size() ) < 0 )
 		std::reverse( outer_ring.begin(), outer_ring.end() );
 
-	for( const std::vector<MercatorPoint>& inner_ring_src : inner_rings )
+	for( const std::vector<ProjectionPoint>& inner_ring_src : inner_rings )
 	{
-		std::vector<MercatorPoint> inner_ring= inner_ring_src;
+		std::vector<ProjectionPoint> inner_ring= inner_ring_src;
 		if( CalculatePolygonDoubleSignedArea( inner_ring.data(), inner_ring.size() ) < 0 )
 			std::reverse( inner_ring.begin(), inner_ring.end() );
 
@@ -412,16 +412,16 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 		for( size_t inner_i= 0u; inner_i < inner_ring.size(); ++inner_i )
 		for( size_t outer_i= 0u; outer_i < outer_ring.size(); ++outer_i )
 		{
-			const MercatorPoint& v0= inner_ring[inner_i];
-			const MercatorPoint& v1= outer_ring[outer_i];
+			const ProjectionPoint& v0= inner_ring[inner_i];
+			const ProjectionPoint& v1= outer_ring[outer_i];
 
 			bool cut_segment_ok= true;
 			// Check all inner rings.
-			for( const std::vector<MercatorPoint>& test_inner_ring : inner_rings )
+			for( const std::vector<ProjectionPoint>& test_inner_ring : inner_rings )
 			for( size_t i= 0u; i < test_inner_ring.size(); ++i )
 			{
-				const MercatorPoint& test_v0= test_inner_ring[i];
-				const MercatorPoint& test_v1= test_inner_ring[ (i+1u) % test_inner_ring.size() ];
+				const ProjectionPoint& test_v0= test_inner_ring[i];
+				const ProjectionPoint& test_v1= test_inner_ring[ (i+1u) % test_inner_ring.size() ];
 
 				if( test_v0 == v0 || test_v0 == v1 || test_v1 == v0 || test_v1 == v1 )
 					continue;
@@ -435,8 +435,8 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 			// Check outer rings.
 			for( size_t i= 0u; i < outer_ring.size(); ++i )
 			{
-				const MercatorPoint& test_v0= outer_ring[i];
-				const MercatorPoint& test_v1= outer_ring[ (i+1u) % outer_ring.size() ];
+				const ProjectionPoint& test_v0= outer_ring[i];
+				const ProjectionPoint& test_v1= outer_ring[ (i+1u) % outer_ring.size() ];
 
 				if( test_v0 == v0 || test_v0 == v1 || test_v1 == v0 || test_v1 == v1 )
 					continue;
@@ -469,7 +469,7 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 		end_selecting_cut_vertices:
 		if( cut_vertices.size() == 2u )
 		{
-			std::vector<MercatorPoint> polys[2u];
+			std::vector<ProjectionPoint> polys[2u];
 
 			if( cut_vertices.front().second > cut_vertices.back().second )
 				std::swap( cut_vertices.front(), cut_vertices.back() );
@@ -503,12 +503,12 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 			PM_ASSERT( polys[0].size() >= 3u );
 			PM_ASSERT( polys[1].size() >= 3u );
 
-			std::vector< std::vector<MercatorPoint> > result;
-			for( const std::vector<MercatorPoint>& poly : polys )
-			for( const std::vector<MercatorPoint>& poly_normalized : SplitPolygonIntNoncrossingParts( poly ) )
+			std::vector< std::vector<ProjectionPoint> > result;
+			for( const std::vector<ProjectionPoint>& poly : polys )
+			for( const std::vector<ProjectionPoint>& poly_normalized : SplitPolygonIntNoncrossingParts( poly ) )
 			{
-				std::vector< std::vector<MercatorPoint> > poly_inner_rings;
-				for( const std::vector<MercatorPoint>& inner_ring_fo_classify : inner_rings )
+				std::vector< std::vector<ProjectionPoint> > poly_inner_rings;
+				for( const std::vector<ProjectionPoint>& inner_ring_fo_classify : inner_rings )
 				{
 					if( &inner_ring_fo_classify == &inner_ring_src )
 						continue;
@@ -519,8 +519,8 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 					result.push_back( poly_normalized );
 				else
 				{
-					std::vector< std::vector<MercatorPoint> > poly_result= CutHoles( poly_normalized, poly_inner_rings );
-					for( std::vector<MercatorPoint>& poly_result_part : poly_result )
+					std::vector< std::vector<ProjectionPoint> > poly_result= CutHoles( poly_normalized, poly_inner_rings );
+					for( std::vector<ProjectionPoint>& poly_result_part : poly_result )
 						result.push_back( std::move( poly_result_part ) );
 				}
 			}
@@ -531,21 +531,21 @@ static std::vector< std::vector<MercatorPoint> > CutHoles(
 	return { outer_ring };
 }
 
-static std::vector< std::vector<MercatorPoint> > CutHoles(
-	const std::vector< std::vector<MercatorPoint> >& outer_rings,
-	const std::vector< std::vector<MercatorPoint> >& inner_rings )
+static std::vector< std::vector<ProjectionPoint> > CutHoles(
+	const std::vector< std::vector<ProjectionPoint> >& outer_rings,
+	const std::vector< std::vector<ProjectionPoint> >& inner_rings )
 {
-	std::vector< std::vector<MercatorPoint> > result;
+	std::vector< std::vector<ProjectionPoint> > result;
 
-	for( const std::vector<MercatorPoint>& outer_ring : outer_rings )
+	for( const std::vector<ProjectionPoint>& outer_ring : outer_rings )
 	{
-		std::vector< std::vector<MercatorPoint> > ring_inner_rings;
-		for( const std::vector<MercatorPoint>& inner_ring : inner_rings )
+		std::vector< std::vector<ProjectionPoint> > ring_inner_rings;
+		for( const std::vector<ProjectionPoint>& inner_ring : inner_rings )
 			if( PolygonIsInsidePolygon( inner_ring, outer_ring ) )
 				ring_inner_rings.push_back( inner_ring );
 
-		std::vector< std::vector<MercatorPoint> > ring_splitted= CutHoles( outer_ring, ring_inner_rings );
-		for( std::vector<MercatorPoint>& part : ring_splitted )
+		std::vector< std::vector<ProjectionPoint> > ring_splitted= CutHoles( outer_ring, ring_inner_rings );
+		for( std::vector<ProjectionPoint>& part : ring_splitted )
 			result.push_back( std::move(part) );
 
 	}
@@ -565,8 +565,8 @@ void NormalizePolygons( ObjectsData& data )
 
 			if( ! in_object.multipolygon->inner_rings.empty() )
 			{
-				std::vector< std::vector<MercatorPoint> > outer_rings_splitted, inner_rings_splitted;
-				std::vector<MercatorPoint> ring_vertices;
+				std::vector< std::vector<ProjectionPoint> > outer_rings_splitted, inner_rings_splitted;
+				std::vector<ProjectionPoint> ring_vertices;
 
 				for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
 				{
@@ -575,7 +575,7 @@ void NormalizePolygons( ObjectsData& data )
 					for( size_t v= outer_ring.first_vertex_index; v < outer_ring.first_vertex_index + outer_ring.vertex_count; ++v )
 						ring_vertices.push_back( data.areal_objects_vertices[v] );
 					auto ring_splitted= SplitPolygonIntNoncrossingParts( ring_vertices );
-					for( std::vector<MercatorPoint>& ring_part : ring_splitted )
+					for( std::vector<ProjectionPoint>& ring_part : ring_splitted )
 						outer_rings_splitted.push_back( std::move(ring_part) );
 				}
 				for( const BaseDataRepresentation::Multipolygon::Part& inner_ring : in_object.multipolygon->inner_rings )
@@ -585,20 +585,20 @@ void NormalizePolygons( ObjectsData& data )
 					for( size_t v= inner_ring.first_vertex_index; v < inner_ring.first_vertex_index + inner_ring.vertex_count; ++v )
 						ring_vertices.push_back( data.areal_objects_vertices[v] );
 					auto ring_splitted= SplitPolygonIntNoncrossingParts( ring_vertices );
-					for( std::vector<MercatorPoint>& ring_part : ring_splitted )
+					for( std::vector<ProjectionPoint>& ring_part : ring_splitted )
 						inner_rings_splitted.push_back( std::move(ring_part) );
 				}
 
-				std::vector< std::vector<MercatorPoint> > all_convex_parts;
-				for( const std::vector<MercatorPoint>& hole_split_part : CutHoles( outer_rings_splitted, inner_rings_splitted ) )
-				for( const std::vector<MercatorPoint>& noncrossing_part : SplitPolygonIntNoncrossingParts( hole_split_part ) )
-				for( std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_part, noncrossing_part.size() < 512u ) )
+				std::vector< std::vector<ProjectionPoint> > all_convex_parts;
+				for( const std::vector<ProjectionPoint>& hole_split_part : CutHoles( outer_rings_splitted, inner_rings_splitted ) )
+				for( const std::vector<ProjectionPoint>& noncrossing_part : SplitPolygonIntNoncrossingParts( hole_split_part ) )
+				for( std::vector<ProjectionPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_part, noncrossing_part.size() < 512u ) )
 					all_convex_parts.push_back(std::move(convex_part));
 
 				if( all_convex_parts.size() < 128u )
 					CombineAdjustedConvexPolygons( all_convex_parts );
 
-				for( const std::vector<MercatorPoint>& convex_part : all_convex_parts )
+				for( const std::vector<ProjectionPoint>& convex_part : all_convex_parts )
 				{
 					PM_ASSERT( convex_part.size() >= 3u );
 
@@ -606,7 +606,7 @@ void NormalizePolygons( ObjectsData& data )
 					out_object.class_= in_object.class_;
 					out_object.first_vertex_index= result_areal_objects_vertices.size();
 					out_object.vertex_count= convex_part.size();
-					for( const MercatorPoint& vertex : convex_part )
+					for( const ProjectionPoint& vertex : convex_part )
 						result_areal_objects_vertices.push_back(vertex);
 					result_areal_objects.push_back( std::move(out_object) );
 				}
@@ -615,14 +615,14 @@ void NormalizePolygons( ObjectsData& data )
 			{
 				for( const BaseDataRepresentation::Multipolygon::Part& outer_ring : in_object.multipolygon->outer_rings )
 				{
-					std::vector<MercatorPoint> ring_vertices;
+					std::vector<ProjectionPoint> ring_vertices;
 					ring_vertices.reserve( outer_ring.vertex_count );
 					for( size_t v= outer_ring.first_vertex_index; v < outer_ring.first_vertex_index + outer_ring.vertex_count; ++v )
 						ring_vertices.push_back( data.areal_objects_vertices[v] );
 
-					for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( ring_vertices ) )
+					for( const std::vector<ProjectionPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( ring_vertices ) )
 					{
-						for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part, noncrossing_polygon_part.size() < 512u ) )
+						for( const std::vector<ProjectionPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part, noncrossing_polygon_part.size() < 512u ) )
 						{
 							PM_ASSERT( convex_part.size() >= 3u );
 
@@ -631,7 +631,7 @@ void NormalizePolygons( ObjectsData& data )
 							out_object.z_level= in_object.z_level;
 							out_object.first_vertex_index= result_areal_objects_vertices.size();
 							out_object.vertex_count= convex_part.size();
-							for( const MercatorPoint& vertex : convex_part )
+							for( const ProjectionPoint& vertex : convex_part )
 								result_areal_objects_vertices.push_back(vertex);
 							result_areal_objects.push_back( std::move(out_object) );
 						}
@@ -641,14 +641,14 @@ void NormalizePolygons( ObjectsData& data )
 		}
 		else
 		{
-			std::vector<MercatorPoint> polygon_vertices;
+			std::vector<ProjectionPoint> polygon_vertices;
 			polygon_vertices.reserve( in_object.vertex_count );
 			for( size_t v= in_object.first_vertex_index; v < in_object.first_vertex_index + in_object.vertex_count; ++v )
 				polygon_vertices.push_back( data.areal_objects_vertices[v] );
 
-			for( const std::vector<MercatorPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( polygon_vertices ) )
+			for( const std::vector<ProjectionPoint>& noncrossing_polygon_part : SplitPolygonIntNoncrossingParts( polygon_vertices ) )
 			{
-				for( const std::vector<MercatorPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part ) )
+				for( const std::vector<ProjectionPoint>& convex_part : SplitPolygonIntoConvexParts( noncrossing_polygon_part ) )
 				{
 					PM_ASSERT( convex_part.size() >= 3u );
 
@@ -657,7 +657,7 @@ void NormalizePolygons( ObjectsData& data )
 					out_object.z_level= in_object.z_level;
 					out_object.first_vertex_index= result_areal_objects_vertices.size();
 					out_object.vertex_count= convex_part.size();
-					for( const MercatorPoint& vertex : convex_part )
+					for( const ProjectionPoint& vertex : convex_part )
 						result_areal_objects_vertices.push_back(vertex);
 					result_areal_objects.push_back( std::move(out_object) );
 				}
