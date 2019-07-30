@@ -418,6 +418,8 @@ WayClassifyResult ClassifyWay( const tinyxml2::XMLElement& way_element, const bo
 			if( GetTagValue( way_element, "layer" ) == 0 )
 				result.z_level= g_zero_z_level + 1u;
 		}
+		else if( std::strcmp( man_made, "embankment" ) == 0 )
+			result.linear_object_class= LinearObjectClass::Cliff;
 	}
 
 	if( const char* const barrier= GetTagValue( way_element, "barrier" ) )
